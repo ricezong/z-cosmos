@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>搜索区 · 紫微星</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+    font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+    background: linear-gradient(135deg, #120a1a 0%, #1a1028 50%, #120a1a 100%);
+    color: #e8d5ff;
+    min-height: 100vh;
+}
+.star-bg {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; z-index: 0;
+    background-image:
+        radial-gradient(2px 2px at 35px 45px, rgba(176,149,224,0.2), transparent),
+        radial-gradient(1px 1px at 90px 85px, rgba(138,109,184,0.15), transparent),
+        radial-gradient(2px 2px at 165px 55px, rgba(176,149,224,0.2), transparent),
+        radial-gradient(1px 1px at 245px 125px, rgba(200,170,255,0.1), transparent);
+}
+.container { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; padding: 30px 20px; }
+
+.header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 30px; padding-bottom: 20px;
+    border-bottom: 1px solid rgba(138,109,184,0.3);
+}
+.header-left { display: flex; align-items: center; gap: 15px; }
+.planet-icon {
+    width: 48px; height: 48px; border-radius: 50%;
+    background: linear-gradient(135deg, #8a6db8, #b095e0);
+    box-shadow: 0 0 20px rgba(138,109,184,0.4);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px;
+}
+.header-title h1 {
+    font-size: 1.8rem; font-weight: 300; letter-spacing: 4px;
+    background: linear-gradient(135deg, #b095e0, #e0d0ff);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.header-title p { font-size: 0.85rem; opacity: 0.7; margin-top: 2px; }
+.back-btn {
+    padding: 8px 20px; border-radius: 30px;
+    background: rgba(138,109,184,0.2); border: 1px solid rgba(138,109,184,0.4);
+    color: #e0d0ff; cursor: pointer; text-decoration: none;
+    transition: 0.3s; font-size: 0.9rem;
+}
+.back-btn:hover {
+    background: rgba(138,109,184,0.35); box-shadow: 0 0 15px rgba(138,109,184,0.3);
+}
+
+/* Search Box */
+.search-box {
+    background: rgba(20,12,35,0.6); border: 1px solid rgba(138,109,184,0.25);
+    border-radius: 24px; padding: 25px; margin-bottom: 30px;
+    backdrop-filter: blur(10px);
+}
+.search-input-wrap {
+    display: flex; gap: 12px; margin-bottom: 15px;
+}
+.search-input {
+    flex: 1; padding: 14px 22px; border-radius: 30px;
+    background: rgba(10,6,20,0.6); border: 1px solid rgba(138,109,184,0.3);
+    color: #e8d5ff; font-size: 1rem; outline: none;
+    font-family: inherit; transition: 0.3s;
+}
+.search-input:focus {
+    border-color: rgba(138,109,184,0.7);
+    box-shadow: 0 0 20px rgba(138,109,184,0.15);
+}
+.search-input::placeholder { color: rgba(138,109,184,0.5); }
+.search-btn {
+    padding: 14px 32px; border-radius: 30px; border: none;
+    background: linear-gradient(135deg, #8a6db8, #b095e0);
+    color: white; cursor: pointer; font-size: 1rem;
+    transition: 0.3s; letter-spacing: 1px;
+}
+.search-btn:hover {
+    box-shadow: 0 0 25px rgba(138,109,184,0.4); transform: translateY(-1px);
+}
+
+/* Filter Tags */
+.filter-tags { display: flex; gap: 10px; flex-wrap: wrap; }
+.filter-tag {
+    padding: 6px 16px; border-radius: 20px; cursor: pointer;
+    background: rgba(138,109,184,0.1); border: 1px solid rgba(138,109,184,0.2);
+    color: #c8b5e8; font-size: 0.85rem; transition: 0.3s;
+}
+.filter-tag.active, .filter-tag:hover {
+    background: rgba(138,109,184,0.3); border-color: rgba(138,109,184,0.5);
+    color: #fff;
+}
+
+/* Results */
+.results-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 20px;
+}
+.results-count { font-size: 0.9rem; opacity: 0.7; }
+.results-list { display: flex; flex-direction: column; gap: 12px; }
+
+.result-item {
+    background: rgba(20,12,35,0.5); border: 1px solid rgba(138,109,184,0.2);
+    border-radius: 16px; padding: 18px 22px;
+    backdrop-filter: blur(8px); cursor: pointer;
+    transition: 0.3s; display: flex; gap: 15px; align-items: flex-start;
+}
+.result-item:hover {
+    border-color: rgba(138,109,184,0.5);
+    box-shadow: 0 5px 25px rgba(138,109,184,0.1);
+    transform: translateY(-2px);
+}
+.result-icon {
+    width: 44px; height: 44px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem; flex-shrink: 0;
+    background: rgba(138,109,184,0.2); border: 1px solid rgba(138,109,184,0.3);
+}
+.result-content { flex: 1; }
+.result-title { font-size: 1.05rem; margin-bottom: 6px; color: #f0e5ff; }
+.result-desc { font-size: 0.88rem; opacity: 0.7; line-height: 1.5; margin-bottom: 8px; }
+.result-meta { display: flex; gap: 15px; font-size: 0.8rem; opacity: 0.5; align-items: center; }
+.result-type {
+    padding: 3px 12px; border-radius: 12px;
+    font-size: 0.75rem; background: rgba(138,109,184,0.2);
+    color: #c8b5e8; border: 1px solid rgba(138,109,184,0.3);
+}
+.result-type.tieba { background: rgba(58,123,213,0.2); color: #a8d0ff; border-color: rgba(58,123,213,0.3); }
+.result-type.hot { background: rgba(212,183,140,0.2); color: #f0e0c0; border-color: rgba(212,183,140,0.3); }
+.result-type.theater { background: rgba(192,92,62,0.2); color: #ffbba0; border-color: rgba(192,92,62,0.3); }
+.result-type.tools { background: rgba(106,176,214,0.2); color: #c8e0f5; border-color: rgba(106,176,214,0.3); }
+
+.empty-state { text-align: center; padding: 60px 20px; opacity: 0.5; }
+.empty-state p { margin-bottom: 10px; }
+
+.highlight { background: rgba(138,109,184,0.3); padding: 1px 4px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<div class="star-bg"></div>
+<div class="container">
+    <div class="header">
+        <div class="header-left">
+            <div class="planet-icon">🟣</div>
+            <div class="header-title">
+                <h1>搜索区</h1>
+                <p>紫微星 · 全站信息聚合</p>
+            </div>
+        </div>
+        <a href="index.html" class="back-btn">← 返回星域</a>
+    </div>
+
+    <div class="search-box">
+        <div class="search-input-wrap">
+            <input type="text" class="search-input" id="search-input" placeholder="搜索帖子、热点、剧场、工具..." onkeydown="if(event.key==='Enter')doSearch()">
+            <button class="search-btn" onclick="doSearch()">🔍 搜索</button>
+        </div>
+        <div class="filter-tags">
+            <div class="filter-tag active" onclick="setFilter('all')">全部</div>
+            <div class="filter-tag" onclick="setFilter('tieba')">📝 贴吧</div>
+            <div class="filter-tag" onclick="setFilter('hot')">🔥 热点</div>
+            <div class="filter-tag" onclick="setFilter('theater')">🎭 剧场</div>
+            <div class="filter-tag" onclick="setFilter('tools')">🛠️ 工具</div>
+        </div>
+    </div>
+
+    <div class="results-header">
+        <div class="results-count" id="results-count">输入关键词开始搜索</div>
+    </div>
+    <div class="results-list" id="results-list"></div>
+</div>
+
+<script>
+// ===== Data Sources =====
+const hotData = [
+    { title: '国产大模型再创新高', desc: '最新评测显示中文理解能力全球第一', source: 'hot', type: 'tech', url: 'hot.html' },
+    { title: '新发现的系外行星可能有生命迹象', desc: '天文学家在宜居带发现类似地球的大气层', source: 'hot', type: 'weibo', url: 'hot.html' },
+    { title: 'SpaceX星舰第四次发射成功', desc: '航天工程师详细解读技术细节和意义', source: 'hot', type: 'zhihu', url: 'hot.html' },
+    { title: '新型固态电池技术取得突破', desc: '充电5分钟续航1000公里成为可能', source: 'hot', type: 'tech', url: 'hot.html' },
+    { title: '沉浸式太空漫步实拍', desc: '国际空间站4K实拍视频火爆全网', source: 'hot', type: 'bilibili', url: 'hot.html' },
+    { title: 'OpenAI发布GPT-5预览版', desc: '多模态能力大幅提升，支持视频理解', source: 'hot', type: 'tech', url: 'hot.html' },
+    { title: '苹果Vision Pro 2代或于明年春季发布', desc: '重量减轻40%，视场角提升至120度', source: 'hot', type: 'tech', url: 'hot.html' },
+    { title: '全球气候峰会在日内瓦召开', desc: '190个国家代表出席，达成碳中和协议', source: 'hot', type: 'weibo', url: 'hot.html' },
+    { title: '自制火箭成功发射并回收', desc: '全程记录视频播放量突破320万', source: 'hot', type: 'bilibili', url: 'hot.html' },
+    { title: 'Rust基金会宣布内核2.0时代', desc: '更多核心模块将使用Rust重写', source: 'hot', type: 'github', url: 'hot.html' }
+];
+
+const theaterData = [
+    { title: '火柴人行走动画', desc: '经典火柴人行走循环动画演示', source: 'theater', type: 'stickman', url: 'theater.html' },
+    { title: '火柴人奔跑动画', desc: '快速奔跑姿态的动态演示', source: 'theater', type: 'stickman', url: 'theater.html' },
+    { title: '火柴人跳跃动画', desc: '跳跃、腾空、落地的完整动作', source: 'theater', type: 'stickman', url: 'theater.html' },
+    { title: '火柴人格斗动画', desc: '出拳、闪避、格斗组合动作', source: 'theater', type: 'stickman', url: 'theater.html' },
+    { title: '像素雨效果', desc: '经典黑客帝国风格数字雨动画', source: 'theater', type: 'pixel', url: 'theater.html' },
+    { title: '像素弹跳球', desc: '物理弹跳轨迹与拖尾效果', source: 'theater', type: 'pixel', url: 'theater.html' },
+    { title: '像素贪吃蛇', desc: '复古风格自动寻路贪吃蛇', source: 'theater', type: 'pixel', url: 'theater.html' },
+    { title: '像素星际穿越', desc: '3D伪深度星际航行效果', source: 'theater', type: 'pixel', url: 'theater.html' }
+];
+
+const toolsData = [
+    { title: '便签工具', desc: '添加、编辑、保存个人便签', source: 'tools', type: 'notepad', url: 'tools.html' },
+    { title: '涂鸦画板', desc: '自由涂鸦，支持保存为图片', source: 'tools', type: 'draw', url: 'tools.html' },
+    { title: '计算器', desc: '支持加减乘除和连续运算', source: 'tools', type: 'calc', url: 'tools.html' },
+    { title: '计时器', desc: '倒计时工具，支持暂停和重置', source: 'tools', type: 'timer', url: 'tools.html' },
+    { title: '颜色工具', desc: 'RGB调色板，输出HEX/RGB/HSL', source: 'tools', type: 'color', url: 'tools.html' },
+    { title: '文本工具', desc: '字数统计、格式转换、复制', source: 'tools', type: 'text', url: 'tools.html' }
+];
+
+let currentFilter = 'all';
+
+function getTiebaData() {
+    try {
+        return JSON.parse(localStorage.getItem('cosmos_tieba_posts')) || [];
+    } catch { return []; }
+}
+
+function setFilter(f) {
+    currentFilter = f;
+    document.querySelectorAll('.filter-tag').forEach(t => t.classList.remove('active'));
+    event.target.classList.add('active');
+    doSearch();
+}
+
+function highlightText(text, query) {
+    if (!query) return text;
+    const regex = new RegExp('(' + escapeRegex(query) + ')', 'gi');
+    return text.replace(regex, '<span class="highlight">$1</span>');
+}
+
+function escapeRegex(str) {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function doSearch() {
+    const query = document.getElementById('search-input').value.trim().toLowerCase();
+    const list = document.getElementById('results-list');
+    const countEl = document.getElementById('results-count');
+
+    if (!query) {
+        list.innerHTML = '';
+        countEl.textContent = '输入关键词开始搜索';
+        return;
+    }
+
+    let results = [];
+
+    // Search tieba
+    if (currentFilter === 'all' || currentFilter === 'tieba') {
+        const tieba = getTiebaData();
+        tieba.forEach(p => {
+            if (p.title.toLowerCase().includes(query) || p.content.toLowerCase().includes(query) || p.nickname.toLowerCase().includes(query)) {
+                results.push({
+                    title: p.title,
+                    desc: p.content.substring(0, 100) + (p.content.length > 100 ? '...' : ''),
+                    meta: `👤 ${p.nickname} · 💬 ${(p.comments || []).length}条评论 · 📅 ${new Date(p.time).toLocaleDateString()}`,
+                    type: 'tieba',
+                    typeLabel: '贴吧',
+                    icon: '📝',
+                    url: 'tieba.html'
+                });
+            }
+            // Search comments too
+            (p.comments || []).forEach(c => {
+                if (c.body.toLowerCase().includes(query) || c.nickname.toLowerCase().includes(query)) {
+                    results.push({
+                        title: `评论: ${p.title}`,
+                        desc: `${c.nickname}: ${c.body.substring(0, 100)}`,
+                        meta: `👤 ${c.nickname} · 📅 ${new Date(c.time).toLocaleDateString()}`,
+                        type: 'tieba',
+                        typeLabel: '贴吧评论',
+                        icon: '💬',
+                        url: 'tieba.html'
+                    });
+                }
+            });
+        });
+    }
+
+    // Search hot
+    if (currentFilter === 'all' || currentFilter === 'hot') {
+        hotData.forEach(h => {
+            if (h.title.toLowerCase().includes(query) || h.desc.toLowerCase().includes(query)) {
+                results.push({
+                    title: h.title,
+                    desc: h.desc,
+                    meta: `${sourceNames[h.type] || h.type} · 🔥 热搜`,
+                    type: 'hot',
+                    typeLabel: '热点',
+                    icon: '🔥',
+                    url: h.url
+                });
+            }
+        });
+    }
+
+    // Search theater
+    if (currentFilter === 'all' || currentFilter === 'theater') {
+        theaterData.forEach(t => {
+            if (t.title.toLowerCase().includes(query) || t.desc.toLowerCase().includes(query)) {
+                results.push({
+                    title: t.title,
+                    desc: t.desc,
+                    meta: t.type === 'stickman' ? '🎭 火柴人剧场' : '👾 像素剧场',
+                    type: 'theater',
+                    typeLabel: '剧场',
+                    icon: t.type === 'stickman' ? '🎭' : '👾',
+                    url: t.url
+                });
+            }
+        });
+    }
+
+    // Search tools
+    if (currentFilter === 'all' || currentFilter === 'tools') {
+        toolsData.forEach(t => {
+            if (t.title.toLowerCase().includes(query) || t.desc.toLowerCase().includes(query)) {
+                results.push({
+                    title: t.title,
+                    desc: t.desc,
+                    meta: '🛠️ 自助工具',
+                    type: 'tools',
+                    typeLabel: '工具',
+                    icon: '🛠️',
+                    url: t.url
+                });
+            }
+        });
+    }
+
+    countEl.textContent = `找到 ${results.length} 个结果`;
+
+    if (results.length === 0) {
+        list.innerHTML = `<div class="empty-state"><p>😕 未找到与 "${escapeHtml(query)}" 相关的结果</p><p>试试其他关键词？</p></div>`;
+        return;
+    }
+
+    list.innerHTML = results.map(r => `
+        <div class="result-item" onclick="window.location.href='${r.url}'">
+            <div class="result-icon">${r.icon}</div>
+            <div class="result-content">
+                <div class="result-title">${highlightText(escapeHtml(r.title), query)}</div>
+                <div class="result-desc">${highlightText(escapeHtml(r.desc), query)}</div>
+                <div class="result-meta">
+                    <span class="result-type ${r.type}">${r.typeLabel}</span>
+                    <span>${r.meta}</span>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+const sourceNames = {
+    weibo: '微博', zhihu: '知乎', bilibili: 'B站', tech: '科技', github: 'GitHub'
+};
+</script>
+</body>
+</html>
