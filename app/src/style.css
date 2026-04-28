@@ -1,0 +1,19 @@
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: #050b1a;
+  color: #e0f0ff;
+  font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+}
+
+#app {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background-color: #050b1a;
+  position: relative;
+}
