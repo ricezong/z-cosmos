@@ -1,28 +1,36 @@
 <template>
   <div class="star-bg"></div>
-  <div class="container">
+  <div class="page-layout">
+    <!-- 固定区域 -->
+    <div class="page-fixed">
     <header class="header">
       <div class="header-left">
-        <div class="planet-icon">❄️</div>
+        <div class="planet-icon ice-giant-wrap"><div class="planet-ring"></div><div class="planet-sphere ice-giant"></div></div>
         <div class="header-title">
           <h1>自助区</h1>
           <p>冰巨星 · 工具集合中心</p>
         </div>
       </div>
-      <router-link to="/" class="back-btn">← 返回星域</router-link>
+      <router-link to="/" class="back-btn"><i class="ri-arrow-left-line"></i> 返回星域</router-link>
     </header>
-
+    <div class="container">
     <div class="tool-menu">
       <div class="tool-card" v-for="t in tools" :key="t.id" :class="{ active: activeTool === t.id }" @click="activeTool = t.id">
-        <div class="icon">{{ t.icon }}</div>
+        <div class="icon"><i :class="t.icon"></i></div>
         <div class="name">{{ t.name }}</div>
       </div>
     </div>
+    </div><!-- container -->
+    </div><!-- page-fixed -->
+
+    <!-- 滚动区域 -->
+    <div class="page-scroll" ref="contentRef" @scroll="onContentScroll">
+    <div class="container">
 
     <!-- Notepad -->
     <div class="tool-panel" v-show="activeTool === 'notepad'">
       <div class="tool-box">
-        <h3>📝 便签板</h3>
+        <h3><i class="ri-sticky-note-line"></i> 便签板</h3>
         <div class="note-grid">
           <div class="note-item" v-for="(note, i) in notes" :key="i">
             <span class="note-del" @click="deleteNote(i)">×</span>
@@ -38,7 +46,7 @@
     <!-- Draw -->
     <div class="tool-panel" v-show="activeTool === 'draw'">
       <div class="tool-box">
-        <h3>🎨 涂鸦画板</h3>
+        <h3><i class="ri-palette-line"></i> 涂鸦画板</h3>
         <div class="draw-tools">
           <label>颜色:</label>
           <input type="color" v-model="drawColor">
@@ -57,7 +65,7 @@
     <!-- Calculator -->
     <div class="tool-panel" v-show="activeTool === 'calc'">
       <div class="tool-box">
-        <h3>🧮 计算器</h3>
+        <h3><i class="ri-calculator-line"></i> 计算器</h3>
         <div class="calc-display">
           <div class="calc-history">{{ calcHistory }}</div>
           <div>{{ calcExpr || '0' }}</div>
@@ -82,16 +90,16 @@
     <!-- Timer -->
     <div class="tool-panel" v-show="activeTool === 'timer'">
       <div class="tool-box">
-        <h3>⏱️ 计时器</h3>
+        <h3><i class="ri-timer-line"></i> 计时器</h3>
         <div class="timer-inputs">
           <input type="number" v-model.number="timerMin" placeholder="分" min="0" max="99">
           <input type="number" v-model.number="timerSec" placeholder="秒" min="0" max="59">
         </div>
         <div class="timer-display">{{ timerDisplay }}</div>
         <div class="timer-btns">
-          <button class="add-note-btn" @click="startTimer">▶ 开始</button>
-          <button class="add-note-btn" style="background:rgba(106,176,214,0.2)" @click="pauseTimer">⏸ 暂停</button>
-          <button class="add-note-btn" style="background:rgba(192,80,80,0.3)" @click="resetTimer">↺ 重置</button>
+          <button class="add-note-btn" @click="startTimer"><i class="ri-play-line"></i> 开始</button>
+          <button class="add-note-btn" style="background:rgba(106,176,214,0.2)" @click="pauseTimer"><i class="ri-pause-line"></i> 暂停</button>
+          <button class="add-note-btn" style="background:rgba(192,80,80,0.3)" @click="resetTimer"><i class="ri-restart-line"></i> 重置</button>
         </div>
       </div>
     </div>
@@ -99,7 +107,7 @@
     <!-- Color -->
     <div class="tool-panel" v-show="activeTool === 'color'">
       <div class="tool-box">
-        <h3>🎨 颜色工具</h3>
+        <h3><i class="ri-palette-line"></i> 颜色工具</h3>
         <div class="color-preview" :style="{ background: colorHex, color: colorPreviewText }">{{ colorHex }}</div>
         <div class="color-sliders">
           <div class="color-slider-row" v-for="c in ['r','g','b']" :key="c">
@@ -120,7 +128,7 @@
     <!-- Text -->
     <div class="tool-panel" v-show="activeTool === 'text'">
       <div class="tool-box">
-        <h3>📄 文本工具</h3>
+        <h3><i class="ri-file-text-line"></i> 文本工具</h3>
         <textarea class="text-area-box" v-model="textInput" placeholder="在这里输入或粘贴文本..."></textarea>
         <div class="text-stats">
           <div class="text-stat-item">字符: {{ textStats.chars }}</div>
@@ -140,19 +148,24 @@
         </div>
       </div>
     </div>
-  </div>
+    </div><!-- container -->
+    </div><!-- page-scroll -->
+  </div><!-- page-layout -->
+
+  <!-- 回到顶部 -->
+  <button class="back-to-top" v-show="showBackTop" @click="scrollToTop"><i class="ri-arrow-up-line"></i></button>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 
 const tools = [
-  { id: 'notepad', icon: '📝', name: '便签' },
-  { id: 'draw', icon: '🎨', name: '画板' },
-  { id: 'calc', icon: '🧮', name: '计算器' },
-  { id: 'timer', icon: '⏱️', name: '计时器' },
-  { id: 'color', icon: '🎨', name: '颜色工具' },
-  { id: 'text', icon: '📄', name: '文本工具' }
+  { id: 'notepad', icon: 'ri-sticky-note-line', name: '便签' },
+  { id: 'draw', icon: 'ri-palette-line', name: '画板' },
+  { id: 'calc', icon: 'ri-calculator-line', name: '计算器' },
+  { id: 'timer', icon: 'ri-timer-line', name: '计时器' },
+  { id: 'color', icon: 'ri-palette-line', name: '颜色工具' },
+  { id: 'text', icon: 'ri-file-text-line', name: '文本工具' }
 ]
 const activeTool = ref('notepad')
 
@@ -210,7 +223,7 @@ function startTimer() {
   if (!timerId) timerSeconds.value = (timerMin.value || 0) * 60 + (timerSec.value || 0)
   if (timerSeconds.value <= 0) return
   timerRunning.value = true
-  timerId = setInterval(() => { timerSeconds.value--; if (timerSeconds.value <= 0) { clearInterval(timerId); timerRunning.value = false; timerId = null; alert('⏰ 时间到！') } }, 1000)
+  timerId = setInterval(() => { timerSeconds.value--; if (timerSeconds.value <= 0) { clearInterval(timerId); timerRunning.value = false; timerId = null; alert('时间到！') } }, 1000)
 }
 function pauseTimer() { if (!timerRunning.value) return; clearInterval(timerId); timerRunning.value = false }
 function resetTimer() { clearInterval(timerId); timerRunning.value = false; timerId = null; timerSeconds.value = (timerMin.value || 0) * 60 + (timerSec.value || 0) }
@@ -235,9 +248,19 @@ const textStats = computed(() => {
 })
 function copyText() { navigator.clipboard.writeText(textInput.value).then(() => alert('已复制到剪贴板')) }
 
+// Back to top
+const showBackTop = ref(false)
+const contentRef = ref(null)
+function onContentScroll() {
+  const el = contentRef.value
+  if (el) showBackTop.value = el.scrollTop > 300
+}
+function scrollToTop() {
+  contentRef.value?.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
 onMounted(() => {
   notes.value = getNotes()
-  clearCanvas()
 })
 
 onUnmounted(() => {
@@ -248,39 +271,22 @@ onUnmounted(() => {
 <style scoped>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif; background: #050b1a; color: #d0e8f5; min-height: 100vh; }
-.star-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0;
-  background-image:
-    radial-gradient(2px 2px at 20px 30px, rgba(255,255,255,0.6), transparent),
-    radial-gradient(2px 2px at 40px 70px, rgba(255,255,255,0.5), transparent),
-    radial-gradient(3px 3px at 90px 40px, rgba(255,255,255,0.7), transparent),
-    radial-gradient(2px 2px at 160px 120px, rgba(255,255,255,0.5), transparent),
-    radial-gradient(2px 2px at 230px 80px, rgba(255,255,255,0.6), transparent),
-    radial-gradient(3px 3px at 300px 60px, rgba(255,255,255,0.7), transparent),
-    radial-gradient(2px 2px at 350px 140px, rgba(255,255,255,0.5), transparent),
-    radial-gradient(2px 2px at 450px 30px, rgba(255,255,255,0.6), transparent),
-    radial-gradient(1px 1px at 520px 100px, rgba(255,255,255,0.4), transparent),
-    radial-gradient(3px 3px at 620px 50px, rgba(255,255,255,0.8), transparent),
-    radial-gradient(2px 2px at 700px 160px, rgba(255,255,255,0.5), transparent),
-    radial-gradient(2px 2px at 780px 90px, rgba(255,255,255,0.6), transparent),
-    radial-gradient(1px 1px at 850px 30px, rgba(255,255,255,0.4), transparent),
-    radial-gradient(3px 3px at 920px 140px, rgba(255,255,255,0.7), transparent),
-    radial-gradient(2px 2px at 50px 200px, rgba(255,255,255,0.5), transparent),
-    radial-gradient(2px 2px at 150px 280px, rgba(255,255,255,0.6), transparent),
-    radial-gradient(3px 3px at 280px 240px, rgba(255,255,255,0.8), transparent),
-    radial-gradient(2px 2px at 400px 320px, rgba(255,255,255,0.5), transparent),
-    radial-gradient(1px 1px at 500px 260px, rgba(255,255,255,0.4), transparent),
-    radial-gradient(2px 2px at 650px 300px, rgba(255,255,255,0.6), transparent),
-    radial-gradient(3px 3px at 750px 220px, rgba(255,255,255,0.7), transparent),
-    radial-gradient(2px 2px at 880px 280px, rgba(255,255,255,0.5), transparent); }
-.container { position: relative; z-index: 1; max-width: 1000px; margin: 0 auto; padding: 30px 20px; }
-.header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid rgba(106,176,214,0.3); }
+.container { position: relative; z-index: 1; max-width: 1000px; margin: 0 auto; padding: 20px 20px; }
+.header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0; padding: 16px 20px; border-bottom: 1px solid rgba(106,176,214,0.3); }
 .header-left { display: flex; align-items: center; gap: 15px; }
-.planet-icon { width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #6ab0d6, #9fc5e8); box-shadow: 0 0 20px rgba(106,176,214,0.4); display: flex; align-items: center; justify-content: center; font-size: 24px; }
+.planet-icon { line-height: 1; display: flex; align-items: center; justify-content: center; }
 .header-title h1 { font-size: 1.8rem; font-weight: 300; letter-spacing: 4px; background: linear-gradient(135deg, #6ab0d6, #c8e0f5); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 .header-title p { font-size: 0.85rem; opacity: 0.7; margin-top: 2px; }
 .back-btn { padding: 8px 20px; border-radius: 30px; background: rgba(106,176,214,0.2); border: 1px solid rgba(106,176,214,0.4); color: #c8e0f5; cursor: pointer; text-decoration: none; transition: 0.3s; font-size: 0.9rem; }
 .back-btn:hover { background: rgba(106,176,214,0.35); box-shadow: 0 0 15px rgba(106,176,214,0.3); }
-.tool-menu { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; margin-bottom: 30px; }
+/* Planet sphere with ring */
+.ice-giant-wrap { position: relative; display: flex; align-items: center; justify-content: center; }
+.planet-ring { position: absolute; width: 50px; height: 14px; border-radius: 50%; border: 2px solid rgba(160,210,240,0.5); transform: rotate(-15deg); top: 50%; left: 50%; margin-left: -25px; margin-top: -7px; z-index: 0; }
+.planet-sphere { width: 36px; height: 36px; border-radius: 50%; position: relative; flex-shrink: 0; z-index: 1; }
+.planet-sphere.ice-giant { background: radial-gradient(circle at 35% 35%, #9fc5e8, #6ab0d6 50%, #2a6080 100%); box-shadow: 0 0 12px rgba(106,176,214,0.5), inset 0 0 8px rgba(255,255,255,0.15); }
+.planet-sphere.ice-giant::after { content: ''; position: absolute; inset: 10% 25% 40% 20%; background: rgba(255,255,255,0.12); border-radius: 50%; }
+.empty-state { text-align: center; padding: 50px 20px; opacity: 0.5; }
+.tool-menu { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
 .tool-card { background: rgba(10,30,50,0.5); border: 1px solid rgba(106,176,214,0.2); border-radius: 16px; padding: 20px 15px; text-align: center; cursor: pointer; transition: 0.3s; }
 .tool-card:hover, .tool-card.active { border-color: rgba(106,176,214,0.5); box-shadow: 0 5px 20px rgba(106,176,214,0.15); background: rgba(10,30,50,0.7); transform: translateY(-3px); }
 .tool-card .icon { font-size: 2rem; margin-bottom: 10px; }
@@ -334,10 +340,10 @@ body { font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif; background: #050b
 .empty-state { text-align: center; padding: 50px 20px; opacity: 0.5; }
 
 @media (max-width: 768px) {
-  .container { padding: 15px 12px; }
+  .container { padding: 0px 20px; }
   .header { flex-direction: column; align-items: flex-start; gap: 12px; }
   .header-title h1 { font-size: 1.4rem; letter-spacing: 2px; }
-  .planet-icon { width: 38px; height: 38px; font-size: 18px; }
+  .planet-sphere { width: 28px; height: 28px; }
   .back-btn { font-size: 0.8rem; padding: 6px 14px; }
   .tool-menu { grid-template-columns: repeat(3, 1fr); gap: 8px; }
   .tool-card { padding: 15px 10px; }

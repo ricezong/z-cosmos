@@ -4,7 +4,7 @@
     <div class="login-wrap">
       <div class="login-card">
         <div class="login-logo">
-          <div class="planet-icon">✦</div>
+          <div class="planet-icon"><i class="ri-shield-star-line"></i></div>
           <h1>COSMOS</h1>
           <p>星际漫游 · 登录星域</p>
         </div>
@@ -39,16 +39,13 @@
 
           <div class="oauth-grid">
             <button class="oauth-btn" @click="oauthLogin('QQ')">
-              <span class="icon" style="color:#12b7f5">🐧</span>
-              <span>QQ</span>
+              <span class="icon" style="color:#12b7f5"><i class="ri-qq-line"></i></span>
             </button>
             <button class="oauth-btn" @click="oauthLogin('GitHub')">
-              <span class="icon" style="color:#fff">🐙</span>
-              <span>GitHub</span>
+              <span class="icon" style="color:#fff"><i class="ri-github-fill"></i></span>
             </button>
             <button class="oauth-btn" @click="oauthLogin('Gitee')">
-              <span class="icon" style="color:#c71d23">🐴</span>
-              <span>Gitee</span>
+              <span class="icon gitee-icon"><svg viewBox="0 0 1024 1024" width="20" height="20"><path d="M512 42.666667C252.793333 42.666667 42.666667 252.793333 42.666667 512s210.126667 469.333333 469.333333 469.333333 469.333333-210.126667 469.333333-469.333333S771.206667 42.666667 512 42.666667z m263.346667 351.466666l-23.04 78.506667c-4.693333 15.786667-21.76 24.746667-37.546667 20.053333L440.32 423.253333c-2.986667-0.853333-5.973333-1.28-8.96-1.28-13.226667 0-25.6 8.533333-29.866667 21.76l-2.133333 7.253334-36.266667 123.733333c-4.693333 15.786667 4.266667 32.853333 20.053334 37.546667l275.2 68.693333c2.986667 0.853333 5.973333 1.28 8.96 1.28 13.226667 0 25.6-8.533333 29.866666-21.76l23.04-78.506667c4.693333-15.786667-4.266667-32.853333-20.053333-37.546666L445.44 476.586667c-2.986667-0.853333-5.973333-1.28-8.96-1.28-13.226667 0-25.6 8.533333-29.866667 21.76" fill="#C71D23"/></svg></span>
             </button>
           </div>
         </div>
@@ -61,7 +58,7 @@
               <div class="qr-extra"></div>
             </div>
             <div class="qr-hint">
-              请使用手机星域 App 扫码登录<br>
+              请使用手机微信扫码登录<br>
               <span style="opacity:0.5;font-size:0.75rem">二维码每 5 分钟自动刷新</span>
             </div>
             <button class="qr-refresh" @click="refreshQR">刷新二维码</button>
@@ -83,6 +80,7 @@ const loginForm = ref({ phone: '', pwd: '', remember: false })
 function doLogin() {
   const { phone, pwd } = loginForm.value
   if (!phone.trim() || !pwd.trim()) { alert('请输入手机号和密码'); return }
+  localStorage.setItem('cosmos_logged_in', 'true')
   if (loginForm.value.remember) localStorage.setItem('cosmos_phone', phone)
   alert('欢迎回来！\n\n（演示模式）')
   router.push('/')
@@ -107,42 +105,10 @@ onMounted(() => {
 .login-page {
   width: 100%;
   min-height: 100vh;
+  overflow: hidden;
   background: #050b1a;
   color: #e0e8f0;
-  font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
   position: relative;
-  overflow-x: hidden;
-}
-
-.star-bg {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  pointer-events: none;
-  z-index: 0;
-  background-image:
-    radial-gradient(2px 2px at 20px 30px, rgba(255,255,255,0.5), transparent),
-    radial-gradient(2px 2px at 40px 70px, rgba(255,255,255,0.4), transparent),
-    radial-gradient(3px 3px at 90px 40px, rgba(255,255,255,0.6), transparent),
-    radial-gradient(2px 2px at 160px 120px, rgba(255,255,255,0.4), transparent),
-    radial-gradient(2px 2px at 230px 80px, rgba(255,255,255,0.5), transparent),
-    radial-gradient(3px 3px at 300px 60px, rgba(255,255,255,0.6), transparent),
-    radial-gradient(2px 2px at 350px 140px, rgba(255,255,255,0.4), transparent),
-    radial-gradient(2px 2px at 450px 30px, rgba(255,255,255,0.5), transparent),
-    radial-gradient(1px 1px at 520px 100px, rgba(255,255,255,0.3), transparent),
-    radial-gradient(3px 3px at 620px 50px, rgba(255,255,255,0.7), transparent),
-    radial-gradient(2px 2px at 700px 160px, rgba(255,255,255,0.4), transparent),
-    radial-gradient(2px 2px at 780px 90px, rgba(255,255,255,0.5), transparent),
-    radial-gradient(1px 1px at 850px 30px, rgba(255,255,255,0.3), transparent),
-    radial-gradient(3px 3px at 920px 140px, rgba(255,255,255,0.6), transparent),
-    radial-gradient(2px 2px at 50px 200px, rgba(255,255,255,0.4), transparent),
-    radial-gradient(2px 2px at 150px 280px, rgba(255,255,255,0.5), transparent),
-    radial-gradient(3px 3px at 280px 240px, rgba(255,255,255,0.7), transparent),
-    radial-gradient(2px 2px at 400px 320px, rgba(255,255,255,0.4), transparent),
-    radial-gradient(1px 1px at 500px 260px, rgba(255,255,255,0.3), transparent),
-    radial-gradient(2px 2px at 650px 300px, rgba(255,255,255,0.5), transparent),
-    radial-gradient(3px 3px at 750px 220px, rgba(255,255,255,0.6), transparent),
-    radial-gradient(2px 2px at 880px 280px, rgba(255,255,255,0.4), transparent);
 }
 
 .login-wrap {
@@ -177,16 +143,11 @@ onMounted(() => {
 }
 
 .login-logo .planet-icon {
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #ffffff, #aaccff);
-  box-shadow: 0 0 25px rgba(255, 255, 255, 0.3), 0 0 50px rgba(170, 204, 255, 0.15);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 24px;
-  color: #050b1a;
+  font-size: 48px;
+  line-height: 1;
+  filter: drop-shadow(0 0 12px rgba(255,255,255,0.5));
+  display: block;
+  color: #fff;
   margin-bottom: 12px;
 }
 
@@ -345,17 +306,14 @@ onMounted(() => {
 .oauth-btn {
   flex: 1;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  padding: 10px 4px;
+  padding: 12px 4px;
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(255, 255, 255, 0.05);
   color: rgba(255, 255, 255, 0.7);
   cursor: pointer;
-  font-size: 0.7rem;
   transition: 0.3s;
   text-decoration: none;
 }
@@ -367,7 +325,7 @@ onMounted(() => {
 }
 
 .oauth-btn .icon {
-  font-size: 1.1rem;
+  font-size: 1.4rem;
 }
 
 .qr-panel {
@@ -454,11 +412,6 @@ onMounted(() => {
   color: #fff;
 }
 
-.qr-refresh:hover {
-  background: rgba(255, 255, 255, 0.15);
-  color: #fff;
-}
-
 @media (max-width: 768px) {
   .login-wrap {
     padding: 12px;
@@ -470,9 +423,7 @@ onMounted(() => {
     border-radius: 16px;
   }
   .login-logo .planet-icon {
-    width: 44px;
-    height: 44px;
-    font-size: 20px;
+    font-size: 38px;
   }
   .login-logo h1 {
     font-size: 1.3rem;
@@ -486,11 +437,10 @@ onMounted(() => {
     font-size: 0.85rem;
   }
   .oauth-btn {
-    padding: 8px 2px;
-    font-size: 0.65rem;
+    padding: 10px 2px;
   }
   .oauth-btn .icon {
-    font-size: 1rem;
+    font-size: 1.2rem;
   }
   .qr-box {
     width: 150px;

@@ -1,17 +1,19 @@
 <template>
   <div class="star-bg"></div>
-  <div class="container">
+  <div class="page-layout">
+    <!-- 固定区域 -->
+    <div class="page-fixed">
     <header class="header">
       <div class="header-left">
-        <div class="planet-icon">🟤</div>
+        <div class="planet-icon"><div class="planet-sphere jupiter"></div></div>
         <div class="header-title">
           <h1>热点区</h1>
           <p>木星 · 每日热点汇聚</p>
         </div>
       </div>
-      <router-link to="/" class="back-btn">← 返回星域</router-link>
+      <router-link to="/" class="back-btn"><i class="ri-arrow-left-line"></i> 返回星域</router-link>
     </header>
-
+    <div class="container">
     <div class="date-bar">
       <div class="date-btn" v-for="d in dates" :key="d.str"
         :class="{ active: currentDate === d.str }" @click="currentDate = d.str">
@@ -22,13 +24,18 @@
 
     <div class="source-tabs">
       <div class="source-tab" :class="{ active: currentSource === 'all' }" @click="currentSource = 'all'">全部</div>
-      <div class="source-tab" :class="{ active: currentSource === 'weibo' }" @click="currentSource = 'weibo'">🔥 微博</div>
-      <div class="source-tab" :class="{ active: currentSource === 'zhihu' }" @click="currentSource = 'zhihu'">💡 知乎</div>
-      <div class="source-tab" :class="{ active: currentSource === 'bilibili' }" @click="currentSource = 'bilibili'">📺 B站</div>
-      <div class="source-tab" :class="{ active: currentSource === 'tech' }" @click="currentSource = 'tech'">💻 科技</div>
-      <div class="source-tab" :class="{ active: currentSource === 'github' }" @click="currentSource = 'github'">🐙 GitHub</div>
+      <div class="source-tab" :class="{ active: currentSource === 'weibo' }" @click="currentSource = 'weibo'"><i class="ri-fire-line"></i> 微博</div>
+      <div class="source-tab" :class="{ active: currentSource === 'zhihu' }" @click="currentSource = 'zhihu'"><i class="ri-lightbulb-line"></i> 知乎</div>
+      <div class="source-tab" :class="{ active: currentSource === 'bilibili' }" @click="currentSource = 'bilibili'"><i class="ri-video-line"></i> B站</div>
+      <div class="source-tab" :class="{ active: currentSource === 'tech' }" @click="currentSource = 'tech'"><i class="ri-computer-line"></i> 科技</div>
+      <div class="source-tab" :class="{ active: currentSource === 'github' }" @click="currentSource = 'github'"><i class="ri-github-line"></i> GitHub</div>
     </div>
+    </div><!-- container -->
+    </div><!-- page-fixed -->
 
+    <!-- 滚动区域 -->
+    <div class="page-scroll" ref="contentRef" @scroll="onContentScroll">
+    <div class="container">
     <div class="hot-list">
       <div class="hot-item" v-for="(item, idx) in filteredItems" :key="idx" @click="openModal(item)">
         <div class="hot-rank" :class="{ top3: idx < 3 }">{{ idx + 1 }}</div>
@@ -38,14 +45,19 @@
           <div class="hot-meta">
             <span class="hot-tag" :class="{ hot: item.heat === '沸', new: item.heat === '新' }">{{ item.heat }}</span>
             <span>{{ item.srcName }}</span>
-            <span>👁 {{ item.views }}</span>
-            <span>💬 {{ item.comments }}</span>
+            <span><i class="ri-eye-line"></i> {{ item.views }}</span>
+            <span><i class="ri-chat-3-line"></i> {{ item.comments }}</span>
           </div>
         </div>
       </div>
     </div>
     <div class="empty-state" v-if="filteredItems.length === 0"><p>当日暂无热点数据</p></div>
-  </div>
+    </div><!-- container -->
+    </div><!-- page-scroll -->
+  </div><!-- page-layout -->
+
+  <!-- 回到顶部 -->
+  <button class="back-to-top" v-show="showBackTop" @click="scrollToTop"><i class="ri-arrow-up-line"></i></button>
 
   <!-- Modal -->
   <div class="modal-overlay" :class="{ active: modalItem }" @click.self="modalItem = null">
@@ -59,18 +71,18 @@
         <p style="margin-top:15px">相关内容持续更新中，点击来源链接可查看原始页面获取最新进展。</p>
       </div>
       <div class="modal-stats">
-        <span>👁 浏览 {{ modalItem.views }}</span>
-        <span>💬 讨论 {{ modalItem.comments }}</span>
-        <span>🔥 热度 {{ modalItem.heat }}</span>
+        <span><i class="ri-eye-line"></i> 浏览 {{ modalItem.views }}</span>
+        <span><i class="ri-chat-3-line"></i> 讨论 {{ modalItem.comments }}</span>
+        <span><i class="ri-fire-line"></i> 热度 {{ modalItem.heat }}</span>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 
-const sourceNames = { weibo: '🔥 微博热搜', zhihu: '💡 知乎热榜', bilibili: '📺 B站热门', tech: '💻 科技资讯', github: '🐙 GitHub Trending' }
+const sourceNames = { weibo: '微博热搜', zhihu: '知乎热榜', bilibili: 'B站热门', tech: '科技资讯', github: 'GitHub Trending' }
 const today = new Date()
 const rawDates = Array.from({ length: 7 }, (_, i) => { const d = new Date(today); d.setDate(d.getDate() - i); return d })
 const days = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
@@ -82,6 +94,16 @@ const dates = rawDates.map(d => ({
 const currentDate = ref(dates[0].str)
 const currentSource = ref('all')
 const modalItem = ref(null)
+
+const showBackTop = ref(false)
+const contentRef = ref(null)
+function onContentScroll() {
+  const el = contentRef.value
+  if (el) showBackTop.value = el.scrollTop > 300
+}
+function scrollToTop() {
+  contentRef.value?.scrollTo({ top: 0, behavior: 'smooth' })
+}
 
 const templates = {
   weibo: [
@@ -161,44 +183,25 @@ function openModal(item) { modalItem.value = item }
 <style scoped>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif; background: #050b1a; color: #f0e5d5; min-height: 100vh; }
-.star-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0;
-  background-image:
-    radial-gradient(2px 2px at 20px 30px, rgba(255,255,255,0.6), transparent),
-    radial-gradient(2px 2px at 40px 70px, rgba(255,255,255,0.5), transparent),
-    radial-gradient(3px 3px at 90px 40px, rgba(255,255,255,0.7), transparent),
-    radial-gradient(2px 2px at 160px 120px, rgba(255,255,255,0.5), transparent),
-    radial-gradient(2px 2px at 230px 80px, rgba(255,255,255,0.6), transparent),
-    radial-gradient(3px 3px at 300px 60px, rgba(255,255,255,0.7), transparent),
-    radial-gradient(2px 2px at 350px 140px, rgba(255,255,255,0.5), transparent),
-    radial-gradient(2px 2px at 450px 30px, rgba(255,255,255,0.6), transparent),
-    radial-gradient(1px 1px at 520px 100px, rgba(255,255,255,0.4), transparent),
-    radial-gradient(3px 3px at 620px 50px, rgba(255,255,255,0.8), transparent),
-    radial-gradient(2px 2px at 700px 160px, rgba(255,255,255,0.5), transparent),
-    radial-gradient(2px 2px at 780px 90px, rgba(255,255,255,0.6), transparent),
-    radial-gradient(1px 1px at 850px 30px, rgba(255,255,255,0.4), transparent),
-    radial-gradient(3px 3px at 920px 140px, rgba(255,255,255,0.7), transparent),
-    radial-gradient(2px 2px at 50px 200px, rgba(255,255,255,0.5), transparent),
-    radial-gradient(2px 2px at 150px 280px, rgba(255,255,255,0.6), transparent),
-    radial-gradient(3px 3px at 280px 240px, rgba(255,255,255,0.8), transparent),
-    radial-gradient(2px 2px at 400px 320px, rgba(255,255,255,0.5), transparent),
-    radial-gradient(1px 1px at 500px 260px, rgba(255,255,255,0.4), transparent),
-    radial-gradient(2px 2px at 650px 300px, rgba(255,255,255,0.6), transparent),
-    radial-gradient(3px 3px at 750px 220px, rgba(255,255,255,0.7), transparent),
-    radial-gradient(2px 2px at 880px 280px, rgba(255,255,255,0.5), transparent); }
-.container { position: relative; z-index: 1; max-width: 960px; margin: 0 auto; padding: 30px 20px; }
-.header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid rgba(212,183,140,0.3); }
+.container { position: relative; z-index: 1; max-width: 960px; margin: 0 auto; padding: 20px 20px; }
+.header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0; padding: 16px 20px; border-bottom: 1px solid rgba(212,183,140,0.3); }
 .header-left { display: flex; align-items: center; gap: 15px; }
-.planet-icon { width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #d4b78c, #b89a6e); box-shadow: 0 0 20px rgba(212,183,140,0.4); display: flex; align-items: center; justify-content: center; font-size: 24px; }
+.planet-icon { line-height: 1; display: flex; align-items: center; }
 .header-title h1 { font-size: 1.8rem; font-weight: 300; letter-spacing: 4px; background: linear-gradient(135deg, #d4b78c, #f0e0c0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 .header-title p { font-size: 0.85rem; opacity: 0.7; margin-top: 2px; }
 .back-btn { padding: 8px 20px; border-radius: 30px; background: rgba(212,183,140,0.15); border: 1px solid rgba(212,183,140,0.4); color: #f0e0c0; cursor: pointer; text-decoration: none; transition: 0.3s; font-size: 0.9rem; }
 .back-btn:hover { background: rgba(212,183,140,0.3); box-shadow: 0 0 15px rgba(212,183,140,0.3); }
-.date-bar { display: flex; gap: 8px; margin-bottom: 25px; overflow-x: auto; padding-bottom: 5px; }
+.planet-sphere { width: 36px; height: 36px; border-radius: 50%; position: relative; flex-shrink: 0; }
+.planet-sphere.jupiter { background: radial-gradient(circle at 35% 35%, #e8cfa0, #d4b78c 40%, #b89a6e 70%, #6b5030 100%); box-shadow: 0 0 12px rgba(212,183,140,0.5), inset 0 0 8px rgba(255,255,255,0.1); overflow: hidden; }
+.planet-sphere.jupiter::before { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(0deg, transparent, transparent 4px, rgba(139,100,60,0.35) 4px, rgba(139,100,60,0.35) 6px); border-radius: 50%; }
+.planet-sphere.jupiter::after { content: ''; position: absolute; inset: 10% 25% 40% 20%; background: rgba(255,255,255,0.1); border-radius: 50%; }
+.empty-state { text-align: center; padding: 50px 20px; opacity: 0.5; }
+.date-bar { display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px; }
 .date-btn { padding: 10px 18px; border-radius: 30px; cursor: pointer; white-space: nowrap; background: rgba(212,183,140,0.1); border: 1px solid rgba(212,183,140,0.2); color: #d4b78c; transition: 0.3s; font-size: 0.9rem; }
 .date-btn.active, .date-btn:hover { background: rgba(212,183,140,0.3); border-color: rgba(212,183,140,0.5); box-shadow: 0 0 15px rgba(212,183,140,0.15); color: #fff; }
 .date-btn .day-label { font-size: 0.75rem; opacity: 0.7; display: block; text-align: center; }
 .date-btn .date-label { font-weight: 500; }
-.source-tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+.source-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
 .source-tab { padding: 8px 16px; border-radius: 20px; cursor: pointer; background: rgba(212,183,140,0.1); border: 1px solid rgba(212,183,140,0.2); color: #d4b78c; transition: 0.3s; font-size: 0.85rem; }
 .source-tab.active, .source-tab:hover { background: rgba(212,183,140,0.25); border-color: rgba(212,183,140,0.5); color: #fff; }
 .hot-list { display: flex; flex-direction: column; gap: 12px; }
@@ -222,13 +225,12 @@ body { font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif; background: #050b
 .modal-source { font-size: 0.85rem; opacity: 0.6; margin-bottom: 20px; }
 .modal-body { line-height: 1.8; opacity: 0.9; font-size: 0.95rem; }
 .modal-stats { display: flex; gap: 20px; margin-top: 25px; padding-top: 20px; border-top: 1px solid rgba(212,183,140,0.2); font-size: 0.9rem; opacity: 0.7; }
-.empty-state { text-align: center; padding: 50px 20px; opacity: 0.5; }
 
 @media (max-width: 768px) {
-  .container { padding: 15px 12px; }
+  .container { padding: 0px 20px; }
   .header { flex-direction: column; align-items: flex-start; gap: 12px; }
   .header-title h1 { font-size: 1.4rem; letter-spacing: 2px; }
-  .planet-icon { width: 38px; height: 38px; font-size: 18px; }
+  .planet-sphere { width: 28px; height: 28px; }
   .back-btn { font-size: 0.8rem; padding: 6px 14px; }
   .date-bar { gap: 6px; }
   .date-btn { padding: 8px 12px; font-size: 0.8rem; }

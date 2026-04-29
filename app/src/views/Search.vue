@@ -1,52 +1,64 @@
 <template>
   <div class="star-bg"></div>
-  <div class="container">
+  <div class="page-layout">
+    <!-- 固定区域 -->
+    <div class="page-fixed">
     <header class="header">
       <div class="header-left">
-        <div class="planet-icon">🟣</div>
+        <div class="planet-icon"><div class="planet-sphere purple"></div></div>
         <div class="header-title">
           <h1>搜索区</h1>
           <p>紫微星 · 全站信息聚合</p>
         </div>
       </div>
-      <router-link to="/" class="back-btn">← 返回星域</router-link>
+      <router-link to="/" class="back-btn"><i class="ri-arrow-left-line"></i> 返回星域</router-link>
     </header>
-
+    <div class="container">
     <div class="search-box">
       <div class="search-input-wrap">
         <input type="text" class="search-input" v-model="query" placeholder="搜索帖子、热点、剧场、工具..." @keydown.enter="doSearch">
-        <button class="search-btn" @click="doSearch">🔍 搜索</button>
+        <button class="search-btn" @click="doSearch"><i class="ri-search-line"></i> 搜索</button>
       </div>
       <div class="filter-tags">
         <div class="filter-tag" :class="{ active: filter === 'all' }" @click="filter = 'all'">全部</div>
-        <div class="filter-tag" :class="{ active: filter === 'tieba' }" @click="filter = 'tieba'">📝 贴吧</div>
-        <div class="filter-tag" :class="{ active: filter === 'hot' }" @click="filter = 'hot'">🔥 热点</div>
-        <div class="filter-tag" :class="{ active: filter === 'theater' }" @click="filter = 'theater'">🎭 剧场</div>
-        <div class="filter-tag" :class="{ active: filter === 'tools' }" @click="filter = 'tools'">🛠️ 工具</div>
+        <div class="filter-tag" :class="{ active: filter === 'community' }" @click="filter = 'community'"><i class="ri-earth-line"></i> 社区</div>
+        <div class="filter-tag" :class="{ active: filter === 'hot' }" @click="filter = 'hot'"><i class="ri-fire-line"></i> 热点</div>
+        <div class="filter-tag" :class="{ active: filter === 'theater' }" @click="filter = 'theater'"><i class="ri-movie-line"></i> 剧场</div>
+        <div class="filter-tag" :class="{ active: filter === 'tools' }" @click="filter = 'tools'"><i class="ri-tools-line"></i> 工具</div>
       </div>
     </div>
+    </div><!-- container -->
+    </div><!-- page-fixed -->
 
+    <!-- 滚动区域 -->
+    <div class="page-scroll" ref="contentRef" @scroll="onContentScroll">
+    <div class="container">
     <div class="results-header">
       <div class="results-count">{{ resultsCount }}</div>
     </div>
     <div class="results-list">
       <div class="result-item" v-for="(r, i) in results" :key="i" @click="$router.push(r.url)">
-        <div class="result-icon">{{ r.icon }}</div>
+        <div class="result-icon" v-html="r.icon"></div>
         <div class="result-content">
           <div class="result-title" v-html="highlight(r.title)"></div>
           <div class="result-desc" v-html="highlight(r.desc)"></div>
           <div class="result-meta">
             <span class="result-type" :class="r.type">{{ r.typeLabel }}</span>
-            <span>{{ r.meta }}</span>
+            <span v-html="r.meta"></span>
           </div>
         </div>
       </div>
     </div>
     <div class="empty-state" v-if="searched && results.length === 0">
-      <p>😕 未找到与 "{{ query }}" 相关的结果</p>
+      <p><i class="ri-emotion-sad-line"></i> 未找到与 "{{ query }}" 相关的结果</p>
       <p>试试其他关键词？</p>
     </div>
-  </div>
+    </div><!-- container -->
+    </div><!-- page-scroll -->
+  </div><!-- page-layout -->
+
+  <!-- 回到顶部 -->
+  <button class="back-to-top" v-show="showBackTop" @click="scrollToTop"><i class="ri-arrow-up-line"></i></button>
 </template>
 
 <script setup>
@@ -112,70 +124,61 @@ function doSearch() {
   if (!q) { results.value = []; return }
   const out = []
 
-  if (filter.value === 'all' || filter.value === 'tieba') {
+  if (filter.value === 'all' || filter.value === 'community') {
     try {
-      const tieba = JSON.parse(localStorage.getItem('cosmos_tieba_posts')) || []
-      tieba.forEach(p => {
-        if (p.title.toLowerCase().includes(q) || p.content.toLowerCase().includes(q) || p.nickname.toLowerCase().includes(q)) {
-          out.push({ title: p.title, desc: p.content.substring(0, 100) + (p.content.length > 100 ? '...' : ''), meta: `👤 ${p.nickname} · 💬 ${(p.comments || []).length}条评论 · 📅 ${new Date(p.time).toLocaleDateString()}`, type: 'tieba', typeLabel: '贴吧', icon: '📝', url: '/tieba' })
+      const posts = JSON.parse(localStorage.getItem('cosmos_community_posts')) || []
+      posts.forEach(p => {
+        if (p.title.toLowerCase().includes(q) || p.content.toLowerCase().includes(q)) {
+          out.push({ title: p.title, desc: p.content.substring(0, 100) + (p.content.length > 100 ? '...' : ''), meta: `<i class="ri-chat-3-line"></i> ${(p.comments || []).length}条评论 · <i class="ri-calendar-line"></i> ${new Date(p.time).toLocaleDateString()}`, type: 'community', typeLabel: '社区', icon: '<i class="ri-earth-line"></i>', url: '/community' })
         }
         ;(p.comments || []).forEach(c => {
           if (c.body.toLowerCase().includes(q) || c.nickname.toLowerCase().includes(q)) {
-            out.push({ title: `评论: ${p.title}`, desc: `${c.nickname}: ${c.body.substring(0, 100)}`, meta: `👤 ${c.nickname} · 📅 ${new Date(c.time).toLocaleDateString()}`, type: 'tieba', typeLabel: '贴吧评论', icon: '💬', url: '/tieba' })
+            out.push({ title: `评论: ${p.title}`, desc: `${c.nickname}: ${c.body.substring(0, 100)}`, meta: `<i class="ri-user-line"></i> ${c.nickname} · <i class="ri-calendar-line"></i> ${new Date(c.time).toLocaleDateString()}`, type: 'community', typeLabel: '社区评论', icon: '<i class="ri-chat-3-line"></i>', url: '/community' })
           }
         })
       })
     } catch { /* ignore */ }
   }
   if (filter.value === 'all' || filter.value === 'hot') {
-    hotData.forEach(h => { if (h.title.toLowerCase().includes(q) || h.desc.toLowerCase().includes(q)) { out.push({ ...h, meta: `${sourceNames[h.type] || h.type} · 🔥 热搜`, type: 'hot', typeLabel: '热点', icon: '🔥' }) } })
+    hotData.forEach(h => { if (h.title.toLowerCase().includes(q) || h.desc.toLowerCase().includes(q)) { out.push({ ...h, meta: `${sourceNames[h.type] || h.type} · <i class="ri-fire-line"></i> 热搜`, type: 'hot', typeLabel: '热点', icon: '<i class="ri-fire-line"></i>' }) } })
   }
   if (filter.value === 'all' || filter.value === 'theater') {
-    theaterData.forEach(t => { if (t.title.toLowerCase().includes(q) || t.desc.toLowerCase().includes(q)) { out.push({ ...t, meta: t.type === 'stickman' ? '🎭 火柴人剧场' : '👾 像素剧场', type: 'theater', typeLabel: '剧场', icon: t.type === 'stickman' ? '🎭' : '👾' }) } })
+    theaterData.forEach(t => { if (t.title.toLowerCase().includes(q) || t.desc.toLowerCase().includes(q)) { out.push({ ...t, meta: t.type === 'stickman' ? '<i class="ri-body-scan-line"></i> 火柴人剧场' : '<i class="ri-game-line"></i> 像素剧场', type: 'theater', typeLabel: '剧场', icon: t.type === 'stickman' ? '<i class="ri-body-scan-line"></i>' : '<i class="ri-game-line"></i>' }) } })
   }
   if (filter.value === 'all' || filter.value === 'tools') {
-    toolsData.forEach(t => { if (t.title.toLowerCase().includes(q) || t.desc.toLowerCase().includes(q)) { out.push({ ...t, meta: '🛠️ 自助工具', type: 'tools', typeLabel: '工具', icon: '🛠️' }) } })
+    toolsData.forEach(t => { if (t.title.toLowerCase().includes(q) || t.desc.toLowerCase().includes(q)) { out.push({ ...t, meta: '<i class="ri-tools-line"></i> 自助工具', type: 'tools', typeLabel: '工具', icon: '<i class="ri-tools-line"></i>' }) } })
   }
   results.value = out
+}
+
+// Back to top
+const showBackTop = ref(false)
+const contentRef = ref(null)
+function onContentScroll() {
+  const el = contentRef.value
+  if (el) showBackTop.value = el.scrollTop > 300
+}
+function scrollToTop() {
+  contentRef.value?.scrollTo({ top: 0, behavior: 'smooth' })
 }
 </script>
 
 <style scoped>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif; background: #050b1a; color: #e8d5ff; min-height: 100vh; }
-.star-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0;
-  background-image:
-    radial-gradient(2px 2px at 20px 30px, rgba(255,255,255,0.6), transparent),
-    radial-gradient(2px 2px at 40px 70px, rgba(255,255,255,0.5), transparent),
-    radial-gradient(3px 3px at 90px 40px, rgba(255,255,255,0.7), transparent),
-    radial-gradient(2px 2px at 160px 120px, rgba(255,255,255,0.5), transparent),
-    radial-gradient(2px 2px at 230px 80px, rgba(255,255,255,0.6), transparent),
-    radial-gradient(3px 3px at 300px 60px, rgba(255,255,255,0.7), transparent),
-    radial-gradient(2px 2px at 350px 140px, rgba(255,255,255,0.5), transparent),
-    radial-gradient(2px 2px at 450px 30px, rgba(255,255,255,0.6), transparent),
-    radial-gradient(1px 1px at 520px 100px, rgba(255,255,255,0.4), transparent),
-    radial-gradient(3px 3px at 620px 50px, rgba(255,255,255,0.8), transparent),
-    radial-gradient(2px 2px at 700px 160px, rgba(255,255,255,0.5), transparent),
-    radial-gradient(2px 2px at 780px 90px, rgba(255,255,255,0.6), transparent),
-    radial-gradient(1px 1px at 850px 30px, rgba(255,255,255,0.4), transparent),
-    radial-gradient(3px 3px at 920px 140px, rgba(255,255,255,0.7), transparent),
-    radial-gradient(2px 2px at 50px 200px, rgba(255,255,255,0.5), transparent),
-    radial-gradient(2px 2px at 150px 280px, rgba(255,255,255,0.6), transparent),
-    radial-gradient(3px 3px at 280px 240px, rgba(255,255,255,0.8), transparent),
-    radial-gradient(2px 2px at 400px 320px, rgba(255,255,255,0.5), transparent),
-    radial-gradient(1px 1px at 500px 260px, rgba(255,255,255,0.4), transparent),
-    radial-gradient(2px 2px at 650px 300px, rgba(255,255,255,0.6), transparent),
-    radial-gradient(3px 3px at 750px 220px, rgba(255,255,255,0.7), transparent),
-    radial-gradient(2px 2px at 880px 280px, rgba(255,255,255,0.5), transparent); }
-.container { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; padding: 30px 20px; }
-.header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid rgba(138,109,184,0.3); }
+.container { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; padding: 20px 20px; }
+.header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0; padding: 16px 20px; border-bottom: 1px solid rgba(138,109,184,0.3); }
 .header-left { display: flex; align-items: center; gap: 15px; }
-.planet-icon { width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #8a6db8, #b095e0); box-shadow: 0 0 20px rgba(138,109,184,0.4); display: flex; align-items: center; justify-content: center; font-size: 24px; }
+.planet-icon { line-height: 1; display: flex; align-items: center; }
 .header-title h1 { font-size: 1.8rem; font-weight: 300; letter-spacing: 4px; background: linear-gradient(135deg, #b095e0, #e0d0ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 .header-title p { font-size: 0.85rem; opacity: 0.7; margin-top: 2px; }
 .back-btn { padding: 8px 20px; border-radius: 30px; background: rgba(138,109,184,0.2); border: 1px solid rgba(138,109,184,0.4); color: #e0d0ff; cursor: pointer; text-decoration: none; transition: 0.3s; font-size: 0.9rem; }
 .back-btn:hover { background: rgba(138,109,184,0.35); box-shadow: 0 0 15px rgba(138,109,184,0.3); }
-.search-box { background: rgba(20,12,35,0.6); border: 1px solid rgba(138,109,184,0.25); border-radius: 24px; padding: 25px; margin-bottom: 30px; backdrop-filter: blur(10px); }
+.planet-sphere { width: 36px; height: 36px; border-radius: 50%; position: relative; flex-shrink: 0; }
+.planet-sphere.purple { background: radial-gradient(circle at 35% 35%, #b095e0, #8a6db8 50%, #4a2d78 100%); box-shadow: 0 0 12px rgba(138,109,184,0.5), inset 0 0 8px rgba(255,255,255,0.15); }
+.planet-sphere.purple::after { content: ''; position: absolute; inset: 10% 25% 40% 20%; background: rgba(255,255,255,0.1); border-radius: 50%; }
+.empty-state { text-align: center; padding: 50px 20px; opacity: 0.5; }
+.search-box { background: rgba(20,12,35,0.6); border: 1px solid rgba(138,109,184,0.25); border-radius: 24px; padding: 25px; backdrop-filter: blur(10px); }
 .search-input-wrap { display: flex; gap: 12px; margin-bottom: 15px; }
 .search-input { flex: 1; padding: 14px 22px; border-radius: 30px; background: rgba(10,6,20,0.6); border: 1px solid rgba(138,109,184,0.3); color: #e8d5ff; font-size: 1rem; outline: none; font-family: inherit; transition: 0.3s; }
 .search-input:focus { border-color: rgba(138,109,184,0.7); box-shadow: 0 0 20px rgba(138,109,184,0.15); }
@@ -191,12 +194,13 @@ body { font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif; background: #050b
 .result-item { background: rgba(20,12,35,0.5); border: 1px solid rgba(138,109,184,0.2); border-radius: 16px; padding: 18px 22px; backdrop-filter: blur(8px); cursor: pointer; transition: 0.3s; display: flex; gap: 15px; align-items: flex-start; }
 .result-item:hover { border-color: rgba(138,109,184,0.5); box-shadow: 0 5px 25px rgba(138,109,184,0.1); transform: translateY(-2px); }
 .result-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; flex-shrink: 0; background: rgba(138,109,184,0.2); border: 1px solid rgba(138,109,184,0.3); }
+.result-icon i { font-size: 1.4rem; }
 .result-content { flex: 1; }
 .result-title { font-size: 1.05rem; margin-bottom: 6px; color: #f0e5ff; }
 .result-desc { font-size: 0.88rem; opacity: 0.7; line-height: 1.5; margin-bottom: 8px; }
 .result-meta { display: flex; gap: 15px; font-size: 0.8rem; opacity: 0.5; align-items: center; }
 .result-type { display: inline-block; padding: 3px 12px; border-radius: 12px; font-size: 0.75rem; background: rgba(138,109,184,0.2); color: #c8b5e8; border: 1px solid rgba(138,109,184,0.3); }
-.result-type.tieba { background: rgba(58,123,213,0.2); color: #a8d0ff; border-color: rgba(58,123,213,0.3); }
+.result-type.community { background: rgba(58,123,213,0.2); color: #a8d0ff; border-color: rgba(58,123,213,0.3); }
 .result-type.hot { background: rgba(212,183,140,0.2); color: #f0e0c0; border-color: rgba(212,183,140,0.3); }
 .result-type.theater { background: rgba(192,92,62,0.2); color: #ffbba0; border-color: rgba(192,92,62,0.3); }
 .result-type.tools { background: rgba(106,176,214,0.2); color: #c8e0f5; border-color: rgba(106,176,214,0.3); }
@@ -209,7 +213,7 @@ body { font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif; background: #050b
   .container { padding: 15px 12px; }
   .header { flex-direction: column; align-items: flex-start; gap: 12px; }
   .header-title h1 { font-size: 1.4rem; letter-spacing: 2px; }
-  .planet-icon { width: 38px; height: 38px; font-size: 18px; }
+  .planet-sphere { width: 28px; height: 28px; }
   .back-btn { font-size: 0.8rem; padding: 6px 14px; }
   .search-box { padding: 18px; }
   .search-input-wrap { flex-direction: column; }

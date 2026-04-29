@@ -1,25 +1,36 @@
 <template>
   <div ref="sceneContainer" class="scene-container"></div>
   <div class="glow"></div>
-  <div id="info">
-    <h1>✨ COSMOS · 星域</h1>
-    <p>拖动星球 · 碰撞 · 点击探索</p>
+
+  <div class="site-title">
+    <span class="site-title-text">Z的探索小站</span>
+    <span class="site-title-sub">COSMOS 星域</span>
   </div>
-  <img class="star-login" src="/star-login.png" alt="登录" @click="router.push('/login')" />
-  <div id="hint">
-    ⚡ 拖拽星球与其他星球相撞 — 触发冲击波效果  |  单击星球跳转功能区
+
+  <div v-if="!isLoggedIn" class="star-login" @click="router.push('/login')" title="登录">
+    <div class="star-ray ray-h"></div>
+    <div class="star-ray ray-v"></div>
+    <div class="star-core"></div>
   </div>
-  <div id="status-tip" :style="{ opacity: statusOpacity }">💥 撞击效果!</div>
+  <button v-if="isLoggedIn" class="profile-btn" @click="router.push('/profile')" title="个人主页">
+    <div class="sun-sphere"></div>
+  </button>
+
 
   <div id="function-panel">
-    <div id="function-title">🌠 {{ panelTitle }}</div>
+    <div id="function-title">{{ panelTitle }}</div>
     <div id="function-desc">{{ panelDesc }}</div>
-    <div id="function-action" @click="goToLink">🚀 {{ panelAction }}</div>
+    <div id="function-action" @click="goToLink"><i class="ri-rocket-line"></i> {{ panelAction }}</div>
+  </div>
+
+  <!-- Meteor Shower -->
+  <div class="meteor-shower">
+    <div v-for="(style, i) in meteorStyles" :key="i" class="meteor" :style="style"></div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import * as THREE from 'three'
 import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js'
@@ -27,15 +38,52 @@ import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRe
 const router = useRouter()
 const sceneContainer = ref(null)
 
-const statusOpacity = ref(0)
-const panelTitle = ref('星际枢纽')
-const panelDesc = ref('点击任意星球，探索不同领域')
+const panelTitle = ref('Z的探索小站')
+const panelDesc = ref('点击任意星球，探索技术领域')
 const panelAction = ref('等待探索')
 
 let currentLink = null
 function goToLink() {
   if (currentLink) router.push(currentLink)
 }
+
+const isLoggedIn = ref(false)
+
+function checkLogin() {
+  isLoggedIn.value = localStorage.getItem('cosmos_logged_in') === 'true'
+}
+
+// Meteor shower styles (computed once, stable)
+const meteorStyles = computed(() =>
+  Array.from({ length: 30 }, () => {
+    const left = Math.random() * 100
+    const top = -(Math.random() * 30)
+    const delay = Math.random() * 8
+    const duration = 0.7 + Math.random() * 1.4
+    const width = 1 + Math.random() * 2.5
+    const height = 40 + Math.random() * 100
+    const opacity = 0.35 + Math.random() * 0.65
+    const angle = 28 + Math.random() * 18
+    const distX = 250 + Math.random() * 200
+    const distY = 400 + Math.random() * 300
+    const hue = 200 + Math.random() * 40
+    return {
+      left: left + '%',
+      top: top + '%',
+      animationDelay: delay + 's',
+      animationDuration: duration + 's',
+      width: width + 'px',
+      height: height + 'px',
+      '--max-opacity': opacity,
+      '--dist-x': '-' + distX + 'px',
+      '--dist-y': distY + 'px',
+      '--meteor-hue': hue,
+      transform: `rotate(${angle}deg)`,
+    }
+  })
+)
+
+// 退出登录已移至Profile页面
 
 let renderer, cssRenderer, scene, camera, animationId
 let draggedPlanet = null, hasMoved = false, dragStartPos
@@ -94,36 +142,6 @@ function createLabel(text, color='#ffffff') {
   div.textContent = text
   div.style.cssText = `color:${color};font-size:18px;font-weight:bold;text-shadow:0 0 15px rgba(0,0,0,0.9);background:rgba(20,30,50,0.6);padding:6px 16px;border-radius:30px;backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.25);pointer-events:none;letter-spacing:1px;`
   return new CSS2DObject(div)
-}
-
-function createImpactEffect(position) {
-  const ringGeo = new THREE.TorusGeometry(0.8,0.05,16,32)
-  const ringMat = new THREE.MeshStandardMaterial({color:0xffaa66,emissive:new THREE.Color(0xff5500),transparent:true,opacity:0.9})
-  const impactRing = new THREE.Mesh(ringGeo,ringMat)
-  impactRing.position.copy(position); impactRing.rotation.x=Math.PI/2; scene.add(impactRing)
-  const particles=[]
-  for (let i=0; i<12; i++) {
-    const pGeo=new THREE.SphereGeometry(0.08,4)
-    const pMat=new THREE.MeshStandardMaterial({color:0xffaa33,emissive:new THREE.Color(0xff4400)})
-    const particle=new THREE.Mesh(pGeo,pMat)
-    particle.position.copy(position)
-    const angle=(i/12)*Math.PI*2
-    particle.userData.vel=new THREE.Vector3(Math.cos(angle)*0.15,Math.sin(angle)*0.15,(Math.random()-0.5)*0.1)
-    scene.add(particle); particles.push(particle)
-  }
-  statusOpacity.value=1; setTimeout(()=>{statusOpacity.value=0},400)
-  let startTime=Date.now()
-  function animateImpact() {
-    const elapsed=Date.now()-startTime
-    if (elapsed>400) { scene.remove(impactRing); particles.forEach(p=>scene.remove(p)); return }
-    const scale=1+elapsed*0.008
-    impactRing.scale.set(scale,scale,scale)
-    impactRing.material.opacity=0.9*(1-elapsed/500)
-    impactRing.rotation.z+=0.1
-    particles.forEach(p=>{ p.position.add(p.userData.vel); p.userData.vel.multiplyScalar(0.96); p.material.opacity=1-elapsed/500 })
-    requestAnimationFrame(animateImpact)
-  }
-  requestAnimationFrame(animateImpact)
 }
 
 function handleBoundary(p) {
@@ -185,7 +203,6 @@ function onMouseMove(event) {
       if (other===draggedPlanet) continue
       const dist=newPos.distanceTo(other.position), minDist=draggedPlanet.userData.radius+other.userData.radius
       if (dist<minDist) {
-        createImpactEffect(newPos.clone().add(other.position).multiplyScalar(0.5))
         const norm=new THREE.Vector3().subVectors(newPos,other.position).normalize()
         newPos.copy(other.position.clone().add(norm.multiplyScalar(minDist+0.1)))
         other.userData.velocity.add(norm.clone().multiplyScalar(0.15))
@@ -202,7 +219,7 @@ function onMouseUp() {
     if (!hasMoved) {
       const data=draggedPlanet.userData
       currentLink=data.link
-      panelTitle.value=`🌠 ${data.func}`
+      panelTitle.value=data.func
       panelDesc.value=`${data.name} · ${data.desc}`
       panelAction.value=`前往 ${data.func}`
     }
@@ -267,13 +284,10 @@ function init() {
   const gridHelper=new THREE.GridHelper(30,20,0x3366aa,0x224466)
   gridHelper.position.y=-2.5; scene.add(gridHelper)
 
-  const glowSphere=new THREE.Mesh(new THREE.SphereGeometry(0.4,16,16),new THREE.MeshBasicMaterial({color:0x88aaff,transparent:true,opacity:0.2}))
-  scene.add(glowSphere)
-
   const tex1=createPlanetTexture('#3a7bd5','#5fa3f0',true,false)
   const planet1=new THREE.Mesh(new THREE.SphereGeometry(1.6,64,64),new THREE.MeshStandardMaterial({map:tex1,roughness:0.5,metalness:0}))
   planet1.castShadow=planet1.receiveShadow=true
-  planet1.userData={name:'地球',func:'贴吧区',desc:'社区交流，发帖互动',link:'/tieba'}
+  planet1.userData={name:'地球',func:'技术社区',desc:'技术交流，知识共享',link:'/community'}
 
   const tex2=createPlanetTexture('#c05c3e','#d97a5c',true,false)
   const planet2=new THREE.Mesh(new THREE.SphereGeometry(1.4,64,64),new THREE.MeshStandardMaterial({map:tex2,roughness:0.7,metalness:0}))
@@ -342,6 +356,7 @@ function animate() {
 }
 
 onMounted(()=>{
+  checkLogin()
   init()
   animate()
 })
@@ -370,6 +385,28 @@ const onWindowBlur = ()=>{draggedPlanet=null;renderer.domElement.style.cursor='g
   overflow: hidden;
 }
 
+.site-title {
+  position: absolute;
+  top: 24px;
+  left: 30px;
+  z-index: 15;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.site-title-text {
+  font-size: 1.6rem;
+  font-weight: 300;
+  letter-spacing: 4px;
+  color: #fff;
+  text-shadow: 0 0 15px rgba(61,157,255,0.5);
+}
+.site-title-sub {
+  font-size: 0.85rem;
+  letter-spacing: 2px;
+  color: rgba(160,200,255,0.6);
+}
+
 .glow {
   position: absolute;
   width: 100%; height: 100%;
@@ -378,74 +415,116 @@ const onWindowBlur = ()=>{draggedPlanet=null;renderer.domElement.style.cursor='g
   z-index: 1;
 }
 
-#info {
-  position: absolute;
-  top: 20px; left: 20px;
-  z-index: 10;
-  text-shadow: 0 0 20px rgba(0,0,0,0.8);
-  pointer-events: none;
-}
-#info h1 {
-  margin: 0;
-  font-size: 2.5rem;
-  font-weight: 300;
-  letter-spacing: 6px;
-  background: linear-gradient(135deg, #ffffff, #aaccff);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  text-shadow: 0 0 30px rgba(100,150,255,0.5);
-}
-#info p { margin: 5px 0 0; opacity: 0.8; font-size: 1rem; letter-spacing: 2px; }
+
 
 .star-login {
   position: absolute;
   top: 18px; right: 26px;
   z-index: 15;
-  width: 48px; height: 48px;
-  object-fit: contain;
-  filter: drop-shadow(0 0 8px rgba(255,255,255,0.8)) drop-shadow(0 0 16px rgba(255,255,255,0.4));
+  width: 64px; height: 64px;
   cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
   animation: twinkle 2s ease-in-out infinite;
   transition: transform 0.3s;
 }
 .star-login:hover {
   transform: scale(1.25);
-  filter: drop-shadow(0 0 12px rgba(255,255,255,1)) drop-shadow(0 0 24px rgba(255,255,255,0.6));
+}
+.star-core {
+  position: absolute;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ffffff 0%, #ffe8a0 25%, #ffc040 55%, transparent 70%);
+  box-shadow: 0 0 8px #ffffff, 0 0 18px rgba(255,220,100,0.9), 0 0 36px rgba(255,180,40,0.5), 0 0 56px rgba(255,160,20,0.2);
+  z-index: 2;
+}
+.star-ray {
+  position: absolute;
+  z-index: 1;
+}
+.star-ray.ray-h {
+  width: 52px; height: 3px;
+  background: linear-gradient(to right, transparent 0%, rgba(255,220,100,0.2) 25%, #ffe8a0 50%, rgba(255,220,100,0.2) 75%, transparent 100%);
+  border-radius: 2px;
+  box-shadow: 0 0 4px rgba(255,220,100,0.6);
+}
+.star-ray.ray-v {
+  width: 3px; height: 52px;
+  background: linear-gradient(to bottom, transparent 0%, rgba(255,220,100,0.2) 25%, #ffe8a0 50%, rgba(255,220,100,0.2) 75%, transparent 100%);
+  border-radius: 2px;
+  box-shadow: 0 0 4px rgba(255,220,100,0.6);
+}
+.profile-btn {
+  position: absolute;
+  top: 18px; right: 26px;
+  z-index: 15;
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.3s;
+  animation: twinkle 2s ease-in-out infinite;
+}
+.profile-btn:hover {
+  transform: scale(1.25);
+}
+.sun-sphere {
+  position: relative;
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #ffe680, #ffc040 35%, #e89820 68%, #a06010 100%);
+  box-shadow: 0 0 16px rgba(255,200,60,0.7), 0 0 32px rgba(255,180,40,0.4), 0 0 50px rgba(255,160,20,0.2), inset 0 0 8px rgba(255,255,255,0.15);
+}
+.sun-sphere::after {
+  content: '';
+  position: absolute;
+  inset: 10% 24% 38% 18%;
+  background: rgba(255,255,255,0.15);
+  border-radius: 50%;
 }
 @keyframes twinkle {
   0%, 100% { opacity: 1; transform: scale(1); }
   50% { opacity: 0.6; transform: scale(0.85); }
 }
 
-#hint {
-  position: absolute;
-  bottom: 30px; left: 30px;
-  z-index: 10;
-  color: rgba(255,255,255,0.7);
-  font-size: 0.9rem;
-  background: rgba(20,30,50,0.4);
-  padding: 10px 20px;
-  border-radius: 40px;
-  backdrop-filter: blur(8px);
-  border-left: 3px solid #6eb5ff;
+/* Meteor Shower */
+.meteor-shower {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
   pointer-events: none;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+  z-index: 2;
+  overflow: hidden;
+}
+.meteor {
+  position: absolute;
+  background: linear-gradient(to top, transparent, hsla(var(--meteor-hue, 220), 80%, 75%, 0.5), hsla(var(--meteor-hue, 220), 60%, 90%, 0.9), #fff);
+  border-radius: 1px;
+  will-change: translate, opacity;
+  animation: meteorFall linear infinite;
+}
+.meteor::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 180%;
+  height: 4px;
+  background: radial-gradient(ellipse at center, rgba(200,225,255,0.9), transparent 70%);
+  border-radius: 50%;
+  box-shadow: 0 0 8px 2px rgba(180,210,255,0.6);
+}
+@keyframes meteorFall {
+  0%   { translate: 0 0; opacity: 0; }
+  4%   { opacity: var(--max-opacity, 0.8); }
+  10%  { opacity: var(--max-opacity, 0.8); }
+  100% { translate: var(--dist-x, -300px) var(--dist-y, 500px); opacity: 0; }
 }
 
-#status-tip {
-  position: absolute;
-  top: 100px; right: 30px;
-  z-index: 15;
-  background: rgba(0,0,0,0.3);
-  padding: 8px 18px;
-  border-radius: 30px;
-  backdrop-filter: blur(5px);
-  font-size: 0.9rem;
-  border: 1px solid rgba(255,215,100,0.5);
-  color: #ffecb3;
-  pointer-events: none;
-  transition: opacity 0.2s;
-}
 
 #function-panel {
   position: absolute;
@@ -494,10 +573,15 @@ const onWindowBlur = ()=>{draggedPlanet=null;renderer.domElement.style.cursor='g
 }
 
 @media (max-width: 768px) {
-  #info h1 { font-size: 1.6rem; letter-spacing: 3px; }
-  #info p { font-size: 0.8rem; letter-spacing: 1px; }
-  #hint { display: none; }
-  .star-login { top: 14px; right: 14px; width: 38px; height: 38px; }
+  .site-title { top: 16px; left: 16px; }
+  .site-title-text { font-size: 1.1rem; letter-spacing: 2px; }
+  .site-title-sub { font-size: 0.7rem; }
+  .star-login { top: 14px; right: 14px; width: 48px; height: 48px; }
+  .star-login .star-core { width: 15px; height: 15px; }
+  .star-login .star-ray.ray-h { width: 38px; }
+  .star-login .star-ray.ray-v { height: 38px; }
+  .profile-btn { top: 14px; right: 14px; width: 48px; height: 48px; }
+  .profile-btn .sun-sphere { width: 36px; height: 36px; }
   #function-panel { width: auto; left: 20px; right: 20px; bottom: 20px; padding: 15px 20px; }
   #function-title { font-size: 1.3rem; }
   #function-desc { font-size: 0.9rem; }
