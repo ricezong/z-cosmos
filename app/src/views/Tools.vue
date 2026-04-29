@@ -150,10 +150,10 @@
     </div>
     </div><!-- container -->
     </div><!-- page-scroll -->
-  </div><!-- page-layout -->
-
   <!-- 回到顶部 -->
   <button class="back-to-top" v-show="showBackTop" @click="scrollToTop"><i class="ri-arrow-up-line"></i></button>
+  </div><!-- page-layout -->
+
 </template>
 
 <script setup>
@@ -271,6 +271,14 @@ onUnmounted(() => {
 <style scoped>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif; background: #050b1a; color: #d0e8f5; min-height: 100vh; }
+/* Theme vars for back-to-top */
+.page-layout {
+  --bt-bg: rgba(106,176,214,0.3);
+  --bt-border: rgba(106,176,214,0.5);
+  --bt-color: #c8e0f5;
+  --bt-hover-bg: rgba(106,176,214,0.5);
+  --bt-shadow: rgba(106,176,214,0.3);
+}
 .container { position: relative; z-index: 1; max-width: 1000px; margin: 0 auto; padding: 20px 20px; }
 .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0; padding: 16px 20px; border-bottom: 1px solid rgba(106,176,214,0.3); }
 .header-left { display: flex; align-items: center; gap: 15px; }

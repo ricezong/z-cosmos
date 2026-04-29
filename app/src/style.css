@@ -91,9 +91,9 @@ html, body {
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: rgba(90,163,240,0.3);
-  border: 1px solid rgba(90,163,240,0.5);
-  color: #a8d0ff;
+  background: var(--bt-bg, rgba(90,163,240,0.3));
+  border: 1px solid var(--bt-border, rgba(90,163,240,0.5));
+  color: var(--bt-color, #a8d0ff);
   font-size: 20px;
   display: flex;
   align-items: center;
@@ -104,7 +104,7 @@ html, body {
   backdrop-filter: blur(8px);
 }
 .back-to-top:hover {
-  background: rgba(90,163,240,0.5);
+  background: var(--bt-hover-bg, rgba(90,163,240,0.5));
   transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(90,163,240,0.3);
+  box-shadow: 0 4px 15px var(--bt-shadow, rgba(90,163,240,0.3));
 }

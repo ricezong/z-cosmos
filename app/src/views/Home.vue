@@ -22,15 +22,10 @@
     <div id="function-desc">{{ panelDesc }}</div>
     <div id="function-action" @click="goToLink"><i class="ri-rocket-line"></i> {{ panelAction }}</div>
   </div>
-
-  <!-- Meteor Shower -->
-  <div class="meteor-shower">
-    <div v-for="(style, i) in meteorStyles" :key="i" class="meteor" :style="style"></div>
-  </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import * as THREE from 'three'
 import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js'
@@ -53,35 +48,6 @@ function checkLogin() {
   isLoggedIn.value = localStorage.getItem('cosmos_logged_in') === 'true'
 }
 
-// Meteor shower styles (computed once, stable)
-const meteorStyles = computed(() =>
-  Array.from({ length: 30 }, () => {
-    const left = Math.random() * 100
-    const top = -(Math.random() * 30)
-    const delay = Math.random() * 8
-    const duration = 0.7 + Math.random() * 1.4
-    const width = 1 + Math.random() * 2.5
-    const height = 40 + Math.random() * 100
-    const opacity = 0.35 + Math.random() * 0.65
-    const angle = 28 + Math.random() * 18
-    const distX = 250 + Math.random() * 200
-    const distY = 400 + Math.random() * 300
-    const hue = 200 + Math.random() * 40
-    return {
-      left: left + '%',
-      top: top + '%',
-      animationDelay: delay + 's',
-      animationDuration: duration + 's',
-      width: width + 'px',
-      height: height + 'px',
-      '--max-opacity': opacity,
-      '--dist-x': '-' + distX + 'px',
-      '--dist-y': distY + 'px',
-      '--meteor-hue': hue,
-      transform: `rotate(${angle}deg)`,
-    }
-  })
-)
 
 // 退出登录已移至Profile页面
 
@@ -488,41 +454,6 @@ const onWindowBlur = ()=>{draggedPlanet=null;renderer.domElement.style.cursor='g
 @keyframes twinkle {
   0%, 100% { opacity: 1; transform: scale(1); }
   50% { opacity: 0.6; transform: scale(0.85); }
-}
-
-/* Meteor Shower */
-.meteor-shower {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  pointer-events: none;
-  z-index: 2;
-  overflow: hidden;
-}
-.meteor {
-  position: absolute;
-  background: linear-gradient(to top, transparent, hsla(var(--meteor-hue, 220), 80%, 75%, 0.5), hsla(var(--meteor-hue, 220), 60%, 90%, 0.9), #fff);
-  border-radius: 1px;
-  will-change: translate, opacity;
-  animation: meteorFall linear infinite;
-}
-.meteor::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 180%;
-  height: 4px;
-  background: radial-gradient(ellipse at center, rgba(200,225,255,0.9), transparent 70%);
-  border-radius: 50%;
-  box-shadow: 0 0 8px 2px rgba(180,210,255,0.6);
-}
-@keyframes meteorFall {
-  0%   { translate: 0 0; opacity: 0; }
-  4%   { opacity: var(--max-opacity, 0.8); }
-  10%  { opacity: var(--max-opacity, 0.8); }
-  100% { translate: var(--dist-x, -300px) var(--dist-y, 500px); opacity: 0; }
 }
 
 
