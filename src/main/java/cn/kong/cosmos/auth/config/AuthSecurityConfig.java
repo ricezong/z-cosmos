@@ -33,14 +33,21 @@ public class AuthSecurityConfig implements WebMvcConfigurer {
         registry.addInterceptor(jwtAuthInterceptor)
                 .addPathPatterns("/api/**")
                 .excludePathPatterns(
-                    "/api/auth/login",           // 账密登录
-                    "/api/auth/refresh",         // Token 刷新
-                    "/api/auth/oauth/url",       // 获取 OAuth 链接
-                    "/api/auth/oauth/callback",  // OAuth 回调
-                    "/api/auth/wechat/**",       // 微信相关（扫码/回调）
-                    "/api/post/list",            // 帖子列表(公开)
-                    "/api/post/{postId}",        // 帖子详情(公开)
-                    "/api/public/**"             // 公开接口
+                    "/api/auth/login",                   // 账密登录
+                    "/api/auth/refresh",                 // Token 刷新
+                    "/api/auth/oauth/url",               // 获取 OAuth 链接
+                    "/api/auth/oauth/callback",          // OAuth 回调
+                    "/api/auth/wechat/**",               // 微信相关（扫码/回调）
+                    "/api/posts",                        // 帖子列表(公开，发帖走 Service 鉴权)
+                    "/api/posts/{postId}",               // 帖子详情(公开，编辑/删除走 Service 鉴权)
+                    "/api/posts/{postId}/comments",      // 评论列表(公开，发评走 Service 鉴权)
+                    "/api/categories",                   // 分类列表(公开)
+                    "/api/news/**",                      // 热点/新闻(公开只读)
+                    "/api/videos",                       // 视频列表(公开)
+                    "/api/videos/*",                     // 视频详情(公开，play 端点需登录)
+                    "/api/videos/*/episodes",            // 剧集列表(公开)
+                    "/api/search/**",                    // 聚合搜索(公开只读)
+                    "/api/public/**"                     // 其他公开接口
                 );
     }
 }

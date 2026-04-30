@@ -32,6 +32,7 @@
         <fastjson2.version>2.0.43</fastjson2.version>
         <wxjava.version>4.6.0</wxjava.version>
         <jjwt.version>0.12.3</jjwt.version>
+        <jsoup.version>1.17.2</jsoup.version>
 
         <!-- Test -->
         <junit.version>5.10.0</junit.version>
@@ -200,6 +201,13 @@
         <dependency>
             <groupId>com.github.binarywang</groupId>
             <artifactId>weixin-java-mp</artifactId>
+        </dependency>
+
+        <!-- Jsoup (HTML 清洗防 XSS) -->
+        <dependency>
+            <groupId>org.jsoup</groupId>
+            <artifactId>jsoup</artifactId>
+            <version>${jsoup.version}</version>
         </dependency>
     </dependencies>
 

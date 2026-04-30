@@ -126,6 +126,12 @@ community:
     ttl: 3600  # 缓存TTL(秒)
     user-cache-ttl: 1800  # 用户缓存TTL(秒)
 
+# 本地文件存储配置
+storage:
+  local:
+    root: ${STORAGE_LOCAL_ROOT:./uploads}      # 物理存储根目录
+    url-prefix: /uploads                        # HTTP 访问前缀（需放行）
+
 # 日志配置
 logging:
   level:
