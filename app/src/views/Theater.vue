@@ -73,34 +73,34 @@ function scrollToTop() {
 <style scoped>
 /* Theme vars for back-to-top */
 .page-layout {
-  --bt-bg: rgba(200,115,120,0.3);
-  --bt-border: rgba(200,115,120,0.5);
+  --bt-bg: rgba(179,124,128,0.3);
+  --bt-border: rgba(179,124,128,0.5);
   --bt-color: #f0c0c6;
-  --bt-hover-bg: rgba(200,115,120,0.5);
-  --bt-shadow: rgba(200,115,120,0.3);
+  --bt-hover-bg: rgba(179,124,128,0.5);
+  --bt-shadow: rgba(179,124,128,0.3);
 }
 .container { position: relative; z-index: 1; max-width: 1000px; margin: 0 auto; padding: 20px 20px; }
-.header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0; padding: 16px 20px; border-bottom: 1px solid rgba(200,115,120,0.3); }
+.header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0; padding: 16px 20px; border-bottom: 1px solid rgba(144,166,196,0.3); }
 .header-left { display: flex; align-items: center; gap: 15px; }
 .planet-icon { line-height: 1; display: flex; align-items: center; }
-.header-title h1 { font-size: 1.8rem; font-weight: 300; letter-spacing: 4px; background: linear-gradient(135deg, #c68088, #f0c0c6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.header-title h1 { font-size: 1.8rem; font-weight: 300; letter-spacing: 4px; background: linear-gradient(135deg, #ffffff, #c5d5ea); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 .header-title p { font-size: 0.85rem; opacity: 0.7; margin-top: 2px; }
-.back-btn { padding: 8px 20px; border-radius: 30px; background: rgba(175,90,95,0.2); border: 1px solid rgba(200,115,120,0.4); color: #f0c0c6; cursor: pointer; text-decoration: none; transition: 0.3s; font-size: 0.9rem; }
-.back-btn:hover { background: rgba(175,90,95,0.4); box-shadow: 0 0 15px rgba(200,115,120,0.3); }
+.back-btn { padding: 8px 20px; border-radius: 30px; background: rgba(144,166,196,0.2); border: 1px solid rgba(144,166,196,0.4); color: #c5d5ea; cursor: pointer; text-decoration: none; transition: 0.3s; font-size: 0.9rem; }
+.back-btn:hover { background: rgba(144,166,196,0.4); box-shadow: 0 0 15px rgba(144,166,196,0.3); }
 .tabs { display: flex; gap: 10px; }
-.tab { padding: 10px 24px; border-radius: 30px; cursor: pointer; background: rgba(175,90,95,0.15); border: 1px solid rgba(200,115,120,0.25); color: #f0c0c6; transition: 0.3s; font-size: 0.95rem; }
-.tab.active, .tab:hover { background: rgba(175,90,95,0.35); border-color: rgba(200,115,120,0.6); box-shadow: 0 0 15px rgba(200,115,120,0.2); color: #fff; }
+.tab { padding: 10px 24px; border-radius: 30px; cursor: pointer; background: rgba(144,166,196,0.15); border: 1px solid rgba(144,166,196,0.25); color: #a8bcd4; transition: 0.3s; font-size: 0.95rem; }
+.tab.active, .tab:hover { background: rgba(144,166,196,0.35); border-color: rgba(144,166,196,0.6); box-shadow: 0 0 15px rgba(144,166,196,0.2); color: #fff; }
 .planet-sphere { width: 36px; height: 36px; border-radius: 50%; position: relative; flex-shrink: 0; }
 .planet-sphere.mars { background: radial-gradient(circle at 35% 35%, #c68088, #a86068 50%, #402028 100%); box-shadow: 0 0 12px rgba(175,90,95,0.5), inset 0 0 8px rgba(255,255,255,0.12); }
 .planet-sphere.mars::after { content: ''; position: absolute; inset: 12% 28% 42% 22%; background: rgba(255,255,255,0.1); border-radius: 50%; }
 .empty-state { text-align: center; padding: 50px 20px; opacity: 0.5; }
 .panel { display: block; }
-.stage { background: rgba(22,14,28,0.62); border: 1px solid rgba(200,115,120,0.25); border-radius: 20px; padding: 25px; margin-bottom: 25px; backdrop-filter: blur(10px); }
-.stage-title { font-size: 1.3rem; font-weight: 400; margin-bottom: 5px; color: #f0c0c6; letter-spacing: 2px; }
+.stage { border: 1px solid rgba(144,166,196,0.25); border-radius: 20px; padding: 25px; margin-bottom: 25px; backdrop-filter: blur(10px); }
+.stage-title { font-size: 1.3rem; font-weight: 400; margin-bottom: 5px; color: #e8eef7; letter-spacing: 2px; }
 .stage-desc { font-size: 0.9rem; opacity: 0.7; margin-bottom: 20px; }
 .placeholder-box { text-align: center; padding: 60px 20px; opacity: 0.6; }
 .placeholder-icon { font-size: 3rem; margin-bottom: 15px; }
-.placeholder-box p { font-size: 1rem; color: #f0c0c6; }
+.placeholder-box p { font-size: 1rem; color: #a8bcd4; }
 
 @media (max-width: 768px) {
   .container { padding: 15px 12px 60px; }

@@ -6,8 +6,40 @@ html, body {
   overflow: hidden;
   background-color: #0b0d1e;
   color: #efecfb;
-  font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+  font-family: 'Noto Serif SC', 'Source Han Serif SC', 'Segoe UI', 'Microsoft YaHei', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
+
+/* 设计 token 体系 */
+:root {
+  /* Ink 文字层级 */
+  --ink-100: #efecfb;
+  --ink-200: rgba(239,236,251,0.72);
+  --ink-300: rgba(239,236,251,0.5);
+  --ink-400: rgba(239,236,251,0.32);
+  /* Surface 表面层 */
+  --surface-1: rgba(22,20,44,0.55);
+  --surface-2: rgba(22,20,44,0.72);
+  --surface-hairline: rgba(255,255,255,0.08);
+  --surface-highlight: linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0) 40%);
+  /* Font stacks */
+  --font-display: 'Cinzel', 'Noto Serif SC', 'Source Han Serif SC', 'Times New Roman', Georgia, serif;
+  --font-body: 'Noto Serif SC', 'Source Han Serif SC', 'Segoe UI', 'Microsoft YaHei', sans-serif;
+  --font-ui: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  /* Easing */
+  --ease-out-expo: cubic-bezier(0.19, 1, 0.22, 1);
+  --ease-soft: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* 文字选中高光 */
+::selection { background: rgba(240,195,115,0.32); color: #fff5df; text-shadow: none; }
+
+/* 标题默认衣线风格 */
+h1, h2, h3, .display { font-family: var(--font-display); font-feature-settings: 'ss01', 'liga'; }
 
 #app {
   width: 100%;
@@ -32,6 +64,9 @@ html, body {
   width: 100%; height: 100%;
   pointer-events: none;
   z-index: 0;
+  /* 静态星图，避免整屏 background-position 动画带来的 CPU 重绘 */
+  transform: translateZ(0);
+  will-change: auto;
   background-image:
     radial-gradient(1.5px 1.5px at 20px 30px, rgba(210,220,255,0.55), transparent),
     radial-gradient(2px 2px at 40px 70px, rgba(255,230,190,0.45), transparent),
@@ -57,6 +92,17 @@ html, body {
     radial-gradient(2px 2px at 880px 280px, rgba(210,220,255,0.45), transparent);
 }
 
+/* 天鹅胶片：极淡的顶部光单 + 底部流光线 */
+.star-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 40% at 50% -10%, rgba(200,180,255,0.08) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 30% at 50% 110%, rgba(240,195,115,0.05) 0%, transparent 60%);
+  pointer-events: none;
+}
+
 /* Page Layout - Fixed Header + Scrollable Content */
 .page-layout {
   display: flex;
@@ -64,10 +110,22 @@ html, body {
   height: 100vh;
   position: relative;
   z-index: 1;
+  animation: fadeIn 0.6s var(--ease-out-expo) both;
 }
 .page-fixed {
   flex-shrink: 0;
   z-index: 50;
+  position: relative;
+  animation: fadeInDown 0.6s 0.05s var(--ease-out-expo) both;
+}
+/* 固定区与滚动区分界：极细渐变发光线 */
+.page-fixed::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: -1px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.16) 50%, transparent 100%);
+  pointer-events: none;
 }
 
 .page-scroll {
@@ -75,14 +133,15 @@ html, body {
   overflow-y: auto;
   overflow-x: hidden;
   min-height: 0;
+  animation: fadeInUp 0.7s 0.12s var(--ease-out-expo) both;
 }
-/* 隐藏滚动条但保留滚动功能 */
-.page-scroll::-webkit-scrollbar {
+/* 隐藏滚动条但保留滚动功能 —— 全局统一（登录页、页面主滚动、弹窗、预览区、textarea 等） */
+*::-webkit-scrollbar {
   width: 0;
   height: 0;
   display: none;
 }
-.page-scroll {
+* {
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* IE/Edge */
 }
@@ -112,6 +171,19 @@ html, body {
   transform: translateY(-2px);
   box-shadow: 0 4px 15px var(--bt-shadow, rgba(160,180,230,0.25));
 }
+/* 后归顶部的脉动光环：仅在 hover 时启用，避免常驻动画吃性能 */
+.back-to-top::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 1px solid var(--bt-border, rgba(160,180,230,0.38));
+  opacity: 0;
+  pointer-events: none;
+}
+.back-to-top:hover::before {
+  animation: btRipple 2.4s var(--ease-soft) infinite;
+}
 
 /* 焦点可访问性：柔和薄雾轮廓 */
 button:focus-visible,
@@ -123,3 +195,59 @@ select:focus-visible {
   outline-offset: 2px;
 }
 button { font-family: inherit; }
+
+/* 全局动画 keyframes */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes btRipple {
+  0% { opacity: 0.7; transform: scale(1); }
+  70% { opacity: 0; transform: scale(1.45); }
+  100% { opacity: 0; transform: scale(1.45); }
+}
+@keyframes glowPulse {
+  0%, 100% { opacity: 0.85; filter: brightness(1); }
+  50% { opacity: 1; filter: brightness(1.08); }
+}
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* 通用工具类 */
+.glow-text {
+  background: linear-gradient(90deg, var(--ink-100) 0%, #d8c89a 50%, var(--ink-100) 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer 6s linear infinite;
+}
+
+/* 按钮通用微交互：悬停时轻微上浮，点击时下沉 */
+button:active, .btn:active, a.back-btn:active, .edit-btn:active, .save-btn:active {
+  transform: translateY(1px);
+}
+
+/* 通用玻璃卡高光（可挂 class="glass"）*/
+.glass {
+  position: relative;
+}
+.glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background: var(--surface-highlight);
+  opacity: 0.9;
+}

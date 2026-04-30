@@ -31,7 +31,15 @@
             </label>
             <a href="#" class="forgot-link" @click.prevent="alert('请联系管理员重置密码')">忘记密码?</a>
           </div>
-          <button class="login-btn" @click="doLogin">登录</button>
+          <button class="login-btn" @click="doLogin">
+            <span class="btn-shine"></span>
+            <span class="btn-content">
+              <span class="btn-bracket left">⟨</span>
+              <span class="btn-text">登 录 星 域</span>
+              <i class="ri-arrow-right-up-line btn-arrow"></i>
+              <span class="btn-bracket right">⟩</span>
+            </span>
+          </button>
 
           <div class="divider">
             <span>第三方账号登录</span>
@@ -39,13 +47,13 @@
 
           <div class="oauth-grid">
             <button class="oauth-btn" @click="oauthLogin('QQ')">
-              <span class="icon" style="color:#12b7f5"><i class="ri-qq-line"></i></span>
+              <span class="icon" style="color:#12b7f5"><svg class="brand-icon" aria-hidden="true"><use href="/icons.svg#qq-icon"/></svg></span>
             </button>
             <button class="oauth-btn" @click="oauthLogin('GitHub')">
-              <span class="icon" style="color:#fff"><i class="ri-github-fill"></i></span>
+              <span class="icon" style="color:#fff"><svg class="brand-icon" aria-hidden="true"><use href="/icons.svg#github-icon"/></svg></span>
             </button>
             <button class="oauth-btn" @click="oauthLogin('Gitee')">
-              <span class="icon gitee-icon"><svg viewBox="0 0 1024 1024" width="20" height="20"><path d="M512 42.666667C252.793333 42.666667 42.666667 252.793333 42.666667 512s210.126667 469.333333 469.333333 469.333333 469.333333-210.126667 469.333333-469.333333S771.206667 42.666667 512 42.666667z m263.346667 351.466666l-23.04 78.506667c-4.693333 15.786667-21.76 24.746667-37.546667 20.053333L440.32 423.253333c-2.986667-0.853333-5.973333-1.28-8.96-1.28-13.226667 0-25.6 8.533333-29.866667 21.76l-2.133333 7.253334-36.266667 123.733333c-4.693333 15.786667 4.266667 32.853333 20.053334 37.546667l275.2 68.693333c2.986667 0.853333 5.973333 1.28 8.96 1.28 13.226667 0 25.6-8.533333 29.866666-21.76l23.04-78.506667c4.693333-15.786667-4.266667-32.853333-20.053333-37.546666L445.44 476.586667c-2.986667-0.853333-5.973333-1.28-8.96-1.28-13.226667 0-25.6 8.533333-29.866667 21.76" fill="#C71D23"/></svg></span>
+              <span class="icon" style="color:#C71D23"><svg class="brand-icon" aria-hidden="true"><use href="/icons.svg#gitee-icon"/></svg></span>
             </button>
           </div>
         </div>
@@ -104,10 +112,14 @@ onMounted(() => {
 <style scoped>
 .login-page {
   width: 100%;
-  min-height: 100vh;
+  height: 100%;
   overflow-x: hidden;
   overflow-y: auto;
-  background: #050b1a;
+  -webkit-overflow-scrolling: touch;
+  background:
+    radial-gradient(ellipse 90% 60% at 50% 0%, rgba(82, 72, 128, 0.35) 0%, transparent 55%),
+    radial-gradient(ellipse 70% 50% at 50% 100%, rgba(120, 90, 150, 0.22) 0%, transparent 60%),
+    linear-gradient(180deg, #0d0f24 0%, #08091a 100%);
   color: #e0e8f0;
   position: relative;
 }
@@ -115,56 +127,82 @@ onMounted(() => {
 .login-wrap {
   position: relative;
   z-index: 1;
-  min-height: 100vh;
+  min-height: 100%;
   display: flex;
-  align-items: center;
+  align-items: safe center;
   justify-content: center;
-  padding: 16px;
+  padding: 24px 16px;
+  box-sizing: border-box;
 }
 
 .login-card {
   width: 100%;
   max-width: 380px;
-  background: rgba(10, 15, 30, 0.75);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 20px;
-  padding: 32px 28px;
-  backdrop-filter: blur(16px);
-  animation: fadeUp 0.5s ease;
+  background:
+    linear-gradient(155deg, rgba(28, 24, 56, 0.78) 0%, rgba(12, 14, 32, 0.68) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  padding: 36px 30px;
+  backdrop-filter: blur(18px);
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  animation: fadeUp 0.65s var(--ease-out-expo, cubic-bezier(0.19, 1, 0.22, 1));
+  position: relative;
+}
+/* 卡片顶部极淡光软 */
+.login-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 20%; right: 20%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent);
 }
 
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(20px); }
+  from { opacity: 0; transform: translateY(24px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 .login-logo {
   text-align: center;
-  margin-bottom: 24px;
+  margin-bottom: 28px;
 }
 
 .login-logo .planet-icon {
   font-size: 48px;
   line-height: 1;
-  filter: drop-shadow(0 0 12px rgba(255,255,255,0.5));
+  /* 使用 text-shadow 代替 drop-shadow，避免帧帧重新栅格化 */
+  text-shadow: 0 0 18px rgba(200, 180, 255, 0.55);
   display: block;
   color: #fff;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
+  animation: logoFloat 4.5s ease-in-out infinite;
+  will-change: transform;
+}
+/* 仅动 transform，移除 filter 动画；光晕呼吸交给子元素的 opacity */
+@keyframes logoFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
 }
 
 .login-logo h1 {
-  font-size: 1.5rem;
-  font-weight: 300;
-  letter-spacing: 4px;
+  font-size: 1.6rem;
+  font-weight: 500;
+  letter-spacing: 8px;
   color: #fff;
-  text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
-  margin-bottom: 4px;
+  font-family: var(--font-display, 'Cinzel', 'Noto Serif SC', serif);
+  text-shadow: 0 0 24px rgba(200, 180, 255, 0.35), 0 0 2px rgba(255,255,255,0.4);
+  margin-bottom: 6px;
 }
 
 .login-logo p {
-  font-size: 0.8rem;
-  opacity: 0.5;
+  font-size: 0.78rem;
+  opacity: 0.55;
   color: #c0d0e8;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  font-family: var(--font-display, 'Cinzel', serif);
 }
 
 .login-tabs {
@@ -264,21 +302,120 @@ onMounted(() => {
 
 .login-btn {
   width: 100%;
-  padding: 12px;
-  border-radius: 24px;
-  border: none;
-  background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(200,220,255,0.9));
-  color: #050b1a;
+  padding: 14px 18px;
+  border-radius: 14px;
+  border: 1px solid rgba(168,188,212,0.4);
+  background:
+    linear-gradient(135deg, rgba(120,144,181,0.22) 0%, rgba(168,188,212,0.12) 50%, rgba(120,144,181,0.22) 100%),
+    linear-gradient(180deg, rgba(22,26,48,0.92) 0%, rgba(14,18,36,0.95) 100%);
+  color: #e8eef7;
   font-size: 0.95rem;
   font-weight: 500;
   cursor: pointer;
-  transition: 0.3s;
-  letter-spacing: 1px;
+  letter-spacing: 4px;
+  position: relative;
+  overflow: hidden;
+  transition: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.12),
+    inset 0 -1px 0 rgba(0,0,0,0.25),
+    0 4px 16px rgba(0,0,0,0.3);
+  font-family: var(--font-display, 'Cinzel', 'Noto Serif SC', serif);
 }
 
+/* 顶部细金属光带 */
+.login-btn::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 12%; right: 12%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.55), transparent);
+  pointer-events: none;
+}
+
+/* 底部雾青辉 */
+.login-btn::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 20%; right: 20%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(168,188,212,0.5), transparent);
+  pointer-events: none;
+}
+
+/* hover 扫光 */
+.btn-shine {
+  position: absolute;
+  top: 0; left: -60%;
+  width: 40%; height: 100%;
+  background: linear-gradient(100deg, transparent 30%, rgba(255,255,255,0.22) 50%, transparent 70%);
+  transform: skewX(-20deg);
+  pointer-events: none;
+  transition: left 0.75s ease;
+}
+
+.login-btn:hover .btn-shine { left: 120%; }
+
 .login-btn:hover {
-  box-shadow: 0 0 25px rgba(255, 255, 255, 0.25);
+  border-color: rgba(168,188,212,0.7);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.18),
+    inset 0 -1px 0 rgba(0,0,0,0.25),
+    0 8px 24px rgba(120,144,181,0.35),
+    0 0 32px rgba(168,188,212,0.2);
   transform: translateY(-1px);
+}
+
+.login-btn:active {
+  transform: translateY(0);
+  box-shadow:
+    inset 0 2px 4px rgba(0,0,0,0.3),
+    0 4px 12px rgba(0,0,0,0.2);
+}
+
+.btn-content {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  position: relative;
+  z-index: 1;
+}
+
+.btn-bracket {
+  font-size: 1.15em;
+  color: rgba(168,188,212,0.7);
+  font-weight: 300;
+  transition: 0.35s ease;
+}
+
+.login-btn:hover .btn-bracket.left {
+  transform: translateX(-4px);
+  color: #c5d5ea;
+  text-shadow: 0 0 8px rgba(168,188,212,0.6);
+}
+
+.login-btn:hover .btn-bracket.right {
+  transform: translateX(4px);
+  color: #c5d5ea;
+  text-shadow: 0 0 8px rgba(168,188,212,0.6);
+}
+
+.btn-text {
+  background: linear-gradient(135deg, #ffffff 0%, #c5d5ea 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.btn-arrow {
+  font-size: 1rem;
+  color: #c5d5ea;
+  transition: transform 0.35s ease;
+}
+
+.login-btn:hover .btn-arrow {
+  transform: translate(3px, -3px);
 }
 
 .divider {
@@ -327,6 +464,22 @@ onMounted(() => {
 
 .oauth-btn .icon {
   font-size: 1.4rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.oauth-btn .brand-icon {
+  width: 1em;
+  height: 1em;
+  display: block;
+  fill: currentColor;
+}
+
+.oauth-btn .icon svg {
+  display: inline-block;
+  vertical-align: -0.15em;
 }
 
 .qr-panel {
