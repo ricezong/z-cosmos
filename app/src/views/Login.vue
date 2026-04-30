@@ -105,7 +105,8 @@ onMounted(() => {
 .login-page {
   width: 100%;
   min-height: 100vh;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   background: #050b1a;
   color: #e0e8f0;
   position: relative;

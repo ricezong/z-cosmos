@@ -194,6 +194,8 @@ function onMouseUp() {
   hasMoved=false
 }
 
+const onWindowBlur = ()=>{if(renderer){draggedPlanet=null;renderer.domElement.style.cursor='grab'}}
+
 function onWindowResize() {
   camera.aspect=window.innerWidth/window.innerHeight
   camera.updateProjectionMatrix()
@@ -338,8 +340,6 @@ onUnmounted(()=>{
   if(cssRenderer?.domElement?.parentNode) cssRenderer.domElement.parentNode.removeChild(cssRenderer.domElement)
   renderer?.dispose()
 })
-
-const onWindowBlur = ()=>{draggedPlanet=null;renderer.domElement.style.cursor='grab'}
 </script>
 
 <style scoped>
@@ -390,7 +390,7 @@ const onWindowBlur = ()=>{draggedPlanet=null;renderer.domElement.style.cursor='g
   width: 64px; height: 64px;
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  animation: twinkle 2s ease-in-out infinite;
+  animation: twinkle 4s ease-in-out infinite;
   transition: transform 0.3s;
 }
 .star-login:hover {
@@ -400,8 +400,8 @@ const onWindowBlur = ()=>{draggedPlanet=null;renderer.domElement.style.cursor='g
   position: absolute;
   width: 20px; height: 20px;
   border-radius: 50%;
-  background: radial-gradient(circle, #ffffff 0%, #ffe8a0 25%, #ffc040 55%, transparent 70%);
-  box-shadow: 0 0 8px #ffffff, 0 0 18px rgba(255,220,100,0.9), 0 0 36px rgba(255,180,40,0.5), 0 0 56px rgba(255,160,20,0.2);
+  background: radial-gradient(circle, #ffffff 0%, #f3e0b0 25%, #e7bc6b 55%, transparent 70%);
+  box-shadow: 0 0 8px #ffffff, 0 0 18px rgba(245,215,150,0.9), 0 0 36px rgba(230,175,95,0.5), 0 0 56px rgba(220,160,80,0.2);
   z-index: 2;
 }
 .star-ray {
@@ -410,15 +410,15 @@ const onWindowBlur = ()=>{draggedPlanet=null;renderer.domElement.style.cursor='g
 }
 .star-ray.ray-h {
   width: 52px; height: 3px;
-  background: linear-gradient(to right, transparent 0%, rgba(255,220,100,0.2) 25%, #ffe8a0 50%, rgba(255,220,100,0.2) 75%, transparent 100%);
+  background: linear-gradient(to right, transparent 0%, rgba(245,215,150,0.2) 25%, #f3e0b0 50%, rgba(245,215,150,0.2) 75%, transparent 100%);
   border-radius: 2px;
-  box-shadow: 0 0 4px rgba(255,220,100,0.6);
+  box-shadow: 0 0 4px rgba(245,215,150,0.6);
 }
 .star-ray.ray-v {
   width: 3px; height: 52px;
-  background: linear-gradient(to bottom, transparent 0%, rgba(255,220,100,0.2) 25%, #ffe8a0 50%, rgba(255,220,100,0.2) 75%, transparent 100%);
+  background: linear-gradient(to bottom, transparent 0%, rgba(245,215,150,0.2) 25%, #f3e0b0 50%, rgba(245,215,150,0.2) 75%, transparent 100%);
   border-radius: 2px;
-  box-shadow: 0 0 4px rgba(255,220,100,0.6);
+  box-shadow: 0 0 4px rgba(245,215,150,0.6);
 }
 .profile-btn {
   position: absolute;
@@ -432,7 +432,7 @@ const onWindowBlur = ()=>{draggedPlanet=null;renderer.domElement.style.cursor='g
   cursor: pointer;
   padding: 0;
   transition: transform 0.3s;
-  animation: twinkle 2s ease-in-out infinite;
+  animation: sunBreath 5s ease-in-out infinite;
 }
 .profile-btn:hover {
   transform: scale(1.25);
@@ -441,8 +441,8 @@ const onWindowBlur = ()=>{draggedPlanet=null;renderer.domElement.style.cursor='g
   position: relative;
   width: 48px; height: 48px;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, #ffe680, #ffc040 35%, #e89820 68%, #a06010 100%);
-  box-shadow: 0 0 16px rgba(255,200,60,0.7), 0 0 32px rgba(255,180,40,0.4), 0 0 50px rgba(255,160,20,0.2), inset 0 0 8px rgba(255,255,255,0.15);
+  background: radial-gradient(circle at 35% 35%, #f6deab, #e7bc6b 35%, #c89a50 68%, #7a5224 100%);
+  box-shadow: 0 0 16px rgba(240,195,115,0.7), 0 0 32px rgba(230,175,95,0.4), 0 0 50px rgba(220,160,80,0.2), inset 0 0 8px rgba(255,255,255,0.15);
 }
 .sun-sphere::after {
   content: '';
@@ -453,7 +453,11 @@ const onWindowBlur = ()=>{draggedPlanet=null;renderer.domElement.style.cursor='g
 }
 @keyframes twinkle {
   0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.6; transform: scale(0.85); }
+  50% { opacity: 0.85; transform: scale(0.94); }
+}
+@keyframes sunBreath {
+  0%, 100% { filter: brightness(1); transform: scale(1); }
+  50% { filter: brightness(1.1); transform: scale(1.04); }
 }
 
 
