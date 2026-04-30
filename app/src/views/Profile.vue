@@ -1,192 +1,119 @@
 <template>
   <div class="star-bg"></div>
   <div class="page-layout">
-    <!-- 固定区域：header + 个人信息卡 + tabs（登录态、非编辑态） -->
     <div class="page-fixed">
-    <header class="header">
-      <div class="header-left">
-        <div class="planet-icon"><div class="planet-sphere sun"></div></div>
-        <div class="header-title">
-          <h1>个人主页</h1>
-          <p>星际枢纽 · 你的空间</p>
+      <header class="header">
+        <div class="header-left">
+          <div class="planet-sphere"></div>
+          <div>
+            <h1>个人主页</h1>
+            <p>太阳 · 你的空间</p>
+          </div>
         </div>
-      </div>
-      <router-link to="/" class="back-btn"><i class="ri-arrow-left-line"></i> 返回星域</router-link>
-    </header>
-
-    <!-- 个人信息卡（固定区）：登录态且非编辑态显示 -->
-    <div class="container profile-fixed-container" v-if="isLoggedIn && !showEdit && !showPasswordEdit">
-      <div class="profile-card">
-        <div class="profile-header">
-          <div class="avatar" :style="avatarStyle">
-            <span v-if="!profile.avatar">{{ profile.nickname.charAt(0).toUpperCase() }}</span>
-            <i v-else :class="profile.avatar"></i>
+        <router-link to="/" class="back-btn"><i class="ri-arrow-left-line"></i> 返回星域</router-link>
+      </header>
+      <div class="container" v-if="isLoggedIn">
+        <section class="profile-card">
+          <div class="avatar">
+            <img v-if="profile.avatarUrl" :src="profile.avatarUrl" alt="avatar">
+            <span v-else>{{ (profile.nickname || 'C').slice(0, 1).toUpperCase() }}</span>
           </div>
           <div class="profile-info">
             <h2>{{ profile.nickname }}</h2>
-            <p class="profile-bio">{{ profile.bio || '这个人很懒，什么都没写...' }}</p>
-            <div class="profile-stats">
+            <p>{{ profile.bio || '这个人很懒，什么都没写...' }}</p>
+            <div class="stats">
               <span><i class="ri-file-text-line"></i> {{ myPosts.length }} 帖子</span>
-              <span><i class="ri-star-line"></i> {{ profile.favorites?.length || 0 }} 收藏</span>
+              <span><i class="ri-star-line"></i> {{ favPosts.length }} 收藏</span>
             </div>
           </div>
-          <div class="action-btns">
-            <button class="edit-btn" @click="toggleEdit">
-              <i class="ri-edit-line"></i> 编辑资料
-            </button>
-            <button class="edit-btn" @click="togglePasswordEdit">
-              <i class="ri-lock-line"></i> 修改密码
-            </button>
-            <button class="logout-btn" @click="doLogout">
-              <i class="ri-logout-box-r-line"></i> 退出登录
-            </button>
+          <div class="actions">
+            <button @click="toggleEdit"><i class="ri-edit-line"></i> 编辑资料</button>
+            <button @click="togglePasswordEdit"><i class="ri-lock-line"></i> 修改密码</button>
+            <button @click="avatarInput?.click()"><i class="ri-image-edit-line"></i> 上传头像</button>
+            <button class="danger" @click="doLogout"><i class="ri-logout-box-r-line"></i> 退出</button>
           </div>
+          <input ref="avatarInput" type="file" accept="image/*" hidden @change="uploadAvatarFile">
+        </section>
+        <div class="tabs" v-if="!showEdit && !showPasswordEdit">
+          <button :class="{ active: profileTab === 'posts' }" @click="profileTab = 'posts'">我的帖子</button>
+          <button :class="{ active: profileTab === 'favorites' }" @click="profileTab = 'favorites'">我的收藏</button>
         </div>
       </div>
     </div>
 
-    <div class="container tabs-container" v-if="isLoggedIn && !showEdit && !showPasswordEdit">
-      <div class="tabs">
-        <div class="tab" :class="{ active: profileTab === 'posts' }" @click="profileTab = 'posts'"><i class="ri-file-text-line"></i> 我的帖子</div>
-        <div class="tab" :class="{ active: profileTab === 'favorites' }" @click="profileTab = 'favorites'"><i class="ri-star-line"></i> 我的收藏</div>
-      </div>
-    </div>
-    </div><!-- page-fixed -->
-
-    <!-- 滚动区域 -->
     <div class="page-scroll" ref="contentRef" @scroll="onContentScroll">
-    <div class="container" v-if="isLoggedIn">
-      <!-- 编辑资料卡（滚动区） -->
-      <div class="profile-card edit-card" v-show="showEdit">
-        <div class="edit-card-header">
-          <h3><i class="ri-edit-line"></i> 编辑资料</h3>
-          <button class="edit-btn" @click="toggleEdit"><i class="ri-close-line"></i> 取消</button>
-        </div>
-        <div class="edit-panel standalone">
-          <div class="form-group">
-            <label>头像</label>
-            <div class="avatar-picker">
-              <div class="avatar-option" v-for="opt in avatarOptions" :key="opt.icon"
-                :class="{ active: editForm.avatar === opt.icon }"
-                @click="editForm.avatar = opt.icon">
-                <i :class="opt.icon"></i>
-              </div>
-            </div>
-          </div>
-          <div class="form-group">
-            <label>昵称</label>
-            <input v-model="editForm.nickname" maxlength="20" placeholder="输入昵称">
-          </div>
-          <div class="form-group">
-            <label>个人简介</label>
-            <textarea v-model="editForm.bio" maxlength="200" placeholder="介绍一下自己..." rows="3"></textarea>
-          </div>
-          <button class="save-btn" @click="saveProfile"><i class="ri-save-line"></i> 保存修改</button>
-        </div>
-      </div>
+      <main class="container" v-if="isLoggedIn">
+        <section class="card form" v-if="showEdit">
+          <h3>编辑资料</h3>
+          <label>昵称</label>
+          <input v-model="editForm.nickname" maxlength="20">
+          <label>个人简介</label>
+          <textarea v-model="editForm.bio" maxlength="200" rows="4"></textarea>
+          <button class="primary" @click="saveProfile">保存</button>
+        </section>
 
-      <!-- 修改密码卡（滚动区） -->
-      <div class="profile-card edit-card" v-show="showPasswordEdit">
-        <div class="edit-card-header">
-          <h3><i class="ri-lock-line"></i> 修改密码</h3>
-          <button class="edit-btn" @click="togglePasswordEdit"><i class="ri-close-line"></i> 取消</button>
-        </div>
-        <div class="edit-panel standalone">
-          <div class="form-group">
-            <label>当前密码</label>
-            <input type="password" v-model="passwordForm.oldPwd" placeholder="输入当前密码">
-          </div>
-          <div class="form-group">
-            <label>新密码</label>
-            <input type="password" v-model="passwordForm.newPwd" placeholder="输入新密码">
-          </div>
-          <div class="form-group">
-            <label>确认新密码</label>
-            <input type="password" v-model="passwordForm.confirmPwd" placeholder="再次输入新密码">
-          </div>
-          <button class="save-btn" @click="savePassword"><i class="ri-lock-line"></i> 修改密码</button>
-        </div>
-      </div>
+        <section class="card form" v-if="showPasswordEdit">
+          <h3>修改密码</h3>
+          <label>当前密码</label>
+          <input type="password" v-model="passwordForm.oldPwd">
+          <label>新密码</label>
+          <input type="password" v-model="passwordForm.newPwd">
+          <label>确认新密码</label>
+          <input type="password" v-model="passwordForm.confirmPwd">
+          <button class="primary" @click="savePassword">修改密码</button>
+        </section>
 
-      <!-- 我的帖子 -->
-      <div class="panel" v-show="profileTab === 'posts' && !showEdit && !showPasswordEdit">
-        <div class="post-list">
-          <div class="post-card" v-for="post in myPosts" :key="post.id" @click="openPost(post.id)">
-            <div class="post-header">
-              <span class="post-category-tag" :class="post.category">{{ categoryLabel(post.category) }}</span>
-              <span class="post-time">{{ formatTime(post.time) }}</span>
+        <section v-if="!showEdit && !showPasswordEdit" class="stack">
+          <article class="post-card" v-for="post in visiblePosts" :key="post.id" @click="openPost(post.id)">
+            <div class="meta">
+              <span>{{ categoryLabel(post.category) }}</span>
+              <span>{{ formatTime(post.time) }}</span>
             </div>
-            <div class="post-title">{{ post.title }}</div>
-            <div class="post-desc">{{ post.content.substring(0, 100) }}{{ post.content.length > 100 ? '...' : '' }}</div>
-            <div class="post-stats-row">
+            <h2>{{ post.title }}</h2>
+            <p>{{ post.content }}</p>
+            <div class="stats">
               <span><i class="ri-eye-line"></i> {{ post.views }}</span>
               <span><i class="ri-chat-3-line"></i> {{ countComments(post.comments) }}</span>
               <span><i class="ri-heart-3-line"></i> {{ post.likes || 0 }}</span>
             </div>
-          </div>
-        </div>
-        <div class="empty-state" v-if="myPosts.length === 0">
-          <p>还没有发布过帖子</p>
-          <router-link to="/community" class="go-link"><i class="ri-arrow-right-line"></i> 去社区发帖</router-link>
-        </div>
-      </div>
+          </article>
+          <div v-if="!visiblePosts.length" class="empty">{{ profileTab === 'posts' ? '还没有发布过帖子' : '还没有收藏的帖子' }}</div>
+        </section>
+      </main>
 
-      <!-- 我的收藏 -->
-      <div class="panel" v-show="profileTab === 'favorites' && !showEdit && !showPasswordEdit">
-        <div class="post-list">
-          <div class="post-card" v-for="post in favPosts" :key="post.id" @click="openPost(post.id)">
-            <div class="post-header">
-              <span class="post-category-tag" :class="post.category">{{ categoryLabel(post.category) }}</span>
-              <span class="post-time">{{ formatTime(post.time) }}</span>
-            </div>
-            <div class="post-title">{{ post.title }}</div>
-            <div class="post-desc">{{ post.content.substring(0, 100) }}{{ post.content.length > 100 ? '...' : '' }}</div>
-            <div class="post-stats-row">
-              <span><i class="ri-eye-line"></i> {{ post.views }}</span>
-              <span><i class="ri-chat-3-line"></i> {{ countComments(post.comments) }}</span>
-              <span><i class="ri-heart-3-line"></i> {{ post.likes || 0 }}</span>
-            </div>
-          </div>
-        </div>
-        <div class="empty-state" v-if="favPosts.length === 0">
-          <p>还没有收藏的帖子</p>
-          <router-link to="/community" class="go-link"><i class="ri-arrow-right-line"></i> 去社区逛逛</router-link>
-        </div>
-      </div>
-    </div><!-- container 登录态 -->
-
-    <!-- 未登录提示 -->
-    <div class="container" v-else>
-      <div class="login-prompt">
-        <i class="ri-lock-line"></i>
-        <h2>请先登录</h2>
-        <p>登录后即可查看个人主页</p>
-        <router-link to="/login" class="login-link"><i class="ri-login-box-line"></i> 去登录</router-link>
-        <router-link to="/" class="back-home-link"><i class="ri-arrow-left-line"></i> 返回首页</router-link>
-      </div>
+      <main class="container" v-else>
+        <section class="login-prompt">
+          <i class="ri-lock-line"></i>
+          <h2>请先登录</h2>
+          <p>登录后即可查看个人主页</p>
+          <router-link to="/login" class="login-link">去登录</router-link>
+        </section>
+      </main>
     </div>
-    </div><!-- page-scroll -->
-  <!-- 回到顶部 -->
-  <button class="back-to-top" v-show="showBackTop" @click="scrollToTop"><i class="ri-arrow-up-line"></i></button>
-  </div><!-- page-layout -->
-
+    <button class="back-to-top" v-show="showBackTop" @click="scrollToTop"><i class="ri-arrow-up-line"></i></button>
+  </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { logout as apiLogout } from '../api/auth'
+import { isApiLoggedIn } from '../api/http'
+import { changePassword as apiChangePassword, getCurrentUser as apiGetCurrentUser, listMyCollections, listMyPosts, updateProfile as apiUpdateProfile, uploadAvatar } from '../api/profile'
 
 const router = useRouter()
-
-const PROFILE_KEY = 'cosmos_profile'
-const COMMUNITY_KEY = 'cosmos_community_posts'
-
 const profileTab = ref('posts')
 const showEdit = ref(false)
 const showPasswordEdit = ref(false)
 const isLoggedIn = ref(false)
+const profile = ref({ id: '', nickname: '星际旅人', bio: '' })
+const editForm = ref({ nickname: '', bio: '' })
+const passwordForm = ref({ oldPwd: '', newPwd: '', confirmPwd: '' })
+const myPosts = ref([])
+const favPosts = ref([])
+const avatarInput = ref(null)
+const visiblePosts = computed(() => profileTab.value === 'posts' ? myPosts.value : favPosts.value)
 
-// Back to top
 const showBackTop = ref(false)
 const contentRef = ref(null)
 function onContentScroll() {
@@ -197,252 +124,146 @@ function scrollToTop() {
   contentRef.value?.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
-const avatarOptions = [
-  { icon: 'ri-user-star-line' },
-  { icon: 'ri-rocket-line' },
-  { icon: 'ri-planet-line' },
-  { icon: 'ri-spaceship-line' },
-  { icon: 'ri-meteor-line' },
-  { icon: 'ri-sun-line' },
-  { icon: 'ri-moon-line' },
-  { icon: 'ri-star-line' },
-  { icon: 'ri-shield-star-line' },
-  { icon: 'ri-code-s-slash-line' },
-  { icon: 'ri-bug-line' },
-  { icon: 'ri-terminal-box-line' },
-]
-
-const profile = ref({
-  id: '',
-  nickname: '星际旅人',
-  bio: '',
-  avatar: 'ri-rocket-line',
-  favorites: []
-})
-
-const editForm = ref({ nickname: '', bio: '', avatar: 'ri-rocket-line' })
-const passwordForm = ref({ oldPwd: '', newPwd: '', confirmPwd: '' })
-
-const avatarStyle = computed(() => {
-  const colors = ['linear-gradient(135deg, #3a7bd5, #5fa3f0)', 'linear-gradient(135deg, #c05c3e, #d97a5c)', 'linear-gradient(135deg, #d4b78c, #b89a6e)', 'linear-gradient(135deg, #6ab0d6, #9fc5e8)', 'linear-gradient(135deg, #8a6db8, #b095e0)']
-  const idx = profile.value.nickname.charCodeAt(0) % colors.length
-  return { background: colors[idx] }
-})
-
-const categoryNames = { frontend: '前端', backend: '后端', mobile: '移动端', ai: '人工智能', cloud: '云计算', database: '数据库', devops: '运维', security: '安全', testing: '测试', product: '产品' }
-function categoryLabel(id) { return categoryNames[id] || id }
-
-function loadProfile() {
-  try {
-    const saved = JSON.parse(localStorage.getItem(PROFILE_KEY))
-    if (saved) profile.value = { ...profile.value, ...saved }
-  } catch { /* ignore */ }
-  // 确保存在稳定 id
-  if (!profile.value.id) {
-    profile.value.id = 'u_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 6)
-    saveProfileToStorage()
+function mapPost(post) {
+  return {
+    id: post.postId,
+    category: post.category?.code || 'tech',
+    title: post.title || '',
+    content: post.summary || '',
+    time: post.createdAt,
+    views: post.viewCount || 0,
+    likes: post.likeCount || 0,
+    comments: Array.from({ length: post.commentCount || 0 }, (_, i) => ({ id: i }))
   }
 }
 
-function saveProfileToStorage() {
-  localStorage.setItem(PROFILE_KEY, JSON.stringify(profile.value))
+async function loadProfile() {
+  const user = await apiGetCurrentUser()
+  profile.value = {
+    id: String(user.userId || user.id || ''),
+    nickname: user.nickname || 'COSMOS',
+    bio: user.bio || '',
+    avatarUrl: user.avatarUrl || ''
+  }
+  editForm.value = { nickname: profile.value.nickname, bio: profile.value.bio }
+  const [postsPage, favPage] = await Promise.all([
+    listMyPosts({ page: 1, size: 50 }),
+    listMyCollections({ page: 1, size: 50 })
+  ])
+  myPosts.value = (postsPage.records || []).map(mapPost)
+  favPosts.value = (favPage.records || []).map(mapPost)
 }
 
 function toggleEdit() {
   showEdit.value = !showEdit.value
   if (showEdit.value) showPasswordEdit.value = false
 }
-
 function togglePasswordEdit() {
   showPasswordEdit.value = !showPasswordEdit.value
   if (showPasswordEdit.value) showEdit.value = false
 }
 
-function doLogout() {
-  if (confirm('确定要退出登录吗？')) {
-    localStorage.removeItem('cosmos_logged_in')
-    router.push('/')
+async function doLogout() {
+  await apiLogout()
+  router.push('/')
+}
+
+async function saveProfile() {
+  if (!editForm.value.nickname.trim()) {
+    alert('昵称不能为空')
+    return
   }
-}
-
-function saveProfile() {
-  const { nickname, bio, avatar } = editForm.value
-  if (!nickname.trim()) { alert('昵称不能为空'); return }
-  profile.value.nickname = nickname.trim()
-  profile.value.bio = bio.trim()
-  profile.value.avatar = avatar
-  saveProfileToStorage()
+  await apiUpdateProfile({ nickname: editForm.value.nickname.trim(), bio: editForm.value.bio.trim() })
+  profile.value.nickname = editForm.value.nickname.trim()
+  profile.value.bio = editForm.value.bio.trim()
   showEdit.value = false
-  alert('资料已更新')
 }
 
-function savePassword() {
+async function savePassword() {
   const { oldPwd, newPwd, confirmPwd } = passwordForm.value
-  if (!oldPwd) { alert('请输入当前密码'); return }
-  if (!newPwd) { alert('请输入新密码'); return }
-  if (newPwd !== confirmPwd) { alert('两次输入的新密码不一致'); return }
-  const savedPwd = localStorage.getItem('cosmos_password') || ''
-  if (savedPwd && oldPwd !== savedPwd) { alert('当前密码错误'); return }
-  localStorage.setItem('cosmos_password', newPwd)
+  if (!oldPwd || !newPwd) {
+    alert('请填写密码')
+    return
+  }
+  if (newPwd !== confirmPwd) {
+    alert('两次输入的新密码不一致')
+    return
+  }
+  await apiChangePassword({ oldPassword: oldPwd, newPassword: newPwd })
   passwordForm.value = { oldPwd: '', newPwd: '', confirmPwd: '' }
   showPasswordEdit.value = false
-  alert('密码修改成功')
 }
 
-function getCommunityData() {
-  try { return JSON.parse(localStorage.getItem(COMMUNITY_KEY)) || [] }
-  catch { return [] }
-}
-
-const allPosts = computed(() => getCommunityData())
-
-// 真实过滤：按 authorId 取当前用户发布的帖子
-const myPosts = computed(() => {
-  return allPosts.value
-    .filter(p => p.authorId && p.authorId === profile.value.id)
-    .sort((a, b) => new Date(b.time) - new Date(a.time))
-})
-
-const favPosts = computed(() => {
-  const favIds = profile.value.favorites || []
-  return allPosts.value
-    .filter(p => favIds.includes(p.id))
-    .sort((a, b) => new Date(b.time) - new Date(a.time))
-})
-
-function countComments(comments) {
-  if (!comments || !comments.length) return 0
-  let count = 0
-  function countRec(arr) {
-    arr.forEach(c => { count++; if (c.replies) countRec(c.replies) })
+async function uploadAvatarFile(event) {
+  const file = event.target.files?.[0]
+  event.target.value = ''
+  if (!file) return
+  try {
+    const url = await uploadAvatar(file)
+    profile.value.avatarUrl = url
+    alert('头像已更新')
+  } catch (e) {
+    alert(e.message || '头像上传失败')
   }
-  countRec(comments)
-  return count
 }
 
-function formatTime(dateStr) {
-  const d = new Date(dateStr)
-  return `${d.getMonth() + 1}月${d.getDate()}日 ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+const categoryNames = { tech: '技术', life: '生活', film: '影视', travel: '旅行', gaming: '游戏', art: '艺术' }
+function categoryLabel(id) { return categoryNames[id] || id }
+function countComments(comments) { return comments?.length || 0 }
+function formatTime(value) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  return `${date.getMonth() + 1}月${date.getDate()}日 ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
 }
-
-// 点击帖子跳转到社区详情页（携带 postId）
 function openPost(postId) {
   router.push({ path: '/community', query: { postId } })
 }
 
-onMounted(() => {
-  isLoggedIn.value = localStorage.getItem('cosmos_logged_in') === 'true'
-  loadProfile()
-  editForm.value = { nickname: profile.value.nickname, bio: profile.value.bio, avatar: profile.value.avatar || 'ri-rocket-line' }
-  passwordForm.value = { oldPwd: '', newPwd: '', confirmPwd: '' }
+onMounted(async () => {
+  isLoggedIn.value = isApiLoggedIn()
+  if (!isLoggedIn.value) return
+  try {
+    await loadProfile()
+  } catch (e) {
+    console.warn('Load profile failed', e)
+  }
 })
 </script>
 
 <style scoped>
-/* Theme vars for back-to-top */
-.page-layout {
-  --bt-bg: rgba(204,177,131,0.25);
-  --bt-border: rgba(204,177,131,0.45);
-  --bt-color: #fff;
-  --bt-hover-bg: rgba(204,177,131,0.45);
-  --bt-shadow: rgba(204,177,131,0.3);
-}
-.container { position: relative; z-index: 1; max-width: 800px; margin: 0 auto; padding: 20px 20px; }
-.tabs-container { padding-top: 12px; padding-bottom: 12px; }
-/* 固定区个人信息卡容器：压缩上下间距，移除卡片底部 margin */
-.profile-fixed-container { padding-top: 14px; padding-bottom: 4px; }
-.profile-fixed-container .profile-card { margin-bottom: 0; padding: 18px 22px; }
-.profile-fixed-container .profile-header { gap: 16px; }
-.profile-fixed-container .avatar { width: 72px; height: 72px; font-size: 1.8rem; }
-.profile-fixed-container .profile-info h2 { font-size: 1.2rem; }
-.profile-fixed-container .profile-bio { font-size: 0.85rem; margin-top: 4px; }
-.profile-fixed-container .profile-stats { margin-top: 8px; gap: 14px; }
-/* 滚动区编辑卡 */
-.edit-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid rgba(255,255,255,0.1); }
-.edit-card-header h3 { font-size: 1.05rem; font-weight: 500; color: #e8eef7; display: flex; align-items: center; gap: 8px; }
-.edit-panel.standalone { margin-top: 0; padding-top: 0; border-top: none; }
-.header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0; padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.2); }
+.page-layout { --bt-bg: rgba(204,177,131,0.25); --bt-border: rgba(204,177,131,0.45); --bt-color: #fff; --bt-hover-bg: rgba(204,177,131,0.45); --bt-shadow: rgba(204,177,131,0.3); }
+.container { position: relative; z-index: 1; max-width: 860px; margin: 0 auto; padding: 20px; }
+.header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.2); }
 .header-left { display: flex; align-items: center; gap: 15px; }
-.planet-icon { line-height: 1; display: flex; align-items: center; }
-.header-title h1 { font-size: 1.8rem; font-weight: 300; letter-spacing: 4px; background: linear-gradient(135deg, #ffffff, #c5d5ea); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-.header-title p { font-size: 0.85rem; opacity: 0.7; margin-top: 2px; }
-.back-btn { padding: 8px 20px; border-radius: 30px; background: rgba(144,166,196,0.1); border: 1px solid rgba(144,166,196,0.25); color: #c5d5ea; cursor: pointer; text-decoration: none; transition: 0.3s; font-size: 0.9rem; }
-.back-btn:hover { background: rgba(144,166,196,0.2); box-shadow: 0 0 15px rgba(144,166,196,0.2); }
-.planet-sphere { width: 36px; height: 36px; border-radius: 50%; position: relative; flex-shrink: 0; }
-.planet-sphere.sun { background: radial-gradient(circle at 35% 35%, #f6deab, #e7bc6b 40%, #c89a50 70%, #7a5224 100%); box-shadow: 0 0 16px rgba(204,177,131,0.7), 0 0 32px rgba(230,175,95,0.4), 0 0 50px rgba(220,160,80,0.2), inset 0 0 6px rgba(255,255,255,0.2); }
-.planet-sphere.sun::after { content: ''; position: absolute; inset: 8% 22% 38% 18%; background: rgba(255,255,255,0.2); border-radius: 50%; }
-.tabs { display: flex; gap: 10px; }
-.tab { padding: 10px 24px; border-radius: 30px; cursor: pointer; background: rgba(144,166,196,0.06); border: 1px solid rgba(144,166,196,0.15); color: #a8bcd4; transition: 0.3s; font-size: 0.95rem; }
-.tab.active, .tab:hover { background: rgba(144,166,196,0.15); border-color: rgba(144,166,196,0.35); color: #fff; box-shadow: 0 0 15px rgba(144,166,196,0.1); }
-.empty-state { text-align: center; padding: 60px 20px; opacity: 0.5; }
-.empty-state p { margin-bottom: 12px; }
-.go-link { color: #c5d5ea; text-decoration: none; transition: 0.3s; }
-.go-link:hover { color: #e8eef7; }
-
-/* Profile Card */
-.profile-card { border: 1px solid rgba(144,166,196,0.18); border-radius: 20px; padding: 28px; margin-bottom: 22px; backdrop-filter: blur(10px); box-shadow: 0 8px 28px rgba(0,0,0,0.25); }
-.profile-header { display: flex; align-items: center; gap: 20px; }
-.avatar { width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: bold; color: #fff; flex-shrink: 0; box-shadow: 0 0 20px rgba(144,166,196,0.35); }
-.avatar i { font-size: 30px; }
-.profile-info { flex: 1; min-width: 0; }
-.profile-info h2 { font-size: 1.3rem; font-weight: 400; color: #fff; margin-bottom: 4px; }
-.profile-bio { font-size: 0.85rem; opacity: 0.6; margin-bottom: 8px; }
-.profile-stats { display: flex; gap: 20px; font-size: 0.85rem; opacity: 0.7; }
-.edit-btn { padding: 8px 16px; border-radius: 20px; border: 1px solid rgba(144,166,196,0.25); background: rgba(144,166,196,0.08); color: #c5d5ea; cursor: pointer; font-size: 0.85rem; transition: 0.3s; white-space: nowrap; }
-.edit-btn:hover { background: rgba(144,166,196,0.18); }
-.action-btns { display: flex; gap: 8px; flex-wrap: wrap; }
-.logout-btn { padding: 8px 16px; border-radius: 20px; border: 1px solid rgba(255,80,80,0.3); background: rgba(255,80,80,0.1); color: #ff9999; cursor: pointer; font-size: 0.85rem; transition: 0.3s; white-space: nowrap; }
-.logout-btn:hover { background: rgba(255,80,80,0.25); }
-.section-title { font-weight: 400; margin-bottom: 16px; color: #e8eef7; letter-spacing: 2px; font-size: 1.05rem; }
-
-/* Avatar Picker */
-.avatar-picker { display: flex; flex-wrap: wrap; gap: 10px; }
-.avatar-option { width: 44px; height: 44px; border-radius: 50%; background: rgba(144,166,196,0.06); border: 1px solid rgba(144,166,196,0.15); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 20px; color: #a8bcd4; transition: 0.3s; }
-.avatar-option:hover { background: rgba(144,166,196,0.15); }
-.avatar-option.active { border-color: rgba(144,166,196,0.6); background: rgba(144,166,196,0.3); box-shadow: 0 0 10px rgba(144,166,196,0.4); color: #fff; }
-
-/* Edit Panel */
-.edit-panel { margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); }
-.edit-panel .form-group { margin-bottom: 14px; }
-.edit-panel label { display: block; margin-bottom: 6px; font-size: 0.85rem; opacity: 0.7; }
-.edit-panel input, .edit-panel textarea { width: 100%; padding: 10px 14px; border-radius: 10px; background: rgba(18,22,34,0.6); border: 1px solid rgba(144,166,196,0.25); color: #e8eef7; font-family: inherit; font-size: 0.9rem; outline: none; transition: 0.3s; }
-.edit-panel input:focus, .edit-panel textarea:focus { border-color: rgba(144,166,196,0.45); }
-.save-btn { padding: 10px 28px; border-radius: 24px; border: none; background: linear-gradient(135deg, #7890b5, #a8bcd4); color: #fff; cursor: pointer; font-size: 0.9rem; transition: 0.3s; font-weight: 500; }
-.save-btn:hover { box-shadow: 0 0 20px rgba(144,166,196,0.5); }
-
-/* Login Prompt */
-.login-prompt { text-align: center; padding: 80px 20px; }
-.login-prompt > i { font-size: 4rem; color: rgba(255,255,255,0.3); display: block; margin-bottom: 20px; }
-.login-prompt h2 { font-size: 1.5rem; font-weight: 300; margin-bottom: 10px; color: #fff; }
-.login-prompt p { opacity: 0.5; margin-bottom: 30px; }
-.login-link { display: inline-block; padding: 12px 36px; border-radius: 30px; background: linear-gradient(135deg, #7890b5, #a8bcd4); color: #fff; text-decoration: none; font-size: 1rem; transition: 0.3s; margin-bottom: 15px; font-weight: 500; }
-.login-link:hover { box-shadow: 0 0 20px rgba(144,166,196,0.5); }
-.back-home-link { display: block; color: rgba(255,255,255,0.5); text-decoration: none; font-size: 0.9rem; transition: 0.3s; }
-.back-home-link:hover { color: #fff; }
-
-/* Posts */
-.panel { display: block; }
-.post-list { display: flex; flex-direction: column; gap: 12px; }
-.post-card { background: rgba(22,26,44,0.62); border: 1px solid rgba(144,166,196,0.18); border-radius: 16px; padding: 20px; cursor: pointer; transition: 0.3s; }
-.post-card:hover { border-color: rgba(144,166,196,0.3); box-shadow: 0 5px 25px rgba(0,0,0,0.2); transform: translateY(-2px); }
-.post-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-.post-category-tag { display: inline-block; padding: 3px 10px; border-radius: 10px; font-size: 0.75rem; background: rgba(144,166,196,0.15); color: #c5d5ea; border: 1px solid rgba(144,166,196,0.3); text-transform: capitalize; }
-.post-category-tag.frontend { background: rgba(58,180,120,0.2); color: #7ee8a0; border-color: rgba(58,180,120,0.3); }
-.post-category-tag.backend { background: rgba(58,123,213,0.2); color: #88bbff; border-color: rgba(58,123,213,0.3); }
-.post-category-tag.ai { background: rgba(138,109,184,0.2); color: #c8b5e8; border-color: rgba(138,109,184,0.3); }
-.post-time { font-size: 0.8rem; opacity: 0.5; }
-.post-title { font-size: 1.05rem; margin-bottom: 6px; color: #fff; font-weight: 500; }
-.post-desc { font-size: 0.85rem; opacity: 0.6; line-height: 1.5; }
-.post-stats-row { display: flex; gap: 16px; margin-top: 10px; font-size: 0.8rem; opacity: 0.5; }
-
-@media (max-width: 768px) {
-  .container { padding: 15px 12px 60px; }
-  .header { flex-direction: column; align-items: flex-start; gap: 12px; }
-  .header-title h1 { font-size: 1.4rem; }
-  .planet-sphere { width: 28px; height: 28px; }
-  .profile-header { flex-wrap: wrap; }
-  .avatar { width: 52px; height: 52px; font-size: 22px; }
-  .tabs { gap: 6px; flex-wrap: wrap; }
-  .tab { padding: 8px 14px; font-size: 0.85rem; }
-}
+.header h1 { font-size: 1.8rem; font-weight: 300; letter-spacing: 4px; background: linear-gradient(135deg, #fff, #c5d5ea); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.header p { font-size: 0.85rem; opacity: 0.7; margin-top: 2px; }
+.planet-sphere { width: 36px; height: 36px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #f6deab, #e7bc6b 40%, #7a5224); box-shadow: 0 0 22px rgba(230,175,95,0.45); }
+.back-btn, button { border: 1px solid rgba(144,166,196,0.25); background: rgba(144,166,196,0.08); color: #c5d5ea; cursor: pointer; transition: 0.25s; }
+.back-btn { padding: 8px 20px; border-radius: 30px; text-decoration: none; }
+button { padding: 8px 16px; border-radius: 20px; }
+button.active, button:hover, .back-btn:hover { background: rgba(144,166,196,0.18); color: #fff; }
+.danger { border-color: rgba(255,80,80,0.35); color: #ff9999; }
+.profile-card, .card, .post-card { border: 1px solid rgba(144,166,196,0.18); border-radius: 18px; padding: 22px; background: rgba(12,18,34,0.45); backdrop-filter: blur(10px); }
+.profile-card { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.avatar { width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #d4b78c, #b89a6e); color: #fff; font-size: 1.8rem; }
+.avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block; }
+.profile-info { flex: 1; min-width: 220px; }
+.profile-info h2 { color: #fff; margin-bottom: 4px; }
+.profile-info p { opacity: 0.65; }
+.actions, .stats, .tabs { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.stats { margin-top: 8px; opacity: 0.72; font-size: 0.86rem; }
+.tabs { margin-top: 14px; }
+.stack { display: flex; flex-direction: column; gap: 12px; }
+.post-card { cursor: pointer; transition: 0.25s; }
+.post-card:hover { transform: translateY(-2px); border-color: rgba(144,166,196,0.35); }
+.post-card h2 { color: #fff; margin: 8px 0; }
+.post-card p { opacity: 0.68; line-height: 1.55; }
+.meta { display: flex; justify-content: space-between; gap: 12px; color: #a8bcd4; font-size: 0.82rem; }
+.form { display: flex; flex-direction: column; gap: 10px; }
+input, textarea { width: 100%; box-sizing: border-box; padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(144,166,196,0.25); background: rgba(5,12,26,0.72); color: #e8eef7; font-family: inherit; }
+.primary { width: fit-content; background: linear-gradient(135deg, #7890b5, #a8bcd4); color: #fff; border: none; }
+.empty, .login-prompt { text-align: center; padding: 70px 20px; opacity: 0.7; }
+.login-prompt > i { font-size: 3rem; display: block; margin-bottom: 16px; }
+.login-link { display: inline-block; margin-top: 18px; padding: 10px 28px; border-radius: 24px; background: linear-gradient(135deg, #7890b5, #a8bcd4); color: #fff; text-decoration: none; }
+@media (max-width: 768px) { .container { padding: 15px 12px 60px; } .header { flex-direction: column; align-items: flex-start; gap: 12px; } .header h1 { font-size: 1.4rem; } }
 </style>

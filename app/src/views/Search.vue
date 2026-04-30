@@ -63,6 +63,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { globalSearch, searchByType } from '../api/search'
 
 const query = ref('')
 const filter = ref('all')
@@ -118,10 +119,29 @@ function highlight(text) {
   return escapeHtml(text).replace(regex, '<span class="highlight">$1</span>')
 }
 
-function doSearch() {
+async function doSearch() {
   const q = query.value.trim().toLowerCase()
   searched.value = true
   if (!q) { results.value = []; return }
+  try {
+    if (filter.value === 'all') {
+      const data = await globalSearch(q, 10)
+      results.value = [
+        ...(data.posts || []).map(toResult),
+        ...(data.news || []).map(toResult),
+        ...(data.videos || []).map(toResult)
+      ]
+      return
+    }
+    const typeMap = { community: 'post', hot: 'news', theater: 'video' }
+    if (typeMap[filter.value]) {
+      const page = await searchByType(typeMap[filter.value], q, 1, 20)
+      results.value = (page.records || []).map(toResult)
+      return
+    }
+  } catch (e) {
+    console.warn('API search failed, fallback to local data', e)
+  }
   const out = []
 
   if (filter.value === 'all' || filter.value === 'community') {
@@ -149,6 +169,30 @@ function doSearch() {
     toolsData.forEach(t => { if (t.title.toLowerCase().includes(q) || t.desc.toLowerCase().includes(q)) { out.push({ ...t, meta: '<i class="ri-tools-line"></i> 自助工具', type: 'tools', typeLabel: '工具', icon: '<i class="ri-tools-line"></i>' }) } })
   }
   results.value = out
+}
+
+function toResult(item) {
+  const type = item.type === 'post' ? 'community' : item.type === 'news' ? 'hot' : item.type === 'video' ? 'theater' : item.type
+  const labels = { community: '绀惧尯', hot: '鐑偣', theater: '鍓у満' }
+  const icons = {
+    community: '<i class="ri-earth-line"></i>',
+    hot: '<i class="ri-fire-line"></i>',
+    theater: '<i class="ri-movie-line"></i>'
+  }
+  const urls = {
+    community: `/community?postId=${encodeURIComponent(item.id)}`,
+    hot: '/hot',
+    theater: '/theater'
+  }
+  return {
+    title: item.title || '',
+    desc: item.summary || '',
+    meta: `<i class="ri-eye-line"></i> ${item.viewCount || 0}`,
+    type,
+    typeLabel: labels[type] || type,
+    icon: icons[type] || '<i class="ri-search-line"></i>',
+    url: urls[type] || '/'
+  }
 }
 
 // Back to top

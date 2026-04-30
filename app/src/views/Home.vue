@@ -36,6 +36,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import * as THREE from 'three'
 import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js'
+import { isApiLoggedIn } from '../api/http'
 
 const router = useRouter()
 const sceneContainer = ref(null)
@@ -52,7 +53,7 @@ function goToLink() {
 const isLoggedIn = ref(false)
 
 function checkLogin() {
-  isLoggedIn.value = localStorage.getItem('cosmos_logged_in') === 'true'
+  isLoggedIn.value = isApiLoggedIn()
 }
 
 
