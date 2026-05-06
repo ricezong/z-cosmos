@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小型搜索引擎 - Mini Search Engine</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="nav-brand">
+            <span class="nav-icon">&#128269;</span>
+            <span class="nav-title">Mini Search Engine</span>
+        </div>
+        <div class="nav-links">
+            <a href="#" class="nav-link active" data-page="search">搜索</a>
+            <a href="#" class="nav-link" data-page="crawl">搜集</a>
+            <a href="#" class="nav-link" data-page="analysis">分析</a>
+            <a href="#" class="nav-link" data-page="index">索引</a>
+            <a href="#" class="nav-link" data-page="stats">统计</a>
+        </div>
+    </nav>
+
+    <!-- 搜索页面 -->
+    <div id="page-search" class="page active">
+        <div class="search-hero">
+            <h1 class="search-title">Mini Search Engine</h1>
+            <p class="search-subtitle">从零构建的小型搜索引擎</p>
+            <div class="search-box">
+                <input type="text" id="searchInput" class="search-input" placeholder="输入搜索关键词..." autocomplete="off">
+                <button id="searchBtn" class="search-btn">搜索</button>
+            </div>
+        </div>
+        <div id="searchResults" class="search-results"></div>
+    </div>
+
+    <!-- 搜集页面 -->
+    <div id="page-crawl" class="page">
+        <div class="container">
+            <h2 class="page-title">搜集模块 <small>Crawling</small></h2>
+            <p class="page-desc">对应博客中的 links.bin（URL队列）和 bloom_filter.bin（布隆过滤器去重）</p>
+
+            <div class="card-grid">
+                <div class="card">
+                    <h3>添加URL到队列</h3>
+                    <div class="form-group">
+                        <input type="text" id="crawlUrl" class="form-input" placeholder="输入URL，例如 https://example.com">
+                        <button id="addUrlBtn" class="btn btn-primary">添加到队列</button>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3>爬取控制</h3>
+                    <div class="form-group">
+                        <label>最大爬取页数：</label>
+                        <input type="number" id="maxPages" class="form-input" value="10" min="1" max="100">
+                        <div class="btn-group">
+                            <button id="startCrawlBtn" class="btn btn-success">开始爬取</button>
+                            <button id="stopCrawlBtn" class="btn btn-danger">停止</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>爬取队列 <span id="queueCount" class="badge">0</span></h3>
+                <div id="crawlQueue" class="data-list">
+                    <p class="empty-text">暂无待爬取的URL</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>已爬取网页 <span id="crawledCount" class="badge">0</span></h3>
+                <div id="crawledPages" class="data-list">
+                    <p class="empty-text">暂无已爬取的网页</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 分析页面 -->
+    <div id="page-analysis" class="page">
+        <div class="container">
+            <h2 class="page-title">分析模块 <small>Analysis</small></h2>
+            <p class="page-desc">对应博客中的"抽取网页文本信息"和"分词并创建临时索引"</p>
+
+            <div class="card-grid">
+                <div class="card">
+                    <h3>分析操作</h3>
+                    <div class="btn-group">
+                        <button id="analyzeAllBtn" class="btn btn-primary">分析所有网页</button>
+                    </div>
+                    <p class="help-text">对已爬取的网页进行文本提取和分词处理</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>高频词语 Top 50 <span class="badge">词表</span></h3>
+                <div id="topTerms" class="tag-cloud">
+                    <p class="empty-text">请先分析网页</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 索引页面 -->
+    <div id="page-index" class="page">
+        <div class="container">
+            <h2 class="page-title">索引模块 <small>Indexing</small></h2>
+            <p class="page-desc">对应博客中的"构建倒排索引"和 term_offset.bin</p>
+
+            <div class="card-grid">
+                <div class="card">
+                    <h3>索引操作</h3>
+                    <div class="btn-group">
+                        <button id="buildIndexBtn" class="btn btn-primary">构建倒排索引</button>
+                        <button id="clearIndexBtn" class="btn btn-danger">清空索引</button>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3>查询词语索引</h3>
+                    <div class="form-group">
+                        <input type="text" id="termLookup" class="form-input" placeholder="输入词语查看倒排索引">
+                        <button id="lookupBtn" class="btn btn-primary">查询</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>倒排索引详情 <span id="indexDetailCount" class="badge">0</span></h3>
+                <div id="indexDetail" class="data-list">
+                    <p class="empty-text">请先查询词语索引</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>词语偏移量表 (term_offset) <span id="termOffsetCount" class="badge">0</span></h3>
+                <div id="termOffsetList" class="table-wrapper">
+                    <p class="empty-text">请先构建索引</p>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- 统计页面 -->
+    <div id="page-stats" class="page">
+        <div class="container">
+            <h2 class="page-title">系统统计 <small>Statistics</small></h2>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="statTotalPages">0</div>
+                    <div class="stat-label">总网页数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statCrawled">0</div>
+                    <div class="stat-label">已爬取</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statAnalyzed">0</div>
+                    <div class="stat-label">已分析</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statIndexed">0</div>
+                    <div class="stat-label">已索引</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statTerms">0</div>
+                    <div class="stat-label">词语数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statIndexRecords">0</div>
+                    . . .
+            </div>
+
+            <div class="card">
+                <h3>系统架构说明</h3>
+                <div class="arch-diagram">
+                    <div class="arch-flow">
+                        <div class="arch-node">
+                            <div class="arch-icon">&#128269;</div>
+                            <div class="arch-label">用户查询</div>
+                        </div>
+                        <div class="arch-arrow">&#8594;</div>
+                        <div class="arch-node">
+                            <div class="arch-icon">&#128221;</div>
+                            <div class="arch-label">分词</div>
+                        </div>
+                        <div class="arch-arrow">&#8594;</div>
+                        <div class="arch-node">
+                            <div class="arch-icon">&#128202;</div>
+                            <div class="arch-label">查term_id</div>
+                        </div>
+                        <div class="arch-arrow">&#8594;</div>
+                        <div class="arch-node">
+                            <div class="arch-icon">&#128196;</div>
+                            . . .
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast通知 -->
+    <div id="toast" class="toast"></div>
+
+    <script src="/js/app.js"></script>
+</body>
+</html>

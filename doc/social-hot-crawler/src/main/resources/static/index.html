@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>社交媒体热点聚合 - Social Hot Aggregator</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<!-- 顶部导航 -->
+<nav class="navbar">
+    <div class="nav-brand">
+        <span class="nav-logo">&#127752;</span>
+        <span class="nav-title">热点聚合</span>
+    </div>
+    <div class="nav-tabs" id="navTabs">
+        <button class="tab active" data-tab="dashboard">&#128202; 总览</button>
+        <button class="tab" data-tab="hot">&#128293; 热点</button>
+        <button class="tab" data-tab="comments">&#128172; 评论</button>
+        <button class="tab" data-tab="platforms">&#9881; 平台</button>
+    </div>
+    <div class="nav-search">
+        <input type="text" id="globalSearch" placeholder="搜索热点或评论..." class="search-input-sm">
+    </div>
+</nav>
+
+<!-- ==================== 总览页 ==================== -->
+<div id="tab-dashboard" class="tab-content active">
+    <div class="container">
+        <!-- 统计卡片 -->
+        <div class="stats-row">
+            <div class="stat-card accent-blue">
+                <div class="stat-num" id="statTopics">0</div>
+                <div class="stat-label">热点总数</div>
+            </div>
+            <div class="stat-card accent-green">
+                <div class="stat-num" id="statComments">0</div>
+                <div class="stat-label">评论总数</div>
+            </div>
+            <div class="stat-card accent-orange">
+                <div class="stat-num" id="statPlatforms">0</div>
+                <div class="stat-label">已接入平台</div>
+            </div>
+            <div class="stat-card accent-purple">
+                <div class="stat-num" id="statTasks">0</div>
+                <div class="stat-label">爬取任务</div>
+            </div>
+        </div>
+
+        <!-- 平台概览 -->
+        <div class="card">
+            <div class="card-header">
+                <h2>平台概览</h2>
+                <button class="btn btn-primary btn-sm" onclick="crawlAllPlatforms()">一键全平台爬取</button>
+            </div>
+            <div class="platform-grid" id="platformGrid">
+                <!-- 动态渲染 -->
+            </div>
+        </div>
+
+        <!-- 最新热点 -->
+        <div class="card">
+            <div class="card-header">
+                <h2>最新热点</h2>
+                <button class="btn btn-sm" onclick="switchTab('hot')">查看全部 &#8594;</button>
+            </div>
+            <div id="latestTopics" class="topic-list">
+                <div class="empty-state">点击上方"一键全平台爬取"开始采集数据</div>
+            </div>
+        </div>
+
+        <!-- 最近任务 -->
+        <div class="card">
+            <div class="card-header"><h2>最近爬取任务</h2></div>
+            <div id="recentTasks" class="task-list">
+                <div class="empty-state">暂无任务记录</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== 热点页 ==================== -->
+<div id="tab-hot" class="tab-content">
+    <div class="container">
+        <!-- 平台筛选 -->
+        <div class="filter-bar">
+            <div class="platform-filters" id="platformFilters">
+                <button class="filter-btn active" data-platform="all">全部</button>
+                <!-- 动态渲染 -->
+            </div>
+            <button class="btn btn-primary" onclick="crawlSelectedPlatform()">爬取选中平台</button>
+        </div>
+
+        <!-- 热点列表 -->
+        <div id="hotTopicList" class="topic-list">
+            <div class="empty-state">暂无热点数据，请先爬取</div>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== 评论页 ==================== -->
+<div id="tab-comments" class="tab-content">
+    <div class="container">
+        <!-- 话题信息 -->
+        <div class="card" id="commentTopicCard" style="display:none;">
+            <div class="topic-detail-header">
+                <span class="platform-badge" id="commentPlatform"></span>
+                <h2 id="commentTitle"></h2>
+                <p id="commentSummary"></p>
+                <div class="topic-meta">
+                    <span id="commentHeat"></span>
+                    <span id="commentAuthor"></span>
+                </div>
+            </div>
+            <div class="card-actions">
+                <button class="btn btn-primary" id="crawlCommentBtn" onclick="crawlTopicComments()">爬取评论</button>
+                <button class="btn" onclick="switchTab('hot')">&#8592; 返回热点列表</button>
+            </div>
+        </div>
+
+        <!-- 评论列表 -->
+        <div id="commentList" class="comment-list">
+            <div class="empty-state">请先在热点列表中选择一个话题查看评论</div>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== 平台管理页 ==================== -->
+<div id="tab-platforms" class="tab-content">
+    <div class="container">
+        <div class="card">
+            <div class="card-header">
+                <h2>已注册平台适配器</h2>
+            </div>
+            <p class="help-text">
+                系统采用策略模式设计，新增平台只需三步：<br>
+                1. 创建 XxxAdapter implements PlatformAdapter<br>
+                2. 添加 @Component 注解注册为 Spring Bean<br>
+                3. 实现 fetchHotTopics() 和 fetchComments() 方法<br>
+                系统会自动发现并管理新平台。
+            </p>
+            <div id="platformDetailList" class="platform-detail-list">
+                <!-- 动态渲染 -->
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h2>架构说明</h2></div>
+            <div class="arch-diagram">
+                <div class="arch-flow">
+                    <div class="arch-box">
+                        <div class="arch-box-title">CrawlService（调度器）</div>
+                        <div class="arch-box-desc">自动发现所有 PlatformAdapter Bean</div>
+                    </div>
+                    <div class="arch-arrow-col">
+                        <div class="arch-arrow-down">&#8595;</div>
+                    </div>
+                    <div class="arch-box wide">
+                        <div class="arch-box-title">PlatformAdapter 接口（策略模式）</div>
+                        <div class="arch-box-row">
+                            <div class="arch-mini-box">DouyinAdapter</div>
+                            <div class="arch-mini-box">XiaohongshuAdapter</div>
+                            <div class="arch-mini-box">ZhihuAdapter</div>
+                            <div class="arch-mini-box">BilibiliAdapter</div>
+                            <div class="arch-mini-box">WeiboAdapter</div>
+                            <div class="arch-mini-box dashed">未来平台...</div>
+                        </div>
+                    </div>
+                    <div class="arch-arrow-col">
+                        <div class="arch-arrow-down">&#8595;</div>
+                    </div>
+                    <div class="arch-box">
+                        <div class="arch-box-title">统一数据模型</div>
+                        <div class="arch-box-row">
+                            <div class="arch-mini-box">HotTopic</div>
+                            <div class="arch-mini-box">Comment</div>
+                            <div class="arch-mini-box">CrawlTask</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast"></div>
+
+<script src="/js/app.js"></script>
+</body>
+</html>
