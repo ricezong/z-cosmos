@@ -5,7 +5,15 @@
     <div class="page-fixed">
     <header class="header">
       <div class="header-left">
-        <div class="planet-icon"><div class="planet-sphere sun"></div></div>
+        <div class="planet-icon">
+          <div class="sun-halo"></div>
+          <div class="sun-corona"></div>
+          <div class="sun-sphere">
+            <span class="sun-flare flare-1"></span>
+            <span class="sun-flare flare-2"></span>
+            <span class="sun-flare flare-3"></span>
+          </div>
+        </div>
         <div class="header-title">
           <h1>个人主页</h1>
           <p>星际枢纽 · 你的空间</p>
@@ -14,8 +22,8 @@
       <router-link to="/" class="back-btn"><i class="ri-arrow-left-line"></i> 返回星域</router-link>
     </header>
 
-    <!-- 个人信息卡（固定区）：登录态且非编辑态显示 -->
-    <div class="container profile-fixed-container" v-if="isLoggedIn && !showEdit && !showPasswordEdit">
+    <!-- 个人信息卡 -->
+    <div class="container profile-fixed-container" v-if="isLoggedIn && !showEdit">
       <div class="profile-card">
         <div class="profile-header">
           <div class="avatar" :style="avatarStyle">
@@ -36,9 +44,6 @@
             <button class="edit-btn" @click="toggleEdit">
               <i class="ri-edit-line"></i> 编辑资料
             </button>
-            <button class="edit-btn" @click="togglePasswordEdit">
-              <i class="ri-lock-line"></i> 修改密码
-            </button>
             <button class="logout-btn" @click="doLogout">
               <i class="ri-logout-box-r-line"></i> 退出登录
             </button>
@@ -47,7 +52,7 @@
       </div>
     </div>
 
-    <div class="container tabs-container" v-if="isLoggedIn && !showEdit && !showPasswordEdit">
+    <div class="container tabs-container" v-if="isLoggedIn && !showEdit">
       <div class="tabs">
         <div class="tab" :class="{ active: profileTab === 'posts' }" @click="profileTab = 'posts'; loadMyPosts()"><i class="ri-file-text-line"></i> 我的帖子</div>
         <div class="tab" :class="{ active: profileTab === 'favorites' }" @click="profileTab = 'favorites'; loadMyCollections()"><i class="ri-star-line"></i> 我的收藏</div>
@@ -100,39 +105,18 @@
           </div>
           <div class="form-group">
             <label>生日</label>
-            <input type="date" v-model="editForm.birthday">
+            <div class="date-picker-wrap" @click="openDatePicker">
+              <input type="date" v-model="editForm.birthday" ref="birthdayInput">
+            </div>
           </div>
           <button class="save-btn" :disabled="saving" @click="saveProfile"><i class="ri-save-line"></i> {{ saving ? '保存中...' : '保存修改' }}</button>
         </div>
       </div>
 
-      <!-- 修改密码卡（滚动区） -->
-      <div class="profile-card edit-card" v-show="showPasswordEdit">
-        <div class="edit-card-header">
-          <h3><i class="ri-lock-line"></i> 修改密码</h3>
-          <button class="edit-btn" @click="togglePasswordEdit"><i class="ri-close-line"></i> 取消</button>
-        </div>
-        <div class="edit-panel standalone">
-          <div class="form-group">
-            <label>当前密码</label>
-            <input type="password" v-model="passwordForm.oldPassword" placeholder="输入当前密码">
-          </div>
-          <div class="form-group">
-            <label>新密码</label>
-            <input type="password" v-model="passwordForm.newPassword" placeholder="输入新密码 (6-32位)">
-          </div>
-          <div class="form-group">
-            <label>确认新密码</label>
-            <input type="password" v-model="passwordForm.confirmPwd" placeholder="再次输入新密码">
-          </div>
-          <div class="form-error" v-if="passwordError">{{ passwordError }}</div>
-          <button class="save-btn" :disabled="savingPwd" @click="savePassword"><i class="ri-lock-line"></i> {{ savingPwd ? '修改中...' : '修改密码' }}</button>
-        </div>
-      </div>
-
       <!-- 我的帖子 -->
-      <div class="panel" v-show="profileTab === 'posts' && !showEdit && !showPasswordEdit">
-        <div class="post-list" v-if="myPosts.length > 0">
+      <div class="panel" v-show="profileTab === 'posts' && !showEdit">
+        <LoadingSpinner v-if="postsLoading" text="加载中..." />
+        <div class="post-list" v-else-if="myPosts.length > 0">
           <div class="post-card" v-for="post in myPosts" :key="post.postId" @click="openPost(post.postId)">
             <div class="post-header">
               <span class="post-category-tag">{{ post.category?.name || '未分类' }}</span>
@@ -154,8 +138,9 @@
       </div>
 
       <!-- 我的收藏 -->
-      <div class="panel" v-show="profileTab === 'favorites' && !showEdit && !showPasswordEdit">
-        <div class="post-list" v-if="myCollections.length > 0">
+      <div class="panel" v-show="profileTab === 'favorites' && !showEdit">
+        <LoadingSpinner v-if="collectionsLoading" text="加载中..." />
+        <div class="post-list" v-else-if="myCollections.length > 0">
           <div class="post-card" v-for="post in myCollections" :key="post.postId" @click="openPost(post.postId)">
             <div class="post-header">
               <span class="post-category-tag">{{ post.category?.name || '未分类' }}</span>
@@ -195,13 +180,14 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
-import { getCurrentUser, updateProfile, changePassword, uploadAvatar, listMyPosts, listMyCollections } from '../api/profile'
+import { getCurrentUser, updateProfile, uploadAvatar, listMyPosts, listMyCollections } from '../api/profile'
 import { logout as apiLogout } from '../api/auth'
 import { useAuth } from '../composables/useAuth'
 import { useToast } from '../composables/useToast'
 import { useConfirm } from '../composables/useConfirm'
+import LoadingSpinner from '../components/LoadingSpinner.vue'
 
 const router = useRouter()
 const toast = useToast()
@@ -210,10 +196,8 @@ const { isLoggedIn } = useAuth()
 
 const profileTab = ref('posts')
 const showEdit = ref(false)
-const showPasswordEdit = ref(false)
 const saving = ref(false)
-const savingPwd = ref(false)
-const passwordError = ref('')
+const birthdayInput = ref(null)
 
 // Back to top
 const showBackTop = ref(false)
@@ -248,10 +232,10 @@ const editForm = ref({
   birthday: ''
 })
 
-const passwordForm = ref({ oldPassword: '', newPassword: '', confirmPwd: '' })
-
 const myPosts = ref([])
 const myCollections = ref([])
+const postsLoading = ref(false)
+const collectionsLoading = ref(false)
 
 const avatarStyle = computed(() => {
   if (profile.value.avatarUrl) {
@@ -261,6 +245,15 @@ const avatarStyle = computed(() => {
   const idx = ((profile.value.nickname || 'U').charCodeAt(0)) % colors.length
   return { background: colors[idx] }
 })
+
+/** 点击容器时直接唤起日期选择器 */
+function openDatePicker() {
+  nextTick(() => {
+    if (birthdayInput.value) {
+      birthdayInput.value.showPicker?.()
+    }
+  })
+}
 
 async function loadProfile() {
   try {
@@ -282,29 +275,34 @@ async function loadProfile() {
 }
 
 async function loadMyPosts(page = 1) {
+  postsLoading.value = true
   try {
     const data = await listMyPosts({ page, size: 20 })
     myPosts.value = data?.records || []
   } catch (e) {
     console.error('加载我的帖子失败:', e)
     myPosts.value = []
+  } finally {
+    postsLoading.value = false
   }
 }
 
 async function loadMyCollections(page = 1) {
+  collectionsLoading.value = true
   try {
     const data = await listMyCollections({ page, size: 20 })
     myCollections.value = data?.records || []
   } catch (e) {
     console.error('加载我的收藏失败:', e)
     myCollections.value = []
+  } finally {
+    collectionsLoading.value = false
   }
 }
 
 function toggleEdit() {
   showEdit.value = !showEdit.value
   if (showEdit.value) {
-    showPasswordEdit.value = false
     editForm.value = {
       nickname: profile.value.nickname || '',
       bio: profile.value.bio || '',
@@ -314,13 +312,6 @@ function toggleEdit() {
       birthday: profile.value.birthday || ''
     }
   }
-}
-
-function togglePasswordEdit() {
-  showPasswordEdit.value = !showPasswordEdit.value
-  if (showPasswordEdit.value) showEdit.value = false
-  passwordForm.value = { oldPassword: '', newPassword: '', confirmPwd: '' }
-  passwordError.value = ''
 }
 
 async function doLogout() {
@@ -345,7 +336,6 @@ async function saveProfile() {
       location: editForm.value.location?.trim() || '',
       birthday: editForm.value.birthday || null
     })
-    // 重新加载
     await loadProfile()
     showEdit.value = false
     toast.success('资料已更新')
@@ -371,27 +361,6 @@ async function handleAvatarUpload(e) {
   e.target.value = ''
 }
 
-async function savePassword() {
-  passwordError.value = ''
-  const { oldPassword, newPassword, confirmPwd } = passwordForm.value
-  if (!oldPassword) { passwordError.value = '请输入当前密码'; return }
-  if (!newPassword) { passwordError.value = '请输入新密码'; return }
-  if (newPassword.length < 6 || newPassword.length > 32) { passwordError.value = '新密码长度需在6-32位之间'; return }
-  if (newPassword !== confirmPwd) { passwordError.value = '两次输入的新密码不一致'; return }
-
-  savingPwd.value = true
-  try {
-    await changePassword({ oldPassword, newPassword })
-    passwordForm.value = { oldPassword: '', newPassword: '', confirmPwd: '' }
-    showPasswordEdit.value = false
-    toast.success('密码修改成功')
-  } catch (e) {
-    passwordError.value = e.message || '修改失败，请重试'
-  } finally {
-    savingPwd.value = false
-  }
-}
-
 function formatTime(dateStr) {
   if (!dateStr) return ''
   const d = new Date(dateStr)
@@ -408,8 +377,6 @@ function openPost(postId) {
   router.push({ path: '/community', query: { postId } })
 }
 
-// isLoggedIn 是响应式的，token 存入 localStorage 后自动变为 true
-// 使用 watch 监听，状态确认后自动加载数据
 watch(isLoggedIn, async (loggedIn) => {
   if (loggedIn) {
     await Promise.allSettled([loadProfile(), loadMyPosts()])
@@ -440,14 +407,66 @@ watch(isLoggedIn, async (loggedIn) => {
 .edit-panel.standalone { margin-top: 0; padding-top: 0; border-top: none; }
 .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0; padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.2); }
 .header-left { display: flex; align-items: center; gap: 15px; }
-.planet-icon { line-height: 1; display: flex; align-items: center; }
+.planet-icon {
+  position: relative;
+  width: 48px; height: 48px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
 .header-title h1 { font-size: 1.8rem; font-weight: 300; letter-spacing: 4px; background: linear-gradient(135deg, #ffffff, #c5d5ea); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 .header-title p { font-size: 0.85rem; opacity: 0.7; margin-top: 2px; }
 .back-btn { padding: 8px 20px; border-radius: 30px; background: rgba(144,166,196,0.1); border: 1px solid rgba(144,166,196,0.25); color: #c5d5ea; cursor: pointer; text-decoration: none; transition: 0.3s; font-size: 0.9rem; }
 .back-btn:hover { background: rgba(144,166,196,0.2); box-shadow: 0 0 15px rgba(144,166,196,0.2); }
-.planet-sphere { width: 36px; height: 36px; border-radius: 50%; position: relative; flex-shrink: 0; }
-.planet-sphere.sun { background: radial-gradient(circle at 35% 35%, #f6deab, #e7bc6b 40%, #c89a50 70%, #7a5224 100%); box-shadow: 0 0 16px rgba(204,177,131,0.7), 0 0 32px rgba(230,175,95,0.4), 0 0 50px rgba(220,160,80,0.2), inset 0 0 6px rgba(255,255,255,0.2); }
-.planet-sphere.sun::after { content: ''; position: absolute; inset: 8% 22% 38% 18%; background: rgba(255,255,255,0.2); border-radius: 50%; }
+/* Sun button (from Home.vue) */
+.sun-halo {
+  position: absolute; inset: -10px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,0.28) 0%, rgba(255,236,180,0.18) 30%, rgba(230,175,95,0.08) 55%, transparent 75%);
+  animation: haloPulse 3.6s ease-in-out infinite;
+  pointer-events: none; z-index: 0;
+}
+@keyframes haloPulse {
+  0%, 100% { opacity: 0.8; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.08); }
+}
+.sun-corona {
+  position: absolute; inset: -6px; border-radius: 50%;
+  pointer-events: none; z-index: 1;
+}
+.sun-corona::before {
+  content: ''; position: absolute; inset: 0; border-radius: 50%;
+  border: 1px dashed rgba(247,223,160,0.55);
+  animation: coronaSpin 18s linear infinite;
+}
+.sun-corona::after {
+  content: ''; position: absolute; inset: 3px; border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.2);
+  animation: coronaSpin 26s linear infinite reverse;
+}
+@keyframes coronaSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.sun-sphere {
+  position: relative; width: 36px; height: 36px; border-radius: 50%;
+  background: radial-gradient(circle at 32% 28%, rgba(255,255,255,0.7) 0%, transparent 22%),
+    radial-gradient(circle at 65% 70%, rgba(120,70,20,0.28) 0%, transparent 48%),
+    radial-gradient(circle at 45% 42%, #fff4d0 0%, #f6deab 18%, #e7bc6b 42%, #c89a50 72%, #7a5224 100%);
+  box-shadow: 0 0 12px rgba(255,236,180,0.6), 0 0 28px rgba(230,175,95,0.4), 0 0 48px rgba(220,160,80,0.2),
+    inset 0 -3px 6px rgba(100,60,20,0.35), inset 0 2px 4px rgba(255,255,255,0.4);
+  animation: sunBreath 5s ease-in-out infinite;
+  z-index: 2;
+}
+@keyframes sunBreath {
+  0%, 100% { filter: brightness(1); transform: scale(1); }
+  50% { filter: brightness(1.1); transform: scale(1.04); }
+}
+.sun-flare {
+  position: absolute; left: 50%; top: 50%; width: 2px; height: 48px;
+  background: linear-gradient(to top, transparent 0%, rgba(255,236,180,0.35) 38%, rgba(255,244,208,0.9) 50%, rgba(255,236,180,0.35) 62%, transparent 100%);
+  transform-origin: 50% 50%; border-radius: 1px; filter: blur(0.4px);
+  pointer-events: none; animation: flareFlicker 2.8s ease-in-out infinite;
+}
+.sun-flare.flare-1 { transform: translate(-50%, -50%) rotate(30deg); animation-delay: 0s; }
+.sun-flare.flare-2 { transform: translate(-50%, -50%) rotate(110deg); animation-delay: -1s; }
+.sun-flare.flare-3 { transform: translate(-50%, -50%) rotate(205deg); animation-delay: -2s; }
+@keyframes flareFlicker { 0%, 100% { opacity: 0.4; } 50% { opacity: 0.85; } }
 .tabs { display: flex; gap: 10px; }
 .tab { padding: 10px 24px; border-radius: 30px; cursor: pointer; background: rgba(144,166,196,0.06); border: 1px solid rgba(144,166,196,0.15); color: #a8bcd4; transition: 0.3s; font-size: 0.95rem; }
 .tab.active, .tab:hover { background: rgba(144,166,196,0.15); border-color: rgba(144,166,196,0.35); color: #fff; box-shadow: 0 0 15px rgba(144,166,196,0.1); }
@@ -484,7 +503,12 @@ watch(isLoggedIn, async (loggedIn) => {
 .edit-panel input:focus, .edit-panel textarea:focus { border-color: rgba(144,166,196,0.45); }
 .form-select { appearance: none; cursor: pointer; background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path fill='%23a8bcd4' d='M6 8 0 0h12z'/></svg>"); background-repeat: no-repeat; background-position: right 14px center; background-size: 10px; }
 .form-select option { background: #0f1428; color: #e8eef7; }
-.form-error { margin-bottom: 12px; padding: 8px 12px; border-radius: 8px; background: rgba(255,80,80,0.15); border: 1px solid rgba(255,80,80,0.3); color: #ff9999; font-size: 0.82rem; }
+
+/* Date Picker */
+.date-picker-wrap { position: relative; cursor: pointer; }
+.date-picker-wrap input[type="date"] { cursor: pointer; width: 100%; }
+.date-picker-wrap input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
+
 .save-btn { padding: 10px 28px; border-radius: 24px; border: none; background: linear-gradient(135deg, #7890b5, #a8bcd4); color: #fff; cursor: pointer; font-size: 0.9rem; transition: 0.3s; font-weight: 500; }
 .save-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 .save-btn:hover { box-shadow: 0 0 20px rgba(144,166,196,0.5); }
@@ -515,7 +539,8 @@ watch(isLoggedIn, async (loggedIn) => {
   .container { padding: 15px 12px 60px; }
   .header { flex-direction: column; align-items: flex-start; gap: 12px; }
   .header-title h1 { font-size: 1.4rem; }
-  .planet-sphere { width: 28px; height: 28px; }
+  .planet-icon { width: 36px; height: 36px; }
+  .sun-sphere { width: 28px; height: 28px; }
   .profile-header { flex-wrap: wrap; }
   .avatar { width: 52px; height: 52px; font-size: 22px; }
   .tabs { gap: 6px; flex-wrap: wrap; }

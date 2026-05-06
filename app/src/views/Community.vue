@@ -98,7 +98,7 @@
                 <i :class="markdownEnabled ? 'ri-toggle-fill' : 'ri-toggle-line'"></i>
                 {{ markdownEnabled ? 'Markdown' : '纯文本' }}
               </div>
-              <textarea v-model="newPost.content" placeholder="分享你的技术见解...&#10;&#10;支持 Markdown 语法：&#10;# 标题&#10;**粗体** *斜体*&#10;- 列表&#10;`代码`&#10;```代码块```"></textarea>
+              <textarea v-model="newPost.content" placeholder="分享你的技术见解"></textarea>
             </div>
             <div class="editor-col preview-col" v-if="markdownEnabled && newPost.content">
               <div class="editor-tag preview-tag"><i class="ri-eye-line"></i> 实时预览</div>
@@ -540,23 +540,19 @@ function scrollToTop() {
   contentRef.value?.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
-async function openPostFromRoute() {
+onMounted(async () => {
   const pid = route.query.postId
   if (pid) {
+    // 有 postId 参数：直接进入详情页，不加载列表
+    pageLoading.value = false
+    await loadCategories()
     await openPost(pid)
+  } else {
+    // 正常浏览模式：加载分类和帖子列表
+    pageLoading.value = true
+    await Promise.allSettled([loadCategories(), loadPosts()])
+    pageLoading.value = false
   }
-}
-
-onMounted(async () => {
-  pageLoading.value = true
-  // 并行加载分类和帖子，减少等待时间
-  const [catResult] = await Promise.allSettled([
-    loadCategories(),
-    loadPosts()
-  ])
-  // 如果路由有 postId 参数，再加载详情
-  await openPostFromRoute()
-  pageLoading.value = false
 })
 </script>
 
