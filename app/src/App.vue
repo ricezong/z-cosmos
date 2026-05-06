@@ -7,6 +7,8 @@
 <script setup>
 import { onMounted } from 'vue'
 import { useAuth } from './composables/useAuth'
+import ToastContainer from './components/ToastContainer.vue'
+import ConfirmModal from './components/ConfirmModal.vue'
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080').replace(/\/$/, '')
 

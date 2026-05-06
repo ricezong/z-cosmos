@@ -202,7 +202,6 @@ import { logout as apiLogout } from '../api/auth'
 import { useAuth } from '../composables/useAuth'
 import { useToast } from '../composables/useToast'
 import { useConfirm } from '../composables/useConfirm'
-import LoadingSpinner from '../components/LoadingSpinner.vue'
 
 const router = useRouter()
 const toast = useToast()
@@ -214,9 +213,6 @@ const showEdit = ref(false)
 const showPasswordEdit = ref(false)
 const saving = ref(false)
 const savingPwd = ref(false)
-const profileLoading = ref(false)
-const postsLoading = ref(false)
-const collectionsLoading = ref(false)
 const passwordError = ref('')
 
 // Back to top
@@ -416,9 +412,7 @@ function openPost(postId) {
 // 使用 watch 监听，状态确认后自动加载数据
 watch(isLoggedIn, async (loggedIn) => {
   if (loggedIn) {
-    profileLoading.value = true
     await Promise.allSettled([loadProfile(), loadMyPosts()])
-    profileLoading.value = false
   }
 }, { immediate: true })
 </script>
