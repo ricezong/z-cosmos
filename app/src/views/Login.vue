@@ -9,68 +9,45 @@
           <p>星际漫游 · 登录星域</p>
         </div>
 
-        <div class="login-tabs">
-          <div class="login-tab" :class="{ active: tab === 'account' }" @click="tab = 'account'">账号登录</div>
-          <div class="login-tab" :class="{ active: tab === 'qr' }" @click="tab = 'qr'">扫码登录</div>
-        </div>
-
-        <!-- 账号登录 -->
-        <div class="login-panel" v-show="tab === 'account'">
-          <div class="form-group">
-            <label>手机号</label>
-            <input type="tel" v-model="loginForm.phone" placeholder="请输入手机号" maxlength="11">
-          </div>
-          <div class="form-group">
-            <label>密码</label>
-            <input type="password" v-model="loginForm.pwd" placeholder="请输入密码" @keydown.enter="doLogin">
-          </div>
-          <div class="form-error" v-if="loginError">{{ loginError }}</div>
-          <div class="form-options">
-            <label class="remember-me">
-              <input type="checkbox" v-model="loginForm.remember">
-              <span>记住我</span>
-            </label>
-            <a href="#" class="forgot-link" @click.prevent="toast.info('请联系管理员重置密码')">忘记密码?</a>
-          </div>
-          <button class="login-btn" :disabled="logging" @click="doLogin">
-            <span class="btn-shine"></span>
-            <span class="btn-content">
-              <span class="btn-bracket left">⟨</span>
-              <span class="btn-text">{{ logging ? '登录中...' : '登 录 星 域' }}</span>
-              <i class="ri-arrow-right-up-line btn-arrow"></i>
-              <span class="btn-bracket right">⟩</span>
-            </span>
-          </button>
-
-          <div class="divider">
-            <span>第三方账号登录</span>
-          </div>
-
-          <div class="oauth-grid">
-            <button class="oauth-btn" @click="oauthLogin('qq')">
-              <span class="icon" style="color:#12b7f5"><svg class="brand-icon" aria-hidden="true"><use href="/icons.svg#qq-icon"/></svg></span>
-            </button>
-            <button class="oauth-btn" @click="oauthLogin('github')">
-              <span class="icon" style="color:#fff"><svg class="brand-icon" aria-hidden="true"><use href="/icons.svg#github-icon"/></svg></span>
-            </button>
-            <button class="oauth-btn" @click="oauthLogin('gitee')">
-              <span class="icon" style="color:#C71D23"><svg class="brand-icon" aria-hidden="true"><use href="/icons.svg#gitee-icon"/></svg></span>
-            </button>
-          </div>
-        </div>
-
         <!-- 扫码登录 -->
-        <div class="login-panel" v-show="tab === 'qr'">
-          <div class="qr-panel">
-            <div class="qr-box">
-              <div class="qr-pattern"></div>
-              <div class="qr-extra"></div>
+        <div class="qr-panel">
+          <div class="qr-box">
+            <img v-if="qrCodeUrl" :src="qrCodeUrl" alt="扫码登录" class="qr-img">
+            <div v-else class="qr-placeholder">
+              <i class="ri-qr-code-line"></i>
+              <span>正在获取二维码...</span>
             </div>
-            <div class="qr-hint">
-              请使用手机微信扫码登录<br>
-              <span style="opacity:0.5;font-size:0.75rem">二维码每 5 分钟自动刷新</span>
+            <!-- 状态遮罩 -->
+            <div v-if="qrStatus === 'EXPIRED'" class="qr-overlay" @click="generateQr">
+              <i class="ri-refresh-line"></i>
+              <span>已过期，点击刷新</span>
             </div>
-            <button class="qr-refresh" @click="refreshQR">刷新二维码</button>
+            <div v-if="qrStatus === 'SCANNED'" class="qr-overlay scanned">
+              <i class="ri-checkbox-circle-line"></i>
+              <span>扫码成功，请确认登录</span>
+            </div>
+            <div v-if="qrStatus === 'SUCCESS'" class="qr-overlay success">
+              <i class="ri-checkbox-circle-fill"></i>
+              <span>登录成功</span>
+            </div>
+            <button v-if="qrStatus !== 'SUCCESS'" class="qr-refresh" @click="generateQr" title="刷新二维码">
+              <i class="ri-refresh-line"></i>
+            </button>
+          </div>
+          <div class="qr-hint">请使用手机微信扫码登录</div>
+        </div>
+
+        <div class="divider">
+          <span>其他方式登录</span>
+        </div>
+
+        <div class="oauth-grid">
+          <div class="oauth-btn" v-for="item in oauthProviders" :key="item.provider"
+               @click="oauthLogin(item.provider)" :style="{ '--hover-color': item.color }">
+            <span class="oauth-icon">
+              <svg class="brand-icon" viewBox="0 0 1024 1024" v-html="item.svg"></svg>
+            </span>
+            <span class="oauth-tooltip">{{ item.name }}</span>
           </div>
         </div>
       </div>
@@ -79,45 +56,105 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { loginByPassword, getOAuthUrl } from '../api/auth'
+import { getOAuthUrl } from '../api/auth'
 import { useAuth } from '../composables/useAuth'
 import { useToast } from '../composables/useToast'
+import { icons } from '../assets/icons'
 
 const router = useRouter()
 const toast = useToast()
-const { isLoggedIn, authReady } = useAuth()
-const tab = ref('account')
-const loginForm = ref({ phone: '', pwd: '', remember: false })
-const loginError = ref('')
-const logging = ref(false)
+const { isLoggedIn, authReady, setToken } = useAuth()
 
-async function doLogin() {
-  loginError.value = ''
-  const { phone, pwd } = loginForm.value
-  if (!phone.trim()) { loginError.value = '请输入手机号'; return }
-  if (!/^1[3-9]\d{9}$/.test(phone.trim())) { loginError.value = '手机号格式不正确'; return }
-  if (!pwd.trim()) { loginError.value = '请输入密码'; return }
-  if (pwd.length < 6) { loginError.value = '密码长度至少6位'; return }
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080').replace(/\/$/, '')
 
-  logging.value = true
+const qrCodeUrl = ref('')
+const qrStatus = ref('') // '' | 'WAIT_SCAN' | 'SCANNED' | 'SUCCESS' | 'EXPIRED'
+let sessionId = ''
+let pollTimer = null
+
+/** 请求后端生成微信登录二维码 */
+async function generateQr() {
+  stopPolling()
+  qrStatus.value = ''
+  qrCodeUrl.value = ''
+  sessionId = ''
+
   try {
-    await loginByPassword({ phone: phone.trim(), password: pwd })
-    if (loginForm.value.remember) {
-      localStorage.setItem('cosmos_phone', phone.trim())
+    const res = await fetch(`${API_BASE_URL}/api/auth/wechat/qr/generate`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+    })
+    const payload = await res.json()
+    if (res.ok && payload.code === 200 && payload.data) {
+      sessionId = payload.data.sessionId
+      qrCodeUrl.value = payload.data.qrCodeUrl
+      qrStatus.value = 'WAIT_SCAN'
+      startPolling()
     } else {
-      localStorage.removeItem('cosmos_phone')
+      toast.error('获取二维码失败')
     }
-    toast.success('欢迎回来！')
-    router.push('/')
-  } catch (e) {
-    toast.error(e.message || '登录失败，请重试')
-    loginError.value = e.message || '登录失败，请重试'
-  } finally {
-    logging.value = false
+  } catch {
+    toast.error('获取二维码失败，请检查网络')
   }
 }
+
+/** 轮询登录状态 */
+function startPolling() {
+  stopPolling()
+  pollTimer = setInterval(async () => {
+    if (!sessionId) return
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/auth/wechat/qr/status`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId }),
+      })
+      const payload = await res.json()
+      if (res.ok && payload.code === 200 && payload.data) {
+        const status = payload.data.status
+        qrStatus.value = status
+
+        if (status === 'SUCCESS') {
+          stopPolling()
+          if (payload.data.accessToken) {
+            setToken(payload.data.accessToken)
+            toast.success('登录成功！')
+            setTimeout(() => router.replace('/'), 800)
+          }
+        } else if (status === 'EXPIRED') {
+          stopPolling()
+        }
+      }
+    } catch {
+      // 轮询失败静默处理
+    }
+  }, 2500)
+}
+
+function stopPolling() {
+  if (pollTimer) {
+    clearInterval(pollTimer)
+    pollTimer = null
+  }
+}
+
+onMounted(() => {
+  generateQr()
+})
+
+onUnmounted(() => {
+  stopPolling()
+})
+
+const oauthProviders = [
+  { provider: 'qq', name: 'QQ', color: '#12b7f5', svg: icons.qq },
+  { provider: 'github', name: 'GitHub', color: '#ffffff', svg: icons.github },
+  { provider: 'gitee', name: 'Gitee', color: '#C71D23', svg: icons.gitee },
+]
 
 async function oauthLogin(provider) {
   try {
@@ -132,21 +169,12 @@ async function oauthLogin(provider) {
   }
 }
 
-function refreshQR() {
-  const box = document.querySelector('.qr-box')
-  if (box) { box.style.opacity = '0.3'; setTimeout(() => { box.style.opacity = '1' }, 300) }
-}
-
 // authReady 后如果是已登录状态，自动跳转首页
 watch(authReady, (ready) => {
   if (ready && isLoggedIn.value) {
     router.replace('/')
   }
 }, { immediate: true })
-
-// 初始化记住的手机号
-const saved = localStorage.getItem('cosmos_phone')
-if (saved) { loginForm.value.phone = saved; loginForm.value.remember = true }
 </script>
 
 <style scoped>
@@ -242,235 +270,125 @@ if (saved) { loginForm.value.phone = saved; loginForm.value.remember = true }
   font-family: var(--font-display, 'Cinzel', serif);
 }
 
-.login-tabs {
-  display: flex;
-  gap: 6px;
-  margin-bottom: 20px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
-  padding: 4px;
-}
-
-.login-tab {
-  flex: 1;
+/* QR Panel */
+.qr-panel {
   text-align: center;
-  padding: 8px;
-  border-radius: 10px;
-  cursor: pointer;
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 0.85rem;
-  transition: 0.3s;
-  border: none;
-  background: transparent;
+  padding: 8px 0 4px;
 }
 
-.login-tab.active {
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
-  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.08);
+.qr-box {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  margin: 0 auto 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  overflow: hidden;
 }
 
-.form-group {
-  margin-bottom: 14px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 5px;
-  font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.6);
-}
-
-.form-group input {
+.qr-img {
   width: 100%;
-  padding: 11px 14px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  color: #fff;
-  font-size: 0.9rem;
-  outline: none;
-  font-family: inherit;
-  transition: 0.3s;
+  height: 100%;
+  background: white;
+  padding: 10px;
+  display: block;
+  object-fit: contain;
   box-sizing: border-box;
 }
 
-.form-group input:focus {
-  border-color: rgba(255, 255, 255, 0.4);
-  background: rgba(255, 255, 255, 0.1);
-  box-shadow: 0 0 12px rgba(255, 255, 255, 0.1);
-}
-
-.form-group input::placeholder {
-  color: rgba(255, 255, 255, 0.25);
-}
-
-.form-error {
-  margin-bottom: 12px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  background: rgba(255, 80, 80, 0.15);
-  border: 1px solid rgba(255, 80, 80, 0.3);
-  color: #ff9999;
-  font-size: 0.82rem;
-}
-
-.form-options {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-  font-size: 0.8rem;
-}
-
-.remember-me {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-  color: rgba(255, 255, 255, 0.5);
-}
-
-.remember-me input {
-  width: 14px;
-  height: 14px;
-  accent-color: #fff;
-}
-
-.forgot-link {
-  color: rgba(255, 255, 255, 0.5);
-  text-decoration: none;
-  transition: 0.3s;
-}
-
-.forgot-link:hover {
-  color: #fff;
-}
-
-.login-btn {
+.qr-placeholder {
   width: 100%;
-  padding: 14px 18px;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px dashed rgba(255, 255, 255, 0.15);
   border-radius: 14px;
-  border: 1px solid rgba(168,188,212,0.4);
-  background:
-    linear-gradient(135deg, rgba(120,144,181,0.22) 0%, rgba(168,188,212,0.12) 50%, rgba(120,144,181,0.22) 100%),
-    linear-gradient(180deg, rgba(22,26,48,0.92) 0%, rgba(14,18,36,0.95) 100%);
-  color: #e8eef7;
-  font-size: 0.95rem;
-  font-weight: 500;
-  cursor: pointer;
-  letter-spacing: 4px;
-  position: relative;
-  overflow: hidden;
-  transition: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.12),
-    inset 0 -1px 0 rgba(0,0,0,0.25),
-    0 4px 16px rgba(0,0,0,0.3);
-  font-family: var(--font-display, 'Cinzel', 'Noto Serif SC', serif);
-}
-.login-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.login-btn::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 12%; right: 12%;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.55), transparent);
-  pointer-events: none;
-}
-
-.login-btn::after {
-  content: '';
-  position: absolute;
-  bottom: 0; left: 20%; right: 20%;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(168,188,212,0.5), transparent);
-  pointer-events: none;
-}
-
-.btn-shine {
-  position: absolute;
-  top: 0; left: -60%;
-  width: 40%; height: 100%;
-  background: linear-gradient(100deg, transparent 30%, rgba(255,255,255,0.22) 50%, transparent 70%);
-  transform: skewX(-20deg);
-  pointer-events: none;
-  transition: left 0.75s ease;
-}
-
-.login-btn:hover .btn-shine { left: 120%; }
-
-.login-btn:hover {
-  border-color: rgba(168,188,212,0.7);
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.18),
-    inset 0 -1px 0 rgba(0,0,0,0.25),
-    0 8px 24px rgba(120,144,181,0.35),
-    0 0 32px rgba(168,188,212,0.2);
-  transform: translateY(-1px);
-}
-
-.login-btn:active {
-  transform: translateY(0);
-  box-shadow:
-    inset 0 2px 4px rgba(0,0,0,0.3),
-    0 4px 12px rgba(0,0,0,0.2);
-}
-
-.btn-content {
-  display: inline-flex;
+  display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 10px;
-  position: relative;
-  z-index: 1;
+  color: rgba(255, 255, 255, 0.35);
+}
+.qr-placeholder i {
+  font-size: 2.5rem;
+}
+.qr-placeholder span {
+  font-size: 0.78rem;
 }
 
-.btn-bracket {
-  font-size: 1.15em;
-  color: rgba(168,188,212,0.7);
-  font-weight: 300;
-  transition: 0.35s ease;
+/* 状态遮罩 */
+.qr-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(5, 8, 20, 0.85);
+  backdrop-filter: blur(4px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  transition: 0.3s;
+  z-index: 3;
+  border-radius: 14px;
+}
+.qr-overlay i {
+  font-size: 2rem;
+}
+.qr-overlay span {
+  font-size: 0.82rem;
+}
+.qr-overlay.scanned {
+  color: #7dcf8c;
+  cursor: default;
+}
+.qr-overlay.success {
+  color: #5ec26e;
+  cursor: default;
 }
 
-.login-btn:hover .btn-bracket.left {
-  transform: translateX(-4px);
-  color: #c5d5ea;
-  text-shadow: 0 0 8px rgba(168,188,212,0.6);
-}
-
-.login-btn:hover .btn-bracket.right {
-  transform: translateX(4px);
-  color: #c5d5ea;
-  text-shadow: 0 0 8px rgba(168,188,212,0.6);
-}
-
-.btn-text {
-  background: linear-gradient(135deg, #ffffff 0%, #c5d5ea 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.btn-arrow {
+.qr-refresh {
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(18, 16, 36, 0.8);
+  backdrop-filter: blur(6px);
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 1rem;
-  color: #c5d5ea;
-  transition: transform 0.35s ease;
+  transition: 0.25s;
+  z-index: 4;
+}
+.qr-refresh:hover {
+  background: rgba(18, 16, 36, 0.95);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: rotate(180deg);
 }
 
-.login-btn:hover .btn-arrow {
-  transform: translate(3px, -3px);
+.qr-hint {
+  font-size: 0.85rem;
+  opacity: 0.6;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.6);
 }
 
+/* Divider */
 .divider {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin: 18px 0;
+  margin: 20px 0 18px;
   font-size: 0.75rem;
   color: rgba(255, 255, 255, 0.35);
 }
@@ -483,135 +401,86 @@ if (saved) { loginForm.value.phone = saved; loginForm.value.remember = true }
   background: rgba(255, 255, 255, 0.1);
 }
 
+/* OAuth Grid */
 .oauth-grid {
   display: flex;
-  flex-direction: row;
-  gap: 10px;
+  justify-content: center;
+  gap: 20px;
 }
 
 .oauth-btn {
-  flex: 1;
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 12px 4px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.05);
-  color: rgba(255, 255, 255, 0.7);
   cursor: pointer;
-  transition: 0.3s;
-  text-decoration: none;
+  transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .oauth-btn:hover {
-  border-color: rgba(255, 255, 255, 0.25);
-  background: rgba(255, 255, 255, 0.1);
-  transform: translateY(-2px);
+  border-color: var(--hover-color, rgba(255, 255, 255, 0.3));
+  background: rgba(255, 255, 255, 0.12);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3), 0 0 12px color-mix(in srgb, var(--hover-color, #fff) 25%, transparent);
 }
 
-.oauth-btn .icon {
-  font-size: 1.4rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-}
-
-.oauth-btn .brand-icon {
-  width: 1em;
-  height: 1em;
-  display: block;
-  fill: currentColor;
-}
-
-.oauth-btn .icon svg {
-  display: inline-block;
-  vertical-align: -0.15em;
-}
-
-.qr-panel {
-  text-align: center;
-  padding: 8px 0;
-}
-
-.qr-box {
-  width: 170px;
-  height: 170px;
-  margin: 0 auto 16px;
-  background: white;
-  border-radius: 14px;
-  padding: 10px;
-  position: relative;
+.oauth-icon {
+  width: 22px;
+  height: 22px;
   display: flex;
   align-items: center;
   justify-content: center;
+  color: rgba(255, 255, 255, 0.75);
+  transition: color 0.3s;
 }
 
-.qr-pattern {
+.oauth-btn:hover .oauth-icon {
+  color: var(--hover-color, #fff);
+}
+
+.brand-icon {
   width: 100%;
   height: 100%;
-  background:
-    repeating-linear-gradient(0deg, #1a1a1a 0, #1a1a1a 4px, transparent 4px, transparent 8px),
-    repeating-linear-gradient(90deg, #1a1a1a 0, #1a1a1a 4px, transparent 4px, transparent 8px);
-  background-size: 8px 8px;
-  border-radius: 6px;
+  display: block;
 }
 
-.qr-pattern::before {
+/* Tooltip */
+.oauth-tooltip {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  padding: 5px 12px;
+  border-radius: 8px;
+  background: rgba(18, 16, 36, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #e8eef7;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s, transform 0.25s;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.oauth-tooltip::after {
   content: '';
   position: absolute;
-  width: 26px;
-  height: 26px;
-  border: 3px solid #1a1a1a;
-  border-radius: 3px;
-  top: 16px;
-  left: 16px;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: rgba(18, 16, 36, 0.95);
 }
 
-.qr-pattern::after {
-  content: '';
-  position: absolute;
-  width: 26px;
-  height: 26px;
-  border: 3px solid #1a1a1a;
-  border-radius: 3px;
-  bottom: 16px;
-  right: 16px;
-}
-
-.qr-extra {
-  position: absolute;
-  width: 26px;
-  height: 26px;
-  border: 3px solid #1a1a1a;
-  border-radius: 3px;
-  top: 16px;
-  right: 16px;
-}
-
-.qr-hint {
-  font-size: 0.85rem;
-  opacity: 0.6;
-  line-height: 1.5;
-  color: rgba(255, 255, 255, 0.6);
-}
-
-.qr-refresh {
-  margin-top: 12px;
-  padding: 7px 18px;
-  border-radius: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.7);
-  cursor: pointer;
-  font-size: 0.8rem;
-  transition: 0.3s;
-}
-
-.qr-refresh:hover {
-  background: rgba(255, 255, 255, 0.15);
-  color: #fff;
+.oauth-btn:hover .oauth-tooltip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
 }
 
 @media (max-width: 768px) {
@@ -621,7 +490,7 @@ if (saved) { loginForm.value.phone = saved; loginForm.value.remember = true }
     padding-top: 40px;
   }
   .login-card {
-    padding: 20px 16px;
+    padding: 24px 20px;
     border-radius: 16px;
   }
   .login-logo .planet-icon {
@@ -630,23 +499,17 @@ if (saved) { loginForm.value.phone = saved; loginForm.value.remember = true }
   .login-logo h1 {
     font-size: 1.3rem;
   }
-  .login-tab {
-    font-size: 0.8rem;
-    padding: 7px;
-  }
-  .form-group input {
-    padding: 10px 12px;
-    font-size: 0.85rem;
+  .qr-box {
+    width: 160px;
+    height: 160px;
   }
   .oauth-btn {
-    padding: 10px 2px;
+    width: 40px;
+    height: 40px;
   }
-  .oauth-btn .icon {
-    font-size: 1.2rem;
-  }
-  .qr-box {
-    width: 150px;
-    height: 150px;
+  .oauth-icon {
+    width: 20px;
+    height: 20px;
   }
 }
 </style>

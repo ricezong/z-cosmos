@@ -2,29 +2,43 @@
   <div ref="sceneContainer" class="scene-container"></div>
   <div class="glow"></div>
 
+  <!-- 顶部装饰星轨 -->
+  <div class="orbit-decoration orbit-1"></div>
+  <div class="orbit-decoration orbit-2"></div>
+
   <div class="site-title">
     <span class="site-title-text">Z的探索小站</span>
     <span class="site-title-sub">COSMOS 星域</span>
+    <div class="title-particles"></div>
   </div>
 
   <div v-if="!isLoggedIn" class="star-login" @click="router.push('/login')" title="登录">
     <div class="portal-ring outer"></div>
+    <div class="portal-ring middle"></div>
     <div class="portal-ring inner"></div>
     <div class="portal-core"></div>
+    <div class="portal-glow"></div>
     <div class="portal-arrow"><i class="ri-arrow-right-up-line"></i></div>
+    <div class="portal-particles"></div>
   </div>
   <button v-if="isLoggedIn" class="profile-btn" @click="router.push('/profile')" title="个人主页">
-    <div class="sun-halo"></div>
-    <div class="sun-corona"></div>
-    <div class="sun-sphere">
-      <span class="sun-flare flare-1"></span>
-      <span class="sun-flare flare-2"></span>
-      <span class="sun-flare flare-3"></span>
-    </div>
+    <div class="cosmic-aura"></div>
+    <div class="orbit-ring outer"></div>
+    <div class="orbit-ring middle"></div>
+    <div class="orbit-ring inner"></div>
+    <div class="cosmic-core"></div>
+    <span class="floating-star"></span>
+    <span class="floating-star"></span>
+    <span class="floating-star"></span>
+    <span class="floating-star"></span>
+    <span class="user-icon"><i class="ri-user-line"></i></span>
   </button>
 
-
   <div id="function-panel">
+    <div class="panel-decoration top-left"></div>
+    <div class="panel-decoration top-right"></div>
+    <div class="panel-decoration bottom-left"></div>
+    <div class="panel-decoration bottom-right"></div>
     <div id="function-title">{{ panelTitle }}</div>
     <div id="function-desc">{{ panelDesc }}</div>
     <div id="function-action" @click="goToLink"><i class="ri-rocket-line"></i> {{ panelAction }}</div>
@@ -52,9 +66,6 @@ function goToLink() {
 
 const { isLoggedIn } = useAuth()
 
-
-// 退出登录已移至Profile页面
-
 let renderer, cssRenderer, scene, camera, animationId
 let draggedPlanet = null, hasMoved = false, dragStartPos
 let planets = []
@@ -65,244 +76,591 @@ const dragOffset = new THREE.Vector3()
 const intersectionPoint = new THREE.Vector3()
 const boundary = { x: 9, y: 5.5, z: 7 }
 
-function shadeColor(col, percent) {
-  let R = parseInt(col.substring(1,3),16)
-  let G = parseInt(col.substring(3,5),16)
-  let B = parseInt(col.substring(5,7),16)
-  R = Math.min(255, Math.max(0, R + percent))
-  G = Math.min(255, Math.max(0, G + percent))
-  B = Math.min(255, Math.max(0, B + percent))
-  return `#${((1 << 24) + (R << 16) + (G << 8) + B).toString(16).slice(1)}`
-}
-
 function rand(min, max) { return min + Math.random() * (max - min) }
+function randInt(min, max) { return Math.floor(rand(min, max + 1)) }
 
-/* 地球：海洋＋不规则大陆＋极地冰盖＋云层 */
+/* ========== 精美地球 ========== */
 function createEarthTexture() {
   const c = document.createElement('canvas')
-  c.width = 1024; c.height = 512
+  c.width = 1024
+  c.height = 512
   const ctx = c.getContext('2d')
-  const ocean = ctx.createLinearGradient(0, 0, 0, 512)
-  ocean.addColorStop(0, '#1a4a8a'); ocean.addColorStop(0.5, '#2a6bb5'); ocean.addColorStop(1, '#1a4a8a')
-  ctx.fillStyle = ocean; ctx.fillRect(0, 0, 1024, 512)
-  const landColors = ['#4a7d3a', '#5a8a4a', '#7a9a5a', '#3a6d2a', '#6a8a4a']
-  for (let i = 0; i < 9; i++) {
+
+  // 深海渐变背景
+  const oceanGrad = ctx.createRadialGradient(512, 256, 0, 512, 256, 600)
+  oceanGrad.addColorStop(0, '#1a6a8a')
+  oceanGrad.addColorStop(0.4, '#0d5a7a')
+  oceanGrad.addColorStop(0.7, '#0a4060')
+  oceanGrad.addColorStop(1, '#062840')
+  ctx.fillStyle = oceanGrad
+  ctx.fillRect(0, 0, 1024, 512)
+
+  // 海洋波纹效果
+  for (let i = 0; i < 8; i++) {
+    const y = 80 + i * 50
     ctx.beginPath()
-    const cx = rand(50, 974), cy = rand(90, 422)
-    ctx.moveTo(cx, cy)
-    for (let a = 0; a < Math.PI * 2; a += 0.25) {
-      const r = rand(40, 130) * (0.6 + 0.8 * Math.random())
-      ctx.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r * 0.6)
+    ctx.moveTo(0, y)
+    for (let x = 0; x <= 1024; x += 20) {
+      const wave = Math.sin(x * 0.008 + i * 0.5) * 3 + Math.sin(x * 0.015) * 2
+      ctx.lineTo(x, y + wave)
     }
-    ctx.closePath()
-    ctx.fillStyle = landColors[i % landColors.length]
-    ctx.globalAlpha = 0.82; ctx.fill(); ctx.globalAlpha = 1
-  }
-  const north = ctx.createLinearGradient(0, 0, 0, 65)
-  north.addColorStop(0, 'rgba(255,255,255,0.92)'); north.addColorStop(1, 'rgba(255,255,255,0)')
-  ctx.fillStyle = north; ctx.fillRect(0, 0, 1024, 65)
-  const south = ctx.createLinearGradient(0, 512, 0, 447)
-  south.addColorStop(0, 'rgba(255,255,255,0.92)'); south.addColorStop(1, 'rgba(255,255,255,0)')
-  ctx.fillStyle = south; ctx.fillRect(0, 447, 1024, 65)
-  for (let i = 0; i < 45; i++) {
-    ctx.beginPath()
-    ctx.ellipse(rand(0,1024), rand(0,512), rand(20,80), rand(10,30), rand(0,Math.PI), 0, Math.PI*2)
-    ctx.fillStyle = `rgba(255,255,255,${0.14 + Math.random()*0.26})`; ctx.fill()
-  }
-  return new THREE.CanvasTexture(c)
-}
-
-/* 火星：红棕地表＋峽谷＋撞击坑＋极冠 */
-function createMarsTexture() {
-  const c = document.createElement('canvas')
-  c.width = 1024; c.height = 512
-  const ctx = c.getContext('2d')
-  const base = ctx.createLinearGradient(0, 0, 0, 512)
-  base.addColorStop(0, '#8a3a24'); base.addColorStop(0.5, '#c05c3e'); base.addColorStop(1, '#7a3020')
-  ctx.fillStyle = base; ctx.fillRect(0, 0, 1024, 512)
-  for (let i = 0; i < 160; i++) {
-    ctx.beginPath()
-    ctx.ellipse(rand(0,1024), rand(0,512), rand(10,60), rand(8,40), rand(0,Math.PI), 0, Math.PI*2)
-    const dark = Math.random() > 0.5
-    ctx.fillStyle = dark ? `rgba(55,22,12,${0.12+Math.random()*0.3})` : `rgba(225,165,115,${0.1+Math.random()*0.28})`
-    ctx.fill()
-  }
-  ctx.strokeStyle = 'rgba(45,18,10,0.55)'; ctx.lineWidth = 6
-  ctx.beginPath(); ctx.moveTo(80, 260)
-  ctx.bezierCurveTo(320, 240, 620, 290, 940, 250); ctx.stroke()
-  for (let i = 0; i < 70; i++) {
-    const x = rand(0,1024), y = rand(0,512), r = rand(4,14)
-    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2)
-    ctx.fillStyle = `rgba(38,16,8,${0.32+Math.random()*0.28})`; ctx.fill()
-    ctx.beginPath(); ctx.arc(x-1, y-1, r*0.55, 0, Math.PI*2)
-    ctx.fillStyle = 'rgba(235,185,135,0.25)'; ctx.fill()
-  }
-  ctx.fillStyle = 'rgba(255,240,230,0.85)'
-  ctx.beginPath(); ctx.ellipse(512, 24, 190, 22, 0, 0, Math.PI*2); ctx.fill()
-  ctx.beginPath(); ctx.ellipse(512, 488, 210, 25, 0, 0, Math.PI*2); ctx.fill()
-  return new THREE.CanvasTexture(c)
-}
-
-/* 木星：横向气带＋湍流＋大红斑 */
-function createJupiterTexture() {
-  const c = document.createElement('canvas')
-  c.width = 1024; c.height = 512
-  const ctx = c.getContext('2d')
-  const bands = [
-    { y: 0,   h: 40, col: '#e8cfa4' }, { y: 40,  h: 50, col: '#b88c5c' },
-    { y: 90,  h: 45, col: '#d8b784' }, { y: 135, h: 55, col: '#9c6c3c' },
-    { y: 190, h: 60, col: '#e8d4a0' }, { y: 250, h: 50, col: '#ac7848' },
-    { y: 300, h: 55, col: '#d8b884' }, { y: 355, h: 50, col: '#8c5c2c' },
-    { y: 405, h: 60, col: '#d0ac78' }, { y: 465, h: 47, col: '#ac7c48' }
-  ]
-  bands.forEach(b => {
-    const g = ctx.createLinearGradient(0, b.y, 0, b.y + b.h)
-    g.addColorStop(0, b.col); g.addColorStop(1, shadeColor(b.col, -22))
-    ctx.fillStyle = g; ctx.fillRect(0, b.y, 1024, b.h)
-  })
-  for (let y = 0; y < 512; y += 4) {
-    for (let x = 0; x < 1024; x += 18) {
-      const offset = Math.sin(y * 0.05 + x * 0.02) * 6
-      ctx.beginPath(); ctx.ellipse(x, y + offset, 14, 2.5, 0, 0, Math.PI*2)
-      ctx.fillStyle = `rgba(100,60,30,${0.06 + Math.random()*0.1})`; ctx.fill()
-    }
-  }
-  const sx = 680, sy = 320
-  const gs = ctx.createRadialGradient(sx, sy, 0, sx, sy, 72)
-  gs.addColorStop(0, '#d05834'); gs.addColorStop(0.5, '#a03a1c')
-  gs.addColorStop(0.85, 'rgba(120,40,20,0.55)'); gs.addColorStop(1, 'rgba(120,40,20,0)')
-  ctx.fillStyle = gs
-  ctx.beginPath(); ctx.ellipse(sx, sy, 72, 42, 0, 0, Math.PI*2); ctx.fill()
-  return new THREE.CanvasTexture(c)
-}
-
-/* 冰巨星：青蓝渐变＋细纬带 */
-function createIceGiantTexture() {
-  const c = document.createElement('canvas')
-  c.width = 1024; c.height = 512
-  const ctx = c.getContext('2d')
-  const base = ctx.createLinearGradient(0, 0, 0, 512)
-  base.addColorStop(0, '#5a9cc5'); base.addColorStop(0.5, '#8bc0dc'); base.addColorStop(1, '#4a8cb5')
-  ctx.fillStyle = base; ctx.fillRect(0, 0, 1024, 512)
-  for (let i = 0; i < 24; i++) {
-    const y = i * 22 + Math.sin(i) * 6
-    ctx.strokeStyle = `rgba(255,255,255,${0.08 + Math.random()*0.08})`; ctx.lineWidth = 2
-    ctx.beginPath(); ctx.moveTo(0, y)
-    for (let x = 0; x <= 1024; x += 40) ctx.lineTo(x, y + Math.sin(x * 0.008 + i) * 2)
+    ctx.strokeStyle = `rgba(30, 100, 140, ${0.15 - i * 0.01})`
+    ctx.lineWidth = 1
     ctx.stroke()
   }
-  const nc = ctx.createLinearGradient(0, 0, 0, 80)
-  nc.addColorStop(0, 'rgba(215,245,255,0.45)'); nc.addColorStop(1, 'rgba(215,245,255,0)')
-  ctx.fillStyle = nc; ctx.fillRect(0, 0, 1024, 80)
-  const sc = ctx.createLinearGradient(0, 512, 0, 432)
-  sc.addColorStop(0, 'rgba(215,245,255,0.45)'); sc.addColorStop(1, 'rgba(215,245,255,0)')
-  ctx.fillStyle = sc; ctx.fillRect(0, 432, 1024, 80)
-  return new THREE.CanvasTexture(c)
-}
 
-/* 紫微星：紫色星云质感＋金光星点 */
-function createNebulaTexture() {
-  const c = document.createElement('canvas')
-  c.width = 1024; c.height = 512
-  const ctx = c.getContext('2d')
-  const base = ctx.createLinearGradient(0, 0, 0, 512)
-  base.addColorStop(0, '#4a2a70'); base.addColorStop(0.5, '#8a5abc'); base.addColorStop(1, '#3a1e5a')
-  ctx.fillStyle = base; ctx.fillRect(0, 0, 1024, 512)
-  for (let i = 0; i < 30; i++) {
-    const cx = rand(0, 1024), cy = rand(0, 512), r = rand(60, 180)
-    const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r)
-    const hue = Math.random() > 0.5 ? '255,210,130' : '200,150,230'
-    g.addColorStop(0, `rgba(${hue},${0.22 + Math.random()*0.25})`)
-    g.addColorStop(0.5, `rgba(${hue},${0.06 + Math.random()*0.1})`)
-    g.addColorStop(1, `rgba(${hue},0)`)
-    ctx.fillStyle = g
-    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.fill()
-  }
-  for (let i = 0; i < 220; i++) {
+  // 绘制更真实的大陆轮廓
+  const continents = [
+    // 北美洲 - 更真实的形状
+    {
+      cx: 180, cy: 140,
+      points: [[90,60],[130,40],[170,50],[200,70],[220,100],[230,140],[220,180],[200,210],[170,230],[140,220],[110,190],[90,150],[80,100]],
+      land: '#3a7a3a', highlight: '#4a9a4a', shadow: '#2a5a2a'
+    },
+    // 南美洲
+    {
+      cx: 260, cy: 350,
+      points: [[220,250],[250,230],[280,240],[310,260],[320,300],[310,350],[290,400],[260,420],[230,410],[210,370],[200,310]],
+      land: '#4a8a4a', highlight: '#5aaa5a', shadow: '#3a6a3a'
+    },
+    // 欧洲
+    {
+      cx: 500, cy: 120,
+      points: [[450,60],[480,50],[520,60],[550,80],[560,110],[540,130],[510,140],[480,130],[460,110]],
+      land: '#5a9a5a', highlight: '#6aba6a', shadow: '#4a7a4a'
+    },
+    // 非洲
+    {
+      cx: 530, cy: 310,
+      points: [[470,200],[510,180],[550,190],[580,220],[600,280],[590,340],[560,390],[520,410],[480,390],[450,340],[440,280],[450,230]],
+      land: '#6a8a5a', highlight: '#7a9a6a', shadow: '#5a7a4a'
+    },
+    // 亚洲
+    {
+      cx: 750, cy: 180,
+      points: [[620,60],[680,50],[750,60],[820,80],[880,110],[920,150],[940,200],[930,260],[900,300],[850,320],[800,300],[750,270],[720,220],[680,170],[640,120]],
+      land: '#5a9a5a', highlight: '#6aba6a', shadow: '#4a7a4a'
+    },
+    // 大洋洲
+    {
+      cx: 860, cy: 400,
+      points: [[820,350],[850,340],[880,350],[900,380],[890,420],[860,440],[830,430],[810,400]],
+      land: '#6aaa6a', highlight: '#7aba7a', shadow: '#5a8a5a'
+    }
+  ]
+
+  continents.forEach(continent => {
     ctx.beginPath()
-    ctx.arc(rand(0,1024), rand(0,512), rand(0.5, 2), 0, Math.PI*2)
-    ctx.fillStyle = `rgba(255,240,200,${0.4 + Math.random()*0.5})`
+    ctx.moveTo(continent.points[0][0], continent.points[0][1])
+    for (let i = 1; i < continent.points.length; i++) {
+      ctx.lineTo(continent.points[i][0], continent.points[i][1])
+    }
+    ctx.closePath()
+
+    // 添加地形渐变
+    const landGrad = ctx.createRadialGradient(
+        continent.cx - 30, continent.cy - 20, 0,
+        continent.cx, continent.cy, 150
+    )
+    landGrad.addColorStop(0, continent.highlight)
+    landGrad.addColorStop(0.5, continent.land)
+    landGrad.addColorStop(1, continent.shadow)
+    ctx.fillStyle = landGrad
+    ctx.fill()
+
+    // 大陆边缘
+    ctx.strokeStyle = 'rgba(20, 60, 20, 0.6)'
+    ctx.lineWidth = 2
+    ctx.stroke()
+  })
+
+  // 添加高原和山脉区域
+  const highlands = [
+    { x: 750, y: 150, rx: 80, ry: 50 }, // 西藏高原
+    { x: 600, y: 200, rx: 40, ry: 30 }, // 阿拉伯半岛
+    { x: 180, y: 180, rx: 30, ry: 20 }, // 落基山脉区域
+    { x: 500, y: 100, rx: 25, ry: 15 },  // 阿尔卑斯山
+  ]
+  highlands.forEach(h => {
+    const hGrad = ctx.createRadialGradient(h.x, h.y, 0, h.x, h.y, Math.max(h.rx, h.ry))
+    hGrad.addColorStop(0, 'rgba(160, 140, 100, 0.5)')
+    hGrad.addColorStop(1, 'rgba(100, 80, 60, 0)')
+    ctx.fillStyle = hGrad
+    ctx.ellipse(h.x, h.y, h.rx, h.ry, 0, 0, Math.PI * 2)
+    ctx.fill()
+  })
+
+  // 撒哈拉沙漠
+  ctx.fillStyle = 'rgba(210, 180, 120, 0.35)'
+  ctx.beginPath()
+  ctx.ellipse(520, 240, 70, 40, 0, 0, Math.PI * 2)
+  ctx.fill()
+
+  // 城市灯光 - 更加分散和自然
+  const cityLights = [
+    // 北美
+    [160, 150], [180, 160], [170, 170], [200, 140], [150, 180], [190, 155],
+    [210, 200], [140, 190],
+    // 欧洲
+    [480, 110], [500, 120], [490, 130], [510, 105], [520, 115],
+    // 亚洲
+    [820, 140], [840, 150], [800, 130], [760, 160], [880, 180], [850, 170],
+    [900, 200], [780, 190], [920, 160],
+    // 其他
+    [260, 300], [550, 280], [860, 380]
+  ]
+
+  cityLights.forEach(([x, y], i) => {
+    const size = rand(1.5, 3)
+    const brightness = rand(0.7, 1)
+
+    // 光晕效果
+    const glow = ctx.createRadialGradient(x, y, 0, x, y, 12)
+    glow.addColorStop(0, `rgba(255, 240, 180, ${brightness * 0.5})`)
+    glow.addColorStop(0.5, `rgba(255, 220, 120, ${brightness * 0.2})`)
+    glow.addColorStop(1, 'rgba(255, 220, 120, 0)')
+    ctx.fillStyle = glow
+    ctx.beginPath()
+    ctx.arc(x, y, 12, 0, Math.PI * 2)
+    ctx.fill()
+
+    // 核心亮点
+    ctx.beginPath()
+    ctx.arc(x, y, size, 0, Math.PI * 2)
+    ctx.fillStyle = `rgba(255, 255, 220, ${brightness})`
+    ctx.fill()
+  })
+
+  // 云层 - 更自然的分布
+  ctx.globalAlpha = 0.3
+  const cloudPatterns = [
+    // 大云团
+    { x: 200, y: 100, w: 180, h: 50, opacity: 0.6 },
+    { x: 600, y: 80, w: 200, h: 45, opacity: 0.5 },
+    { x: 850, y: 120, w: 150, h: 40, opacity: 0.55 },
+    { x: 400, y: 200, w: 120, h: 35, opacity: 0.4 },
+    { x: 700, y: 300, w: 160, h: 50, opacity: 0.5 },
+    // 小云朵
+    { x: 150, y: 250, w: 80, h: 25, opacity: 0.4 },
+    { x: 450, y: 350, w: 100, h: 30, opacity: 0.45 },
+    { x: 900, y: 280, w: 90, h: 28, opacity: 0.4 },
+  ]
+
+  cloudPatterns.forEach(cloud => {
+    for (let i = 0; i < 5; i++) {
+      const cx = cloud.x + rand(-cloud.w * 0.3, cloud.w * 0.3)
+      const cy = cloud.y + rand(-cloud.h * 0.2, cloud.h * 0.2)
+      const cw = cloud.w * rand(0.4, 0.8)
+      const ch = cloud.h * rand(0.5, 1)
+
+      const cloudGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, cw / 2)
+      cloudGrad.addColorStop(0, `rgba(255, 255, 255, ${cloud.opacity * rand(0.6, 1)})`)
+      cloudGrad.addColorStop(0.5, `rgba(240, 245, 250, ${cloud.opacity * 0.5 * rand(0.6, 1)})`)
+      cloudGrad.addColorStop(1, 'rgba(240, 245, 250, 0)')
+      ctx.fillStyle = cloudGrad
+      ctx.save()
+      ctx.translate(cx, cy)
+      ctx.scale(1, ch / cw)
+      ctx.beginPath()
+      ctx.arc(0, 0, cw / 2, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.restore()
+    }
+  })
+  ctx.globalAlpha = 1
+
+  // 极地冰盖
+  const northCap = ctx.createLinearGradient(0, 0, 0, 80)
+  northCap.addColorStop(0, 'rgba(255, 255, 255, 0.95)')
+  northCap.addColorStop(0.3, 'rgba(240, 250, 255, 0.8)')
+  northCap.addColorStop(1, 'rgba(220, 240, 255, 0)')
+  ctx.fillStyle = northCap
+  ctx.fillRect(0, 0, 1024, 80)
+
+  // 北极冰层纹理
+  ctx.globalAlpha = 0.3
+  for (let i = 0; i < 5; i++) {
+    const x = rand(100, 900)
+    ctx.beginPath()
+    ctx.arc(x, rand(20, 60), rand(30, 80), 0, Math.PI * 2)
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)'
     ctx.fill()
   }
+  ctx.globalAlpha = 1
+
+  const southCap = ctx.createLinearGradient(0, 512, 0, 432)
+  southCap.addColorStop(0, 'rgba(255, 255, 255, 0.95)')
+  southCap.addColorStop(0.3, 'rgba(240, 250, 255, 0.8)')
+  southCap.addColorStop(1, 'rgba(220, 240, 255, 0)')
+  ctx.fillStyle = southCap
+  ctx.fillRect(0, 432, 1024, 80)
+
+  // 南极冰层纹理
+  ctx.globalAlpha = 0.3
+  for (let i = 0; i < 5; i++) {
+    const x = rand(100, 900)
+    ctx.beginPath()
+    ctx.arc(x, rand(450, 490), rand(30, 80), 0, Math.PI * 2)
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)'
+    ctx.fill()
+  }
+  ctx.globalAlpha = 1
+
   return new THREE.CanvasTexture(c)
 }
 
-/* 统一大气层：背面透明辛光包裹 */
-function createAtmosphere(radius, hexColor, opacity = 0.15) {
-  return new THREE.Mesh(
-    new THREE.SphereGeometry(radius, 48, 48),
-    new THREE.MeshBasicMaterial({ color: hexColor, transparent: true, opacity, side: THREE.BackSide })
-  )
+/* ========== 精美火星 ========== */
+function createMarsTexture() {
+  const c = document.createElement('canvas')
+  c.width = 1024
+  c.height = 512
+  const ctx = c.getContext('2d')
+
+  const baseGrad = ctx.createLinearGradient(0, 0, 0, 512)
+  baseGrad.addColorStop(0, '#9c5235')
+  baseGrad.addColorStop(0.3, '#c96d4a')
+  baseGrad.addColorStop(0.5, '#b86040')
+  baseGrad.addColorStop(0.7, '#c96d4a')
+  baseGrad.addColorStop(1, '#9c5235')
+  ctx.fillStyle = baseGrad
+  ctx.fillRect(0, 0, 1024, 512)
+
+  for (let i = 0; i < 60; i++) {
+    const x = rand(0, 1024), y = rand(0, 512)
+    const r = rand(30, 100)
+    const col = ctx.createRadialGradient(x, y, 0, x, y, r)
+    const dark = Math.random() > 0.5
+    col.addColorStop(0, dark ? 'rgba(140, 60, 30, 0.3)' : 'rgba(220, 160, 120, 0.25)')
+    col.addColorStop(1, 'rgba(0, 0, 0, 0)')
+    ctx.fillStyle = col
+    ctx.beginPath()
+    ctx.arc(x, y, r, 0, Math.PI * 2)
+    ctx.fill()
+  }
+
+  ctx.strokeStyle = 'rgba(80, 35, 15, 0.5)'
+  ctx.lineWidth = 4
+  ctx.beginPath()
+  ctx.moveTo(100, 280)
+  ctx.bezierCurveTo(350, 260, 600, 300, 900, 270)
+  ctx.stroke()
+
+  for (let i = 0; i < 35; i++) {
+    const x = rand(0, 1024), y = rand(0, 512)
+    const r = rand(5, 18)
+    ctx.beginPath()
+    ctx.arc(x, y, r, 0, Math.PI * 2)
+    const craterGrad = ctx.createRadialGradient(x - r * 0.2, y - r * 0.2, 0, x, y, r)
+    craterGrad.addColorStop(0, 'rgba(160, 90, 60, 0.6)')
+    craterGrad.addColorStop(0.7, 'rgba(140, 70, 45, 0.3)')
+    craterGrad.addColorStop(1, 'rgba(100, 50, 30, 0)')
+    ctx.fillStyle = craterGrad
+    ctx.fill()
+  }
+
+  const northCap = ctx.createRadialGradient(512, 20, 0, 512, 20, 120)
+  northCap.addColorStop(0, 'rgba(255, 248, 240, 0.9)')
+  northCap.addColorStop(1, 'rgba(240, 235, 230, 0)')
+  ctx.fillStyle = northCap
+  ctx.fillRect(0, 0, 1024, 140)
+
+  const southCap = ctx.createRadialGradient(512, 492, 0, 512, 492, 120)
+  southCap.addColorStop(0, 'rgba(255, 248, 240, 0.9)')
+  southCap.addColorStop(1, 'rgba(240, 235, 230, 0)')
+  ctx.fillStyle = southCap
+  ctx.fillRect(0, 372, 1024, 140)
+
+  return new THREE.CanvasTexture(c)
 }
 
-function createLabel(text, color='#ffffff') {
+/* ========== 精美木星 ========== */
+function createJupiterTexture() {
+  const c = document.createElement('canvas')
+  c.width = 1024
+  c.height = 512
+  const ctx = c.getContext('2d')
+
+  const bands = [
+    { y: 0, h: 50, col: '#f0dcc4' },
+    { y: 50, h: 60, col: '#c89060' },
+    { y: 110, h: 55, col: '#d8b884' },
+    { y: 165, h: 70, col: '#a87848' },
+    { y: 235, h: 65, col: '#e8cca8' },
+    { y: 300, h: 60, col: '#b08858' },
+    { y: 360, h: 55, col: '#d0a870' },
+    { y: 415, h: 50, col: '#a07040' },
+    { y: 465, h: 47, col: '#c8a070' }
+  ]
+
+  bands.forEach(b => {
+    const grad = ctx.createLinearGradient(0, b.y, 0, b.y + b.h)
+    grad.addColorStop(0, b.col)
+    grad.addColorStop(0.5, b.col)
+    grad.addColorStop(1, b.col)
+    ctx.fillStyle = grad
+    ctx.fillRect(0, b.y, 1024, b.h)
+  })
+
+  for (let y = 0; y < 512; y += 4) {
+    ctx.beginPath()
+    ctx.moveTo(0, y)
+    for (let x = 0; x < 1024; x += 16) {
+      const wave = Math.sin(y * 0.06 + x * 0.02) * 2
+      ctx.lineTo(x, y + wave)
+    }
+    ctx.strokeStyle = 'rgba(80, 50, 30, 0.1)'
+    ctx.lineWidth = 1
+    ctx.stroke()
+  }
+
+  const sx = 700, sy = 320
+  const spotGrad = ctx.createRadialGradient(sx, sy, 0, sx, sy, 60)
+  spotGrad.addColorStop(0, '#e05030')
+  spotGrad.addColorStop(0.4, '#c04020')
+  spotGrad.addColorStop(0.8, 'rgba(100, 40, 20, 0.4)')
+  spotGrad.addColorStop(1, 'rgba(80, 30, 15, 0)')
+  ctx.beginPath()
+  ctx.ellipse(sx, sy, 60, 35, 0, 0, Math.PI * 2)
+  ctx.fillStyle = spotGrad
+  ctx.fill()
+
+  ctx.beginPath()
+  ctx.ellipse(sx - 10, sy - 8, 35, 20, 0.2, 0, Math.PI * 2)
+  ctx.strokeStyle = 'rgba(200, 100, 60, 0.4)'
+  ctx.lineWidth = 2
+  ctx.stroke()
+
+  for (let i = 0; i < 8; i++) {
+    const x = rand(50, 950), y = rand(50, 450)
+    const r = rand(8, 20)
+    ctx.beginPath()
+    ctx.arc(x, y, r, 0, Math.PI * 2)
+    const stormGrad = ctx.createRadialGradient(x, y, 0, x, y, r)
+    stormGrad.addColorStop(0, 'rgba(180, 140, 100, 0.4)')
+    stormGrad.addColorStop(1, 'rgba(150, 110, 80, 0)')
+    ctx.fillStyle = stormGrad
+    ctx.fill()
+  }
+
+  return new THREE.CanvasTexture(c)
+}
+
+/* ========== 精美冰巨星 ========== */
+function createIceGiantTexture() {
+  const c = document.createElement('canvas')
+  c.width = 1024
+  c.height = 512
+  const ctx = c.getContext('2d')
+
+  const baseGrad = ctx.createLinearGradient(0, 0, 0, 512)
+  baseGrad.addColorStop(0, '#1a6080')
+  baseGrad.addColorStop(0.5, '#40a0c8')
+  baseGrad.addColorStop(1, '#1a6080')
+  ctx.fillStyle = baseGrad
+  ctx.fillRect(0, 0, 1024, 512)
+
+  for (let i = 0; i < 20; i++) {
+    const y = i * 26 + 8
+    ctx.beginPath()
+    ctx.moveTo(0, y)
+    for (let x = 0; x <= 1024; x += 24) {
+      const wave = Math.sin(x * 0.01 + i * 0.5) * 3
+      ctx.lineTo(x, y + wave)
+    }
+    ctx.strokeStyle = 'rgba(200, 240, 255, 0.12)'
+    ctx.lineWidth = 2
+    ctx.stroke()
+  }
+
+  for (let i = 0; i < 15; i++) {
+    const x = rand(0, 1024), y = rand(30, 480)
+    const w = rand(50, 150), h = rand(15, 40)
+    const cloudGrad = ctx.createRadialGradient(x, y, 0, x, y, w / 2)
+    cloudGrad.addColorStop(0, 'rgba(220, 250, 255, 0.3)')
+    cloudGrad.addColorStop(1, 'rgba(200, 240, 255, 0)')
+    ctx.fillStyle = cloudGrad
+    ctx.save()
+    ctx.translate(x, y)
+    ctx.scale(1, h / w)
+    ctx.beginPath()
+    ctx.arc(0, 0, w / 2, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.restore()
+  }
+
+  const northCap = ctx.createLinearGradient(0, 0, 0, 50)
+  northCap.addColorStop(0, 'rgba(200, 240, 255, 0.5)')
+  northCap.addColorStop(1, 'rgba(180, 230, 255, 0)')
+  ctx.fillStyle = northCap
+  ctx.fillRect(0, 0, 1024, 50)
+
+  return new THREE.CanvasTexture(c)
+}
+
+/* ========== 精美紫微星 ========== */
+function createNebulaTexture() {
+  const c = document.createElement('canvas')
+  c.width = 1024
+  c.height = 512
+  const ctx = c.getContext('2d')
+
+  const bgGrad = ctx.createRadialGradient(512, 256, 0, 512, 256, 400)
+  bgGrad.addColorStop(0, '#1a0848')
+  bgGrad.addColorStop(0.5, '#100530')
+  bgGrad.addColorStop(1, '#05010d')
+  ctx.fillStyle = bgGrad
+  ctx.fillRect(0, 0, 1024, 512)
+
+  for (let i = 0; i < 20; i++) {
+    const x = rand(0, 1024), y = rand(0, 512)
+    const r = rand(80, 200)
+    const nebulaGrad = ctx.createRadialGradient(x, y, 0, x, y, r)
+    const hue = Math.random() > 0.5 ? `rgba(200, 150, 255, ${rand(0.1, 0.2)})` : `rgba(150, 200, 255, ${rand(0.08, 0.15)})`
+    nebulaGrad.addColorStop(0, hue)
+    nebulaGrad.addColorStop(1, 'transparent')
+    ctx.fillStyle = nebulaGrad
+    ctx.beginPath()
+    ctx.arc(x, y, r, 0, Math.PI * 2)
+    ctx.fill()
+  }
+
+  for (let i = 0; i < 250; i++) {
+    const x = rand(0, 1024), y = rand(0, 512)
+    const size = rand(0.5, 2.5)
+    const brightness = rand(0.4, 1)
+    const glow = ctx.createRadialGradient(x, y, 0, x, y, size * 4)
+    glow.addColorStop(0, `rgba(255, 250, 230, ${brightness})`)
+    glow.addColorStop(1, 'transparent')
+    ctx.fillStyle = glow
+    ctx.fillRect(x - size * 4, y - size * 4, size * 8, size * 8)
+    ctx.beginPath()
+    ctx.arc(x, y, size, 0, Math.PI * 2)
+    ctx.fillStyle = `rgba(255, ${randInt(245, 255)}, ${randInt(225, 245)}, ${brightness})`
+    ctx.fill()
+  }
+
+  for (let i = 0; i < 10; i++) {
+    const x = rand(50, 975), y = rand(50, 460)
+    const size = rand(3, 6)
+    const outerGlow = ctx.createRadialGradient(x, y, 0, x, y, size * 6)
+    outerGlow.addColorStop(0, 'rgba(255, 240, 200, 0.4)')
+    outerGlow.addColorStop(1, 'transparent')
+    ctx.fillStyle = outerGlow
+    ctx.fillRect(x - size * 6, y - size * 6, size * 12, size * 12)
+    ctx.beginPath()
+    ctx.arc(x, y, size * 0.4, 0, Math.PI * 2)
+    ctx.fillStyle = '#ffffff'
+    ctx.fill()
+  }
+
+  return new THREE.CanvasTexture(c)
+}
+
+/* 大气层效果 */
+function createAtmosphere(radius, hexColor, opacity = 0.15) {
+  const group = new THREE.Group()
+  const mainAtmo = new THREE.Mesh(
+      new THREE.SphereGeometry(radius, 48, 48),
+      new THREE.MeshBasicMaterial({ color: hexColor, transparent: true, opacity, side: THREE.BackSide })
+  )
+  group.add(mainAtmo)
+  const outerAtmo = new THREE.Mesh(
+      new THREE.SphereGeometry(radius * 1.06, 32, 32),
+      new THREE.MeshBasicMaterial({ color: hexColor, transparent: true, opacity: opacity * 0.35, side: THREE.BackSide })
+  )
+  group.add(outerAtmo)
+  return group
+}
+
+function createLabel(text, color = '#ffffff') {
   const div = document.createElement('div')
   div.textContent = text
-  div.style.cssText = `color:${color};font-size:16px;font-weight:500;letter-spacing:3px;font-family:'Cinzel','Noto Serif SC',serif;text-shadow:0 0 20px rgba(0,0,0,0.95),0 0 40px rgba(80,120,200,0.3);background:linear-gradient(135deg,rgba(15,25,45,0.65),rgba(10,15,30,0.5));padding:6px 18px;border-radius:20px;backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.12);pointer-events:none;white-space:nowrap;`
+  div.style.cssText = `
+    color: ${color};
+    font-size: 16px;
+    font-weight: 500;
+    letter-spacing: 3px;
+    font-family: 'Cinzel', 'Noto Serif SC', serif;
+    text-shadow: 0 0 20px rgba(0, 0, 0, 0.9), 0 0 40px rgba(80, 120, 200, 0.3);
+    background: linear-gradient(135deg, rgba(15, 25, 45, 0.65), rgba(10, 15, 30, 0.5));
+    padding: 6px 18px;
+    border-radius: 20px;
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    pointer-events: none;
+    white-space: nowrap;
+  `
   return new CSS2DObject(div)
 }
 
 function handleBoundary(p) {
-  const vel=p.userData.velocity, r=p.userData.radius
-  ;['x','y','z'].forEach(axis=>{
-    if (p.position[axis]>boundary[axis]-r) { p.position[axis]=boundary[axis]-r; vel[axis]*=-0.5 }
-    else if (p.position[axis]<-boundary[axis]+r) { p.position[axis]=-boundary[axis]+r; vel[axis]*=-0.5 }
+  const vel = p.userData.velocity, r = p.userData.radius
+  ;['x', 'y', 'z'].forEach(axis => {
+    if (p.position[axis] > boundary[axis] - r) { p.position[axis] = boundary[axis] - r; vel[axis] *= -0.5 }
+    else if (p.position[axis] < -boundary[axis] + r) { p.position[axis] = -boundary[axis] + r; vel[axis] *= -0.5 }
   })
 }
 
 function handleCollisions() {
-  for (let i=0; i<planets.length; i++) {
-    for (let j=i+1; j<planets.length; j++) {
-      const a=planets[i], b=planets[j]
-      const delta=new THREE.Vector3().subVectors(a.position,b.position)
-      const dist=delta.length(), minDist=a.userData.radius+b.userData.radius
-      if (dist<minDist) {
-        const correction=(minDist-dist)/2, norm=delta.clone().normalize()
+  for (let i = 0; i < planets.length; i++) {
+    for (let j = i + 1; j < planets.length; j++) {
+      const a = planets[i], b = planets[j]
+      const delta = new THREE.Vector3().subVectors(a.position, b.position)
+      const dist = delta.length(), minDist = a.userData.radius + b.userData.radius
+      if (dist < minDist) {
+        const correction = (minDist - dist) / 2, norm = delta.clone().normalize()
         a.position.add(norm.clone().multiplyScalar(correction))
         b.position.add(norm.clone().multiplyScalar(-correction))
-        const va=a.userData.velocity, vb=b.userData.velocity
-        const impulse=norm.clone().multiplyScalar((1+0.3)*va.dot(norm)-vb.dot(norm))
-        va.sub(impulse.multiplyScalar(0.5)); vb.add(impulse.multiplyScalar(0.5))
+        const va = a.userData.velocity, vb = b.userData.velocity
+        const impulse = norm.clone().multiplyScalar((1 + 0.3) * va.dot(norm) - vb.dot(norm))
+        va.sub(impulse.clone().multiplyScalar(0.5))
+        vb.add(impulse.clone().multiplyScalar(0.5))
       }
     }
   }
 }
 
 function onMouseDown(event) {
-  const rect=renderer.domElement.getBoundingClientRect()
-  mouse.x=((event.clientX-rect.left)/rect.width)*2-1
-  mouse.y=-((event.clientY-rect.top)/rect.height)*2+1
-  raycaster.setFromCamera(mouse,camera)
-  const intersects=raycaster.intersectObjects(planets)
-  if (intersects.length>0) {
-    draggedPlanet=intersects[0].object
-    dragPlane.setFromNormalAndCoplanarPoint(camera.getWorldDirection(dragPlane.normal).negate(),draggedPlanet.position)
-    if (raycaster.ray.intersectPlane(dragPlane,intersectionPoint)) dragOffset.copy(draggedPlanet.position).sub(intersectionPoint)
-    dragStartPos=draggedPlanet.position.clone(); hasMoved=false
-    event.preventDefault(); renderer.domElement.style.cursor='grabbing'
+  const rect = renderer.domElement.getBoundingClientRect()
+  mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1
+  mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1
+  raycaster.setFromCamera(mouse, camera)
+  const intersects = raycaster.intersectObjects(planets, true)
+  if (intersects.length > 0) {
+    let target = intersects[0].object
+    while (target.parent && !target.userData.radius) target = target.parent
+    if (target.userData.radius) {
+      draggedPlanet = target
+      dragPlane.setFromNormalAndCoplanarPoint(camera.getWorldDirection(dragPlane.normal).negate(), draggedPlanet.position)
+      if (raycaster.ray.intersectPlane(dragPlane, intersectionPoint)) dragOffset.copy(draggedPlanet.position).sub(intersectionPoint)
+      dragStartPos = draggedPlanet.position.clone()
+      hasMoved = false
+      event.preventDefault()
+      renderer.domElement.style.cursor = 'grabbing'
+    }
   }
 }
 
 function onMouseMove(event) {
   if (!draggedPlanet) return
-  if (event.buttons!==1) { draggedPlanet=null; renderer.domElement.style.cursor='grab'; return }
-  const rect=renderer.domElement.getBoundingClientRect()
-  mouse.x=((event.clientX-rect.left)/rect.width)*2-1
-  mouse.y=-((event.clientY-rect.top)/rect.height)*2+1
-  raycaster.setFromCamera(mouse,camera)
-  if (raycaster.ray.intersectPlane(dragPlane,intersectionPoint)) {
-    const newPos=intersectionPoint.clone().add(dragOffset)
-    const r=draggedPlanet.userData.radius
-    newPos.x=Math.min(boundary.x-r,Math.max(-boundary.x+r,newPos.x))
-    newPos.y=Math.min(boundary.y-r,Math.max(-boundary.y+r,newPos.y))
-    newPos.z=Math.min(boundary.z-r,Math.max(-boundary.z+r,newPos.z))
-    if (newPos.distanceTo(dragStartPos)>0.3) hasMoved=true
+  if (event.buttons !== 1) { draggedPlanet = null; renderer.domElement.style.cursor = 'grab'; return }
+  const rect = renderer.domElement.getBoundingClientRect()
+  mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1
+  mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1
+  raycaster.setFromCamera(mouse, camera)
+  if (raycaster.ray.intersectPlane(dragPlane, intersectionPoint)) {
+    const newPos = intersectionPoint.clone().add(dragOffset)
+    const r = draggedPlanet.userData.radius
+    newPos.x = Math.min(boundary.x - r, Math.max(-boundary.x + r, newPos.x))
+    newPos.y = Math.min(boundary.y - r, Math.max(-boundary.y + r, newPos.y))
+    newPos.z = Math.min(boundary.z - r, Math.max(-boundary.z + r, newPos.z))
+    if (newPos.distanceTo(dragStartPos) > 0.3) hasMoved = true
     for (let other of planets) {
-      if (other===draggedPlanet) continue
-      const dist=newPos.distanceTo(other.position), minDist=draggedPlanet.userData.radius+other.userData.radius
-      if (dist<minDist) {
-        const norm=new THREE.Vector3().subVectors(newPos,other.position).normalize()
-        newPos.copy(other.position.clone().add(norm.multiplyScalar(minDist+0.1)))
+      if (other === draggedPlanet) continue
+      const dist = newPos.distanceTo(other.position), minDist = draggedPlanet.userData.radius + other.userData.radius
+      if (dist < minDist) {
+        const norm = new THREE.Vector3().subVectors(newPos, other.position).normalize()
+        newPos.copy(other.position.clone().add(norm.multiplyScalar(minDist + 0.1)))
         other.userData.velocity.add(norm.clone().multiplyScalar(0.15))
         draggedPlanet.userData.velocity.add(norm.clone().multiplyScalar(-0.1))
         break
@@ -315,177 +673,210 @@ function onMouseMove(event) {
 function onMouseUp() {
   if (draggedPlanet) {
     if (!hasMoved) {
-      const data=draggedPlanet.userData
-      currentLink=data.link
-      panelTitle.value=data.func
-      panelDesc.value=`${data.name} · ${data.desc}`
-      panelAction.value=`前往 ${data.func}`
+      const data = draggedPlanet.userData
+      currentLink = data.link
+      panelTitle.value = data.func
+      panelDesc.value = `${data.name} · ${data.desc}`
+      panelAction.value = `前往 ${data.func}`
     }
-    draggedPlanet=null; renderer.domElement.style.cursor='grab'
+    draggedPlanet = null
+    renderer.domElement.style.cursor = 'grab'
   }
-  hasMoved=false
+  hasMoved = false
 }
 
-const onWindowBlur = ()=>{if(renderer){draggedPlanet=null;renderer.domElement.style.cursor='grab'}}
+const onWindowBlur = () => { if (renderer) { draggedPlanet = null; renderer.domElement.style.cursor = 'grab' } }
 
 function onWindowResize() {
-  camera.aspect=window.innerWidth/window.innerHeight
+  camera.aspect = window.innerWidth / window.innerHeight
   camera.updateProjectionMatrix()
-  renderer.setSize(window.innerWidth,window.innerHeight)
-  cssRenderer.setSize(window.innerWidth,window.innerHeight)
+  renderer.setSize(window.innerWidth, window.innerHeight)
+  cssRenderer.setSize(window.innerWidth, window.innerHeight)
 }
 
 function init() {
-  scene=new THREE.Scene()
-  scene.background=new THREE.Color(0x030812)
+  scene = new THREE.Scene()
+  scene.background = new THREE.Color(0x030812)
 
-  renderer=new THREE.WebGLRenderer({antialias:true,alpha:false})
-  renderer.setSize(window.innerWidth,window.innerHeight)
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2))
-  renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap
-  renderer.toneMapping=THREE.ACESFilmicToneMapping
-  renderer.toneMappingExposure=1.1
-  renderer.domElement.style.cssText='position:absolute;top:0;left:0;width:100%;height:100%;display:block;'
+  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false })
+  renderer.setSize(window.innerWidth, window.innerHeight)
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+  renderer.shadowMap.enabled = true
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap
+  renderer.toneMapping = THREE.ACESFilmicToneMapping
+  renderer.toneMappingExposure = 1.1
+  renderer.domElement.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;display:block;'
   sceneContainer.value.appendChild(renderer.domElement)
 
-  cssRenderer=new CSS2DRenderer()
-  cssRenderer.setSize(window.innerWidth,window.innerHeight)
-  cssRenderer.domElement.style.cssText='position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;'
+  cssRenderer = new CSS2DRenderer()
+  cssRenderer.setSize(window.innerWidth, window.innerHeight)
+  cssRenderer.domElement.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;'
   sceneContainer.value.appendChild(cssRenderer.domElement)
 
-  camera=new THREE.PerspectiveCamera(42,window.innerWidth/window.innerHeight,0.1,1000)
-  camera.position.set(0,2,22); camera.lookAt(0,0,0)
+  camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 1000)
+  camera.position.set(0, 2, 22)
+  camera.lookAt(0, 0, 0)
 
-  scene.add(new THREE.AmbientLight(0x1a2040,0.6))
-  const dirLight=new THREE.DirectionalLight(0xfff0dd,1.8)
-  dirLight.position.set(8,10,6); dirLight.castShadow=true
-  dirLight.shadow.mapSize.set(1024,1024)
-  const d=15; dirLight.shadow.camera.left=-d; dirLight.shadow.camera.right=d
-  dirLight.shadow.camera.top=d; dirLight.shadow.camera.bottom=-d
-  dirLight.shadow.camera.near=1; dirLight.shadow.camera.far=30; dirLight.shadow.bias=-0.001
+  scene.add(new THREE.AmbientLight(0x1a2040, 0.6))
+
+  const dirLight = new THREE.DirectionalLight(0xfff0dd, 1.8)
+  dirLight.position.set(8, 10, 6)
+  dirLight.castShadow = true
+  dirLight.shadow.mapSize.set(1024, 1024)
+  const d = 15
+  dirLight.shadow.camera.left = -d
+  dirLight.shadow.camera.right = d
+  dirLight.shadow.camera.top = d
+  dirLight.shadow.camera.bottom = -d
+  dirLight.shadow.camera.near = 1
+  dirLight.shadow.camera.far = 30
+  dirLight.shadow.bias = -0.001
   scene.add(dirLight)
 
-  const rimLight=new THREE.DirectionalLight(0x4488ff,0.6); rimLight.position.set(-6,3,-8); scene.add(rimLight)
-  const fillLight=new THREE.PointLight(0xff7744,0.4); fillLight.position.set(-4,-3,5); scene.add(fillLight)
-  const backLight=new THREE.PointLight(0x6644cc,0.5); backLight.position.set(5,-2,-12); scene.add(backLight)
+  const rimLight = new THREE.DirectionalLight(0x4488ff, 0.6)
+  rimLight.position.set(-6, 3, -8)
+  scene.add(rimLight)
 
-  for (let L=0; L<3; L++) {
-    const sg=new THREE.BufferGeometry(), c=[4000,2000,800][L], sz=[0.12,0.08,0.05][L], cl=[0xffffff,0xddeeff,0xaabbff][L]
-    const sp=new Float32Array(c*3)
-    for (let i=0; i<c*3; i+=3) { const r=60+L*80+Math.random()*120, th=Math.random()*Math.PI*2, ph=Math.acos(Math.random()*2-1); sp[i]=Math.sin(ph)*Math.cos(th)*r; sp[i+1]=Math.sin(ph)*Math.sin(th)*r; sp[i+2]=Math.cos(ph)*r }
-    sg.setAttribute('position',new THREE.BufferAttribute(sp,3))
-    scene.add(new THREE.Points(sg,new THREE.PointsMaterial({color:cl,size:sz,transparent:true,opacity:0.7-L*0.15})))
+  const fillLight = new THREE.PointLight(0xff7744, 0.4)
+  fillLight.position.set(-4, -3, 5)
+  scene.add(fillLight)
+
+  const backLight = new THREE.PointLight(0x6644cc, 0.5)
+  backLight.position.set(5, -2, -12)
+  scene.add(backLight)
+
+  for (let L = 0; L < 3; L++) {
+    const sg = new THREE.BufferGeometry()
+    const c = [4000, 2000, 800][L], sz = [0.12, 0.08, 0.05][L], cl = [0xffffff, 0xddeeff, 0xaabbff][L]
+    const sp = new Float32Array(c * 3)
+    for (let i = 0; i < c * 3; i += 3) {
+      const r = 60 + L * 80 + Math.random() * 120, th = Math.random() * Math.PI * 2,
+          ph = Math.acos(Math.random() * 2 - 1)
+      sp[i] = Math.sin(ph) * Math.cos(th) * r
+      sp[i + 1] = Math.sin(ph) * Math.sin(th) * r
+      sp[i + 2] = Math.cos(ph) * r
+    }
+    sg.setAttribute('position', new THREE.BufferAttribute(sp, 3))
+    scene.add(new THREE.Points(sg, new THREE.PointsMaterial({ color: cl, size: sz, transparent: true, opacity: 0.7 - L * 0.15 })))
   }
-  scene.fog=new THREE.FogExp2(0x030812,0.003)
-
+  scene.fog = new THREE.FogExp2(0x030812, 0.003)
 
   const tex1 = createEarthTexture()
-  const planet1 = new THREE.Mesh(new THREE.SphereGeometry(1.6,64,64), new THREE.MeshStandardMaterial({ map: tex1, roughness: 0.7, metalness: 0.05 }))
+  const planet1 = new THREE.Mesh(new THREE.SphereGeometry(1.6, 64, 64), new THREE.MeshStandardMaterial({ map: tex1, roughness: 0.7, metalness: 0.05 }))
   planet1.castShadow = planet1.receiveShadow = true
-  planet1.add(createAtmosphere(1.72, 0x66a3ff, 0.18))
-  planet1.userData = { name:'地球', func:'技术社区', desc:'技术交流，知识共享', link:'/community', spin: 0.004 }
+  planet1.add(createAtmosphere(1.72, 0x66a3ff, 0.2))
+  planet1.userData = { name: '地球', func: '技术社区', desc: '技术交流，知识共享', link: '/community', spin: 0.004 }
 
   const tex2 = createMarsTexture()
-  const planet2 = new THREE.Mesh(new THREE.SphereGeometry(1.4,64,64), new THREE.MeshStandardMaterial({ map: tex2, roughness: 0.88, metalness: 0 }))
+  const planet2 = new THREE.Mesh(new THREE.SphereGeometry(1.4, 64, 64), new THREE.MeshStandardMaterial({ map: tex2, roughness: 0.88, metalness: 0 }))
   planet2.castShadow = planet2.receiveShadow = true
-  planet2.add(createAtmosphere(1.48, 0xffaa88, 0.09))
-  planet2.userData = { name:'火星', func:'剧场区', desc:'火柴人与像素剧场', link:'/theater', spin: 0.006 }
+  planet2.add(createAtmosphere(1.48, 0xffaa88, 0.1))
+  planet2.userData = { name: '火星', func: '剧场区', desc: '火柴人与像素剧场', link: '/theater', spin: 0.006 }
 
   const tex3 = createJupiterTexture()
-  const planet3 = new THREE.Mesh(new THREE.SphereGeometry(2.0,64,64), new THREE.MeshStandardMaterial({ map: tex3, roughness: 0.6, metalness: 0 }))
+  const planet3 = new THREE.Mesh(new THREE.SphereGeometry(2.0, 64, 64), new THREE.MeshStandardMaterial({ map: tex3, roughness: 0.6, metalness: 0 }))
   planet3.castShadow = planet3.receiveShadow = true
-  planet3.add(createAtmosphere(2.12, 0xf0d5a0, 0.12))
-  planet3.userData = { name:'木星', func:'热点区', desc:'每日热点新闻汇聚', link:'/hot', spin: 0.009 }
+  planet3.add(createAtmosphere(2.12, 0xf0d5a0, 0.14))
+  planet3.userData = { name: '木星', func: '热点区', desc: '每日热点新闻汇聚', link: '/hot', spin: 0.009 }
 
   const tex4 = createIceGiantTexture()
-  const planet4 = new THREE.Mesh(new THREE.SphereGeometry(1.5,64,64), new THREE.MeshStandardMaterial({ map: tex4, roughness: 0.35, metalness: 0.12 }))
+  const planet4 = new THREE.Mesh(new THREE.SphereGeometry(1.5, 64, 64), new THREE.MeshStandardMaterial({ map: tex4, roughness: 0.35, metalness: 0.12 }))
   planet4.castShadow = planet4.receiveShadow = true
-  planet4.add(createAtmosphere(1.6, 0x88ccee, 0.2))
-  planet4.userData = { name:'冰巨星', func:'自助区', desc:'自定义工具集合', link:'/tools', spin: 0.003 }
+  planet4.add(createAtmosphere(1.6, 0x88ccee, 0.22))
+  planet4.userData = { name: '冰巨星', func: '自助区', desc: '自定义工具集合', link: '/tools', spin: 0.003 }
 
   const tex5 = createNebulaTexture()
-  const planet5 = new THREE.Mesh(new THREE.SphereGeometry(1.3,64,64), new THREE.MeshStandardMaterial({ map: tex5, roughness: 0.45, metalness: 0.15, emissive: 0x3a1e5a, emissiveIntensity: 0.35 }))
+  const planet5 = new THREE.Mesh(new THREE.SphereGeometry(1.3, 64, 64), new THREE.MeshStandardMaterial({ map: tex5, roughness: 0.45, metalness: 0.15, emissive: 0x3a1e5a, emissiveIntensity: 0.35 }))
   planet5.castShadow = planet5.receiveShadow = true
-  planet5.add(createAtmosphere(1.4, 0xc89aff, 0.22))
-  planet5.userData = { name:'紫微星', func:'搜索区', desc:'全站信息聚合搜索', link:'/search', spin: 0.005 }
+  planet5.add(createAtmosphere(1.4, 0xc89aff, 0.25))
+  planet5.userData = { name: '紫微星', func: '搜索区', desc: '全站信息聚合搜索', link: '/search', spin: 0.005 }
 
-  /* 冰巨星双层环 */
-  const ringInner = new THREE.Mesh(
-    new THREE.TorusGeometry(2.1, 0.08, 16, 200),
-    new THREE.MeshStandardMaterial({ color: 0xd8e8f5, transparent: true, opacity: 0.78, side: THREE.DoubleSide })
-  )
-  const ringOuter = new THREE.Mesh(
-    new THREE.TorusGeometry(2.45, 0.12, 16, 200),
-    new THREE.MeshStandardMaterial({ color: 0xc0d5ea, transparent: true, opacity: 0.55, side: THREE.DoubleSide })
-  )
+  const ringInner = new THREE.Mesh(new THREE.TorusGeometry(2.1, 0.08, 16, 200), new THREE.MeshStandardMaterial({ color: 0xd8e8f5, transparent: true, opacity: 0.8, side: THREE.DoubleSide }))
+  const ringOuter = new THREE.Mesh(new THREE.TorusGeometry(2.45, 0.12, 16, 200), new THREE.MeshStandardMaterial({ color: 0xc0d5ea, transparent: true, opacity: 0.55, side: THREE.DoubleSide }))
   ringInner.rotation.x = ringOuter.rotation.x = Math.PI / 2.8
   ringInner.rotation.z = ringOuter.rotation.z = 0.3
-  planet4.add(ringInner); planet4.add(ringOuter)
+  planet4.add(ringInner)
+  planet4.add(ringOuter)
 
-  const planetMeshes=[planet1,planet2,planet3,planet4,planet5]
-  const GOLDEN=Math.PI*(3-Math.sqrt(5))
-  planetMeshes.forEach((p,i)=>{
-    const angle=i*GOLDEN
-    const dist=3.2+i*0.55
-    const y=(i-2)*0.9+Math.sin(i*1.2)*0.3
-    p.position.set(Math.cos(angle)*dist,y,Math.sin(angle)*dist*0.6)
+  const planetMeshes = [planet1, planet2, planet3, planet4, planet5]
+  const GOLDEN = Math.PI * (3 - Math.sqrt(5))
+  planetMeshes.forEach((p, i) => {
+    const angle = i * GOLDEN
+    const dist = 3.2 + i * 0.55
+    const y = (i - 2) * 0.9 + Math.sin(i * 1.2) * 0.3
+    p.position.set(Math.cos(angle) * dist, y, Math.sin(angle) * dist * 0.6)
     scene.add(p)
-    const label=createLabel(p.userData.name,'#e0f0ff')
+    const label = createLabel(p.userData.name, '#e0f0ff')
     const r = p.geometry.parameters.radius
-    label.position.set(0, r + 0.75, 0); p.add(label)
-    p.userData.velocity=new THREE.Vector3((Math.random()-0.5)*0.012,(Math.random()-0.5)*0.012,(Math.random()-0.5)*0.012)
-    p.userData.radius=p.geometry.parameters.radius
-    p.userData.mass=p.userData.radius*1.5
+    label.position.set(0, r + 0.75, 0)
+    p.add(label)
+    p.userData.velocity = new THREE.Vector3((Math.random() - 0.5) * 0.012, (Math.random() - 0.5) * 0.012, (Math.random() - 0.5) * 0.012)
+    p.userData.radius = p.geometry.parameters.radius
+    p.userData.mass = p.userData.radius * 1.5
     planets.push(p)
   })
 
-  ;[0x6688cc,0xcc88ff,0xffaa66].forEach(col=>{
-    const g=new THREE.BufferGeometry(), p=new Float32Array(750)
-    for(let i=0;i<750;i+=3){p[i]=(Math.random()-0.5)*35;p[i+1]=(Math.random()-0.5)*20;p[i+2]=(Math.random()-0.5)*30}
-    g.setAttribute('position',new THREE.BufferAttribute(p,3))
-    scene.add(new THREE.Points(g,new THREE.PointsMaterial({color:col,size:0.04,transparent:true,opacity:0.4})))
+  ;[0x6688cc, 0xcc88ff, 0xffaa66].forEach(col => {
+    const g = new THREE.BufferGeometry()
+    const p = new Float32Array(750)
+    for (let i = 0; i < 750; i += 3) { p[i] = (Math.random() - 0.5) * 35; p[i + 1] = (Math.random() - 0.5) * 20; p[i + 2] = (Math.random() - 0.5) * 30 }
+    g.setAttribute('position', new THREE.BufferAttribute(p, 3))
+    scene.add(new THREE.Points(g, new THREE.PointsMaterial({ color: col, size: 0.04, transparent: true, opacity: 0.4 })))
   })
 
-  renderer.domElement.style.cursor='grab'
-  renderer.domElement.addEventListener('mousedown',onMouseDown)
-  window.addEventListener('mousemove',onMouseMove)
-  window.addEventListener('mouseup',onMouseUp)
-  window.addEventListener('blur',onWindowBlur)
-  window.addEventListener('resize',onWindowResize)
+  renderer.domElement.style.cursor = 'grab'
+  renderer.domElement.addEventListener('mousedown', onMouseDown)
+  window.addEventListener('mousemove', onMouseMove)
+  window.addEventListener('mouseup', onMouseUp)
+  window.addEventListener('blur', onWindowBlur)
+  window.addEventListener('resize', onWindowResize)
 }
 
 function animate() {
-  animationId=requestAnimationFrame(animate)
-  planets.forEach(p=>{
-    if (p!==draggedPlanet) { p.position.add(p.userData.velocity); p.userData.velocity.multiplyScalar(0.995); handleBoundary(p) }
+  animationId = requestAnimationFrame(animate)
+  planets.forEach(p => {
+    if (p !== draggedPlanet) { p.position.add(p.userData.velocity); p.userData.velocity.multiplyScalar(0.995); handleBoundary(p) }
   })
   handleCollisions()
-  planets.forEach(p=>{p.rotation.y += p.userData.spin || 0.005})
-  renderer.render(scene,camera)
-  cssRenderer.render(scene,camera)
+  planets.forEach(p => { p.rotation.y += p.userData.spin || 0.005 })
+  renderer.render(scene, camera)
+  cssRenderer.render(scene, camera)
 }
 
-onMounted(()=>{
-  // OAuth 回调已移至 App.vue 统一处理
-  // isLoggedIn 来自 useAuth()，是响应式的，状态自动同步
-  init()
-  animate()
-})
+onMounted(() => { init(); animate() })
 
-onUnmounted(()=>{
+onUnmounted(() => {
   cancelAnimationFrame(animationId)
-  window.removeEventListener('resize',onWindowResize)
-  window.removeEventListener('mousemove',onMouseMove)
-  window.removeEventListener('mouseup',onMouseUp)
-  window.removeEventListener('blur',onWindowBlur)
-  renderer?.domElement?.removeEventListener('mousedown',onMouseDown)
-  if(renderer?.domElement?.parentNode) renderer.domElement.parentNode.removeChild(renderer.domElement)
-  if(cssRenderer?.domElement?.parentNode) cssRenderer.domElement.parentNode.removeChild(cssRenderer.domElement)
+  window.removeEventListener('resize', onWindowResize)
+  window.removeEventListener('mousemove', onMouseMove)
+  window.removeEventListener('mouseup', onMouseUp)
+  window.removeEventListener('blur', onWindowBlur)
+  renderer?.domElement?.removeEventListener('mousedown', onMouseDown)
+  if (renderer?.domElement?.parentNode) renderer.domElement.parentNode.removeChild(renderer.domElement)
+  if (cssRenderer?.domElement?.parentNode) cssRenderer.domElement.parentNode.removeChild(cssRenderer.domElement)
   renderer?.dispose()
 })
 </script>
 
 <style scoped>
+
+.orbit-decoration {
+  position: absolute;
+  border: 1px dashed rgba(100, 180, 255, 0.08);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 2;
+  animation: orbitRotate 60s linear infinite;
+}
+.orbit-1 { width: 300px; height: 300px; top: -80px; right: -60px; }
+.orbit-2 {
+  width: 450px; height: 450px; top: -150px; right: -130px;
+  border-color: rgba(200, 150, 255, 0.06);
+  animation-duration: 90s;
+  animation-direction: reverse;
+}
+@keyframes orbitRotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
 .scene-container {
   position: absolute;
   top: 0; left: 0;
@@ -504,121 +895,141 @@ onUnmounted(()=>{
   gap: 10px;
 }
 .site-title-text {
-  font-size: 1.6rem;
-  font-weight: 400;
+  font-size: 1.7rem;
+  font-weight: 600;
   letter-spacing: 6px;
-  color: #fff;
   font-family: var(--font-display, 'Cinzel', 'Noto Serif SC', serif);
-  text-shadow: 0 0 24px rgba(180,160,255,0.45), 0 0 2px rgba(255,255,255,0.6);
+  background: linear-gradient(135deg, #fff 0%, #e0d4ff 25%, #c8b8ff 50%, #e0d4ff 75%, #fff 100%);
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 20px rgba(180, 160, 255, 0.6)) drop-shadow(0 0 40px rgba(180, 160, 255, 0.3));
+  animation: titleShimmer 4s ease-in-out infinite;
 }
 .site-title-sub {
-  font-size: 0.8rem;
-  letter-spacing: 4px;
-  color: rgba(200,190,240,0.62);
+  font-size: 0.85rem;
+  letter-spacing: 5px;
+  color: rgba(180, 170, 220, 0.75);
   text-transform: uppercase;
   font-family: var(--font-display, 'Cinzel', serif);
+  position: relative;
 }
+.site-title-sub::before {
+  content: '';
+  position: absolute;
+  left: -12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 6px;
+  background: radial-gradient(circle, rgba(200, 180, 255, 0.9), transparent);
+  border-radius: 50%;
+  animation: dotPulse 2s ease-in-out infinite;
+}
+@keyframes titleShimmer { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+@keyframes dotPulse { 0%, 100% { opacity: 0.5; transform: translateY(-50%) scale(1); } 50% { opacity: 1; transform: translateY(-50%) scale(1.3); } }
+
+.title-particles {
+  position: absolute;
+  top: -10px; left: -20px; right: -20px; bottom: -10px;
+  pointer-events: none;
+  background: radial-gradient(circle at 20% 50%, rgba(180, 160, 255, 0.08) 0%, transparent 30%), radial-gradient(circle at 80% 30%, rgba(200, 180, 255, 0.06) 0%, transparent 25%);
+  animation: particleFloat 8s ease-in-out infinite;
+}
+@keyframes particleFloat { 0%, 100% { opacity: 0.6; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-5px); } }
 
 .glow {
   position: absolute;
   width: 100%; height: 100%;
   pointer-events: none;
-  background: radial-gradient(circle at 20% 30%, rgba(30,60,120,0.15) 0%, transparent 50%);
+  background: radial-gradient(circle at 20% 30%, rgba(30, 60, 120, 0.12) 0%, transparent 45%), radial-gradient(circle at 80% 70%, rgba(60, 30, 80, 0.1) 0%, transparent 40%);
   z-index: 1;
 }
-
-
 
 .star-login {
   position: absolute;
   top: 18px; right: 26px;
   z-index: 15;
-  width: 64px; height: 64px;
+  width: 70px; height: 70px;
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
-.star-login:hover {
-  transform: scale(1.08);
-}
-.portal-ring {
-  position: absolute;
-  border-radius: 50%;
-  pointer-events: none;
-}
+.star-login:hover { transform: scale(1.1); }
+.portal-ring { position: absolute; border-radius: 50%; pointer-events: none; transition: all 0.4s ease; }
 .portal-ring.outer {
   inset: 0;
-  border: 1px dashed rgba(197,213,234,0.55);
-  animation: portalSpin 14s linear infinite;
-  box-shadow:
-    0 0 14px rgba(168,188,212,0.25),
-    inset 0 0 10px rgba(168,188,212,0.12);
+  border: 1px dashed rgba(197, 213, 234, 0.6);
+  animation: portalSpin 16s linear infinite;
+  box-shadow: 0 0 16px rgba(168, 188, 212, 0.35), inset 0 0 12px rgba(168, 188, 212, 0.15);
+}
+.portal-ring.middle {
+  inset: 8px;
+  border: 1px solid rgba(168, 188, 212, 0.25);
+  animation: portalSpin 24s linear infinite reverse;
+  background: radial-gradient(circle, rgba(168, 188, 212, 0.1) 0%, transparent 70%);
 }
 .portal-ring.inner {
-  inset: 12px;
-  border: 1px solid rgba(168,188,212,0.35);
-  background: radial-gradient(circle,
-    rgba(168,188,212,0.22) 0%,
-    rgba(120,144,181,0.08) 60%,
-    transparent 100%);
-  animation: portalBreath 3.2s ease-in-out infinite;
+  inset: 16px;
+  border: 1px solid rgba(197, 213, 234, 0.45);
+  background: radial-gradient(circle, rgba(197, 213, 234, 0.25) 0%, rgba(150, 180, 220, 0.12) 50%, transparent 100%);
+  animation: portalBreath 3.5s ease-in-out infinite;
 }
 .portal-core {
   position: relative;
-  width: 14px; height: 14px;
+  width: 16px; height: 16px;
   border-radius: 50%;
-  background: radial-gradient(circle, #ffffff 0%, #c5d5ea 40%, #7890b5 85%);
-  box-shadow:
-    0 0 6px #ffffff,
-    0 0 14px rgba(197,213,234,0.9),
-    0 0 26px rgba(168,188,212,0.5);
+  background: radial-gradient(circle at 35% 35%, #ffffff 0%, #e0ecff 30%, #a0c0e0 70%, #6080b0 100%);
+  box-shadow: 0 0 8px #ffffff, 0 0 16px rgba(197, 213, 234, 0.95), 0 0 32px rgba(168, 188, 212, 0.6), 0 0 50px rgba(140, 170, 210, 0.3);
   z-index: 2;
-  animation: coreTwinkle 2.4s ease-in-out infinite;
+  animation: coreTwinkle 2.6s ease-in-out infinite;
+}
+.portal-glow {
+  position: absolute;
+  inset: -15px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(168, 188, 212, 0.15) 0%, rgba(140, 170, 210, 0.08) 40%, transparent 70%);
+  animation: glowPulse 3s ease-in-out infinite;
+  z-index: 1;
 }
 .portal-arrow {
   position: absolute;
-  bottom: 12px; right: 12px;
-  font-size: 11px;
-  line-height: 1;
+  bottom: 14px; right: 14px;
+  font-size: 12px;
   color: #e8eef7;
   display: flex; align-items: center; justify-content: center;
-  opacity: 0.75;
-  transition: 0.3s ease;
+  opacity: 0.8;
+  transition: all 0.3s ease;
   z-index: 3;
-  text-shadow: 0 0 6px rgba(168,188,212,0.8);
+  text-shadow: 0 0 8px rgba(168, 188, 212, 0.9);
 }
-.star-login:hover .portal-arrow {
-  transform: translate(2px, -2px);
-  opacity: 1;
+.portal-particles { position: absolute; inset: 0; pointer-events: none; }
+.portal-particles::before, .portal-particles::after {
+  content: '';
+  position: absolute;
+  width: 4px; height: 4px;
+  background: rgba(197, 213, 234, 0.7);
+  border-radius: 50%;
+  animation: particleOrbit 4s linear infinite;
 }
-.star-login:hover .portal-ring.outer {
-  animation-duration: 6s;
-  border-color: rgba(197,213,234,0.85);
-  box-shadow: 0 0 22px rgba(168,188,212,0.5), inset 0 0 14px rgba(168,188,212,0.25);
-}
-.star-login:hover .portal-core {
-  box-shadow:
-    0 0 10px #ffffff,
-    0 0 22px rgba(197,213,234,1),
-    0 0 40px rgba(168,188,212,0.7);
-}
-@keyframes portalSpin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-@keyframes portalBreath {
-  0%, 100% { opacity: 0.8; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.06); }
-}
-@keyframes coreTwinkle {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.85; transform: scale(0.9); }
-}
+.portal-particles::before { top: 50%; left: -2px; animation-delay: 0s; }
+.portal-particles::after { bottom: 50%; right: -2px; animation-delay: -2s; }
+@keyframes particleOrbit { 0% { transform: rotate(0deg) translateX(35px) rotate(0deg); opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { transform: rotate(360deg) translateX(35px) rotate(-360deg); opacity: 0; } }
+.star-login:hover .portal-arrow { transform: translate(3px, -3px); opacity: 1; }
+.star-login:hover .portal-ring.outer { animation-duration: 4s; border-color: rgba(197, 213, 234, 0.95); box-shadow: 0 0 28px rgba(168, 188, 212, 0.7), inset 0 0 18px rgba(168, 188, 212, 0.3); }
+.star-login:hover .portal-core { box-shadow: 0 0 12px #ffffff, 0 0 28px rgba(197, 213, 234, 1), 0 0 50px rgba(168, 188, 212, 0.8), 0 0 70px rgba(140, 170, 210, 0.4); }
+.star-login:hover .portal-glow { inset: -25px; background: radial-gradient(circle, rgba(168, 188, 212, 0.25) 0%, rgba(140, 170, 210, 0.15) 40%, transparent 70%); }
+@keyframes portalSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes portalBreath { 0%, 100% { opacity: 0.8; transform: scale(1); } 50% { opacity: 1; transform: scale(1.08); } }
+@keyframes coreTwinkle { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.85; transform: scale(0.92); } }
+@keyframes glowPulse { 0%, 100% { opacity: 0.6; transform: scale(1); } 50% { opacity: 1; transform: scale(1.1); } }
+
 .profile-btn {
   position: absolute;
   top: 18px; right: 26px;
   z-index: 15;
-  width: 64px; height: 64px;
+  width: 72px; height: 72px;
   border-radius: 50%;
   border: none;
   background: transparent;
@@ -627,192 +1038,237 @@ onUnmounted(()=>{
   padding: 0;
   transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
-.profile-btn:hover {
-  transform: scale(1.08);
-}
-/* 最外层柔白光晕（符合规范：白色光晕） */
-.sun-halo {
+.profile-btn:hover { transform: scale(1.12); }
+
+/* Outer ethereal glow */
+.cosmic-aura {
   position: absolute;
-  inset: -10px;
+  inset: -18px;
   border-radius: 50%;
-  background: radial-gradient(circle,
-    rgba(255,255,255,0.28) 0%,
-    rgba(255,236,180,0.18) 30%,
-    rgba(230,175,95,0.08) 55%,
-    transparent 75%);
-  animation: haloPulse 3.6s ease-in-out infinite;
+  background: radial-gradient(circle, rgba(180, 160, 255, 0.18) 0%, rgba(160, 140, 220, 0.08) 35%, transparent 65%);
+  animation: auraBreath 4s ease-in-out infinite;
   pointer-events: none;
   z-index: 0;
-  transition: inset 0.4s ease, background 0.4s ease;
+  transition: all 0.4s ease;
 }
-@keyframes haloPulse {
-  0%, 100% { opacity: 0.8; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.08); }
-}
-/* 日冕双环：外虚线＋内细实线，反向旋转 */
-.sun-corona {
-  position: absolute;
-  inset: -6px;
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 1;
-}
-.sun-corona::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  border: 1px dashed rgba(247,223,160,0.55);
-  animation: coronaSpin 18s linear infinite;
-  transition: border-color 0.3s;
-}
-.sun-corona::after {
-  content: '';
-  position: absolute;
-  inset: 3px;
-  border-radius: 50%;
-  border: 1px solid rgba(255,255,255,0.2);
-  animation: coronaSpin 26s linear infinite reverse;
-}
-/* 主球：多层径向渐变，顶点白高光＋底部暗面 */
-.sun-sphere {
-  position: relative;
-  width: 48px; height: 48px;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 32% 28%, rgba(255,255,255,0.7) 0%, transparent 22%),
-    radial-gradient(circle at 65% 70%, rgba(120,70,20,0.28) 0%, transparent 48%),
-    radial-gradient(circle at 45% 42%, #fff4d0 0%, #f6deab 18%, #e7bc6b 42%, #c89a50 72%, #7a5224 100%);
-  box-shadow:
-    0 0 12px rgba(255,236,180,0.6),
-    0 0 28px rgba(230,175,95,0.4),
-    0 0 48px rgba(220,160,80,0.2),
-    inset 0 -3px 6px rgba(100,60,20,0.35),
-    inset 0 2px 4px rgba(255,255,255,0.4);
-  animation: sunBreath 5s ease-in-out infinite;
-  z-index: 2;
-  transition: box-shadow 0.4s ease;
-}
-/* 太阳耀斑：三道射线状光尖 */
-.sun-flare {
-  position: absolute;
-  left: 50%; top: 50%;
-  width: 2px; height: 58px;
-  background: linear-gradient(to top,
-    transparent 0%,
-    rgba(255,236,180,0.35) 38%,
-    rgba(255,244,208,0.9) 50%,
-    rgba(255,236,180,0.35) 62%,
-    transparent 100%);
-  transform-origin: 50% 50%;
-  border-radius: 1px;
-  filter: blur(0.4px);
-  pointer-events: none;
-  animation: flareFlicker 2.8s ease-in-out infinite;
-  transition: height 0.4s ease, opacity 0.3s;
-}
-.sun-flare.flare-1 { transform: translate(-50%, -50%) rotate(30deg); animation-delay: 0s; }
-.sun-flare.flare-2 { transform: translate(-50%, -50%) rotate(110deg); animation-delay: -1s; }
-.sun-flare.flare-3 { transform: translate(-50%, -50%) rotate(205deg); animation-delay: -2s; }
-@keyframes flareFlicker {
-  0%, 100% { opacity: 0.4; }
-  50% { opacity: 0.85; }
-}
-@keyframes coronaSpin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-.profile-btn:hover .sun-halo {
-  inset: -18px;
-  background: radial-gradient(circle,
-    rgba(255,255,255,0.42) 0%,
-    rgba(255,236,180,0.26) 30%,
-    rgba(230,175,95,0.14) 55%,
-    transparent 78%);
-}
-.profile-btn:hover .sun-sphere {
-  box-shadow:
-    0 0 18px rgba(255,236,180,0.85),
-    0 0 40px rgba(230,175,95,0.55),
-    0 0 70px rgba(220,160,80,0.3),
-    inset 0 -3px 6px rgba(100,60,20,0.35),
-    inset 0 2px 4px rgba(255,255,255,0.5);
-}
-.profile-btn:hover .sun-flare {
-  height: 72px;
-  opacity: 1;
-}
-.profile-btn:hover .sun-corona::before {
-  border-color: rgba(255,244,208,0.9);
-}
-@keyframes sunBreath {
-  0%, 100% { filter: brightness(1); transform: scale(1); }
-  50% { filter: brightness(1.1); transform: scale(1.04); }
-}
+@keyframes auraBreath { 0%, 100% { opacity: 0.7; transform: scale(1); } 50% { opacity: 1; transform: scale(1.08); } }
 
+/* Orbital rings system */
+.orbit-ring {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  transition: all 0.4s ease;
+}
+.orbit-ring.outer {
+  inset: 0;
+  border: 1px dashed rgba(200, 180, 255, 0.45);
+  animation: orbitSpin 18s linear infinite;
+  box-shadow: 0 0 12px rgba(180, 160, 240, 0.2), inset 0 0 10px rgba(180, 160, 240, 0.08);
+}
+.orbit-ring.middle {
+  inset: 6px;
+  border: 1px solid rgba(220, 200, 255, 0.25);
+  animation: orbitSpinReverse 26s linear infinite;
+  background: radial-gradient(circle, rgba(180, 160, 240, 0.08) 0%, transparent 65%);
+}
+.orbit-ring.inner {
+  inset: 14px;
+  border: 1px solid rgba(230, 210, 255, 0.35);
+  animation: orbitSpin 34s linear infinite;
+}
+@keyframes orbitSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes orbitSpinReverse { from { transform: rotate(360deg); } to { transform: rotate(0deg); } }
+
+/* Central crystal core */
+.cosmic-core {
+  position: relative;
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.9) 0%, rgba(240, 230, 255, 0.7) 20%, rgba(200, 180, 255, 0.5) 45%, rgba(160, 140, 220, 0.35) 70%, rgba(120, 100, 180, 0.2) 100%);
+  box-shadow:
+      0 0 12px rgba(220, 200, 255, 0.7),
+      0 0 28px rgba(200, 180, 255, 0.5),
+      0 0 50px rgba(180, 160, 240, 0.25),
+      inset 0 2px 6px rgba(255, 255, 255, 0.6),
+      inset 0 -3px 8px rgba(140, 120, 200, 0.3);
+  animation: corePulse 3.5s ease-in-out infinite;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.4s ease;
+}
+.cosmic-core::before {
+  content: '';
+  position: absolute;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 40%, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.8) 30%, rgba(240, 230, 255, 0.6) 60%, transparent 100%);
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.8);
+}
+@keyframes corePulse { 0%, 100% { filter: brightness(1); transform: scale(1); } 50% { filter: brightness(1.1); transform: scale(1.04); } }
+
+/* Floating stars */
+.floating-star {
+  position: absolute;
+  width: 3px; height: 3px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.95) 0%, rgba(220, 200, 255, 0.6) 50%, transparent 100%);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: starTwinkle 2.5s ease-in-out infinite;
+}
+.floating-star:nth-child(1) { top: 8px; left: 18px; animation-delay: 0s; }
+.floating-star:nth-child(2) { top: 20px; right: 10px; animation-delay: -0.8s; }
+.floating-star:nth-child(3) { bottom: 14px; left: 10px; animation-delay: -1.6s; }
+.floating-star:nth-child(4) { bottom: 18px; right: 16px; animation-delay: -0.4s; }
+@keyframes starTwinkle { 0%, 100% { opacity: 0.3; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.2); } }
+
+/* Hover effects */
+.profile-btn:hover .cosmic-aura {
+  inset: -28px;
+  background: radial-gradient(circle, rgba(200, 180, 255, 0.28) 0%, rgba(180, 160, 240, 0.12) 35%, transparent 65%);
+}
+.profile-btn:hover .orbit-ring.outer {
+  border-color: rgba(220, 200, 255, 0.8);
+  box-shadow: 0 0 22px rgba(180, 160, 240, 0.4), inset 0 0 15px rgba(180, 160, 240, 0.15);
+  animation-duration: 6s;
+}
+.profile-btn:hover .orbit-ring.middle {
+  border-color: rgba(230, 210, 255, 0.5);
+  animation-duration: 8s;
+}
+.profile-btn:hover .orbit-ring.inner {
+  border-color: rgba(240, 220, 255, 0.6);
+  animation-duration: 12s;
+}
+.profile-btn:hover .cosmic-core {
+  box-shadow:
+      0 0 18px rgba(220, 200, 255, 0.9),
+      0 0 40px rgba(200, 180, 255, 0.65),
+      0 0 70px rgba(180, 160, 240, 0.35),
+      inset 0 2px 6px rgba(255, 255, 255, 0.7),
+      inset 0 -3px 8px rgba(140, 120, 200, 0.4);
+}
+.profile-btn:hover .floating-star { opacity: 1; transform: scale(1.4); }
+
+/* User icon */
+.user-icon {
+  position: absolute;
+  bottom: 8px; right: 8px;
+  font-size: 11px;
+  color: rgba(200, 185, 255, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3;
+  transition: all 0.3s ease;
+  text-shadow: 0 0 6px rgba(200, 180, 255, 0.8);
+}
+.profile-btn:hover .user-icon {
+  transform: translate(2px, -2px) scale(1.15);
+  color: rgba(230, 215, 255, 1);
+}
 
 #function-panel {
   position: absolute;
   bottom: 30px; right: 30px;
   z-index: 20;
-  width: 280px;
-  background: rgba(10, 20, 40, 0.65);
-  backdrop-filter: blur(12px);
+  width: 300px;
+  background: linear-gradient(135deg, rgba(15, 28, 52, 0.75) 0%, rgba(12, 20, 38, 0.85) 100%);
+  backdrop-filter: blur(20px) saturate(1.2);
+  -webkit-backdrop-filter: blur(20px) saturate(1.2);
   border-radius: 24px;
-  padding: 20px 24px;
-  border: 1px solid rgba(255,255,255,0.2);
-  box-shadow: 0 20px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(100,180,255,0.2) inset;
+  padding: 24px 28px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(100, 180, 255, 0.08) inset, 0 0 60px rgba(60, 130, 220, 0.08) inset;
   color: #e0f0ff;
-  transition: 0.3s;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   pointer-events: none;
+  overflow: hidden;
 }
+#function-panel::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(100, 180, 255, 0.4) 50%, transparent 100%);
+}
+.panel-decoration { position: absolute; width: 40px; height: 40px; pointer-events: none; opacity: 0.3; }
+.panel-decoration.top-left { top: 8px; left: 8px; border-top: 1px solid rgba(100, 180, 255, 0.3); border-left: 1px solid rgba(100, 180, 255, 0.3); border-radius: 8px 0 0 0; }
+.panel-decoration.top-right { top: 8px; right: 8px; border-top: 1px solid rgba(100, 180, 255, 0.3); border-right: 1px solid rgba(100, 180, 255, 0.3); border-radius: 0 8px 0 0; }
+.panel-decoration.bottom-left { bottom: 8px; left: 8px; border-bottom: 1px solid rgba(100, 180, 255, 0.3); border-left: 1px solid rgba(100, 180, 255, 0.3); border-radius: 0 0 0 8px; }
+.panel-decoration.bottom-right { bottom: 8px; right: 8px; border-bottom: 1px solid rgba(100, 180, 255, 0.3); border-right: 1px solid rgba(100, 180, 255, 0.3); border-radius: 0 0 8px 0; }
 #function-title {
-  margin: 0 0 8px;
-  font-size: 1.8rem;
-  font-weight: 400;
-  letter-spacing: 2px;
+  margin: 0 0 10px;
+  font-size: 1.9rem;
+  font-weight: 500;
+  letter-spacing: 3px;
   color: #fff;
-  text-shadow: 0 0 15px #3d9dff;
-  border-bottom: 1px solid rgba(255,255,255,0.2);
-  padding-bottom: 8px;
+  background: linear-gradient(135deg, #fff 0%, #c8e0ff 50%, #fff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 20px rgba(80, 160, 255, 0.5);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  padding-bottom: 12px;
+  position: relative;
 }
-#function-desc { margin: 10px 0 5px; font-size: 1rem; line-height: 1.5; opacity: 0.9; }
+#function-title::after {
+  content: '';
+  position: absolute;
+  bottom: -1px; left: 0;
+  width: 60px; height: 2px;
+  background: linear-gradient(90deg, rgba(80, 160, 255, 0.8), transparent);
+  border-radius: 1px;
+}
+#function-desc { margin: 14px 0 8px; font-size: 1rem; line-height: 1.6; color: rgba(200, 220, 255, 0.85); letter-spacing: 0.5px; }
 #function-action {
-  margin-top: 15px;
-  display: inline-block;
-  background: rgba(60, 140, 255, 0.3);
-  padding: 6px 18px;
+  margin-top: 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, rgba(70, 150, 255, 0.35) 0%, rgba(100, 130, 220, 0.25) 100%);
+  padding: 10px 22px;
   border-radius: 30px;
-  font-size: 0.9rem;
-  border: 1px solid rgba(255,255,255,0.3);
-  color: #bbddff;
+  font-size: 0.95rem;
+  font-weight: 500;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #d0e8ff;
   pointer-events: auto;
   cursor: pointer;
-  transition: 0.2s;
-  backdrop-filter: blur(5px);
+  transition: all 0.3s ease;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 15px rgba(60, 130, 220, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
+#function-action i { font-size: 1.1rem; transition: transform 0.3s ease; }
 #function-action:hover {
-  background: rgba(60, 160, 255, 0.6);
-  color: white;
-  box-shadow: 0 0 15px #3d9dff;
+  background: linear-gradient(135deg, rgba(80, 170, 255, 0.6) 0%, rgba(120, 150, 240, 0.5) 100%);
+  color: #fff;
+  box-shadow: 0 6px 25px rgba(60, 140, 255, 0.4), 0 0 30px rgba(80, 160, 255, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
 }
+#function-action:hover i { transform: translateX(3px) translateY(-2px); }
 
 @media (max-width: 768px) {
   .site-title { top: 16px; left: 16px; }
-  .site-title-text { font-size: 1.1rem; letter-spacing: 2px; }
-  .site-title-sub { font-size: 0.7rem; }
-  .star-login { top: 14px; right: 14px; width: 48px; height: 48px; }
-  .star-login .portal-ring.inner { inset: 9px; }
-  .star-login .portal-core { width: 10px; height: 10px; }
-  .star-login .portal-arrow { bottom: 9px; right: 9px; font-size: 9px; }
-  .profile-btn { top: 14px; right: 14px; width: 48px; height: 48px; }
-  .profile-btn .sun-sphere { width: 36px; height: 36px; }
-  .profile-btn .sun-halo { inset: -8px; }
-  .profile-btn .sun-corona { inset: -4px; }
-  .profile-btn .sun-flare { height: 44px; }
-  #function-panel { width: auto; left: 20px; right: 20px; bottom: 20px; padding: 15px 20px; }
-  #function-title { font-size: 1.3rem; }
-  #function-desc { font-size: 0.9rem; }
-  #function-action { font-size: 0.85rem; }
+  .site-title-text { font-size: 1.2rem; letter-spacing: 3px; }
+  .site-title-sub { font-size: 0.72rem; letter-spacing: 2px; }
+  .star-login { top: 14px; right: 14px; width: 52px; height: 52px; }
+  .star-login .portal-ring.middle { inset: 6px; }
+  .star-login .portal-ring.inner { inset: 12px; }
+  .star-login .portal-core { width: 11px; height: 11px; }
+  .star-login .portal-arrow { bottom: 10px; right: 10px; font-size: 9px; }
+  .profile-btn { top: 14px; right: 14px; width: 54px; height: 54px; }
+  .profile-btn .cosmic-core { width: 30px; height: 30px; }
+  .profile-btn .cosmic-core::before { width: 10px; height: 10px; }
+  .profile-btn .cosmic-aura { inset: -14px; }
+  .profile-btn .orbit-ring.middle { inset: 5px; }
+  .profile-btn .orbit-ring.inner { inset: 10px; }
+  .profile-btn .floating-star { width: 2.5px; height: 2.5px; }
+  .profile-btn .user-icon { bottom: 6px; right: 6px; font-size: 9px; }
+  #function-panel { width: auto; left: 16px; right: 16px; bottom: 16px; padding: 18px 20px; border-radius: 20px; }
+  #function-title { font-size: 1.4rem; padding-bottom: 10px; }
+  #function-desc { font-size: 0.9rem; margin: 10px 0 6px; }
+  #function-action { font-size: 0.88rem; padding: 8px 18px; }
 }
 </style>

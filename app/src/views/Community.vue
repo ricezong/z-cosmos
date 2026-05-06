@@ -71,10 +71,19 @@
         <div class="form-row">
           <div class="form-group half">
             <label><i class="ri-price-tag-3-line"></i> 分类</label>
-            <select v-model="newPost.categoryCode" class="form-select">
-              <option value="" disabled>-- 请选择分类 --</option>
-              <option v-for="cat in categories" :key="cat.code" :value="cat.code">{{ cat.name }}</option>
-            </select>
+            <div class="custom-select" :class="{ open: catDropdownOpen }" @click.stop="catDropdownOpen = !catDropdownOpen" v-click-outside="() => catDropdownOpen = false">
+              <div class="cs-value">
+                <span :class="{ placeholder: !newPost.categoryCode }">{{ selectedCategoryName || '-- 请选择分类 --' }}</span>
+                <i class="ri-arrow-down-s-line cs-arrow"></i>
+              </div>
+              <div class="cs-dropdown" v-show="catDropdownOpen">
+                <div class="cs-option" v-for="cat in categories" :key="cat.code"
+                     :class="{ active: newPost.categoryCode === cat.code }"
+                     @click.stop="newPost.categoryCode = cat.code; catDropdownOpen = false">
+                  {{ cat.name }}
+                </div>
+              </div>
+            </div>
           </div>
           <div class="form-group grow">
             <label><i class="ri-edit-2-line"></i> 帖子标题</label>
@@ -150,49 +159,45 @@
       <!-- 评论区 -->
       <div class="comments-section" ref="commentsRef">
         <div class="comments-head">
-          <h3><i class="ri-chat-smile-2-line"></i> 评论</h3>
+          <span class="comments-title">评论</span>
           <span class="comments-count">{{ currentPost.commentCount || 0 }}</span>
         </div>
-        <div class="comment-input-box">
-          <textarea v-model="newComment" placeholder="写下你的评论... (Ctrl+Enter 发送)" rows="2" @keydown.enter.ctrl="submitTopComment"></textarea>
-          <button class="comment-send-btn" @click="submitTopComment" title="发送 (Ctrl+Enter)">
-            <i class="ri-send-plane-2-fill"></i>
-          </button>
-        </div>
-        <div class="comment-list" v-if="comments.length > 0">
-          <div class="comment-group" v-for="comment in comments" :key="comment.commentId">
-            <div class="comment-item parent-comment">
-              <div class="c-avatar">{{ (comment.author?.nickname || 'U').slice(0, 1).toUpperCase() }}</div>
-              <div class="c-main">
-                <div class="comment-header">
-                  <span class="comment-author">{{ comment.author?.nickname || '匿名用户' }}</span>
-                  <span class="comment-time">{{ formatTime(comment.createdAt) }}</span>
-                </div>
-                <div class="comment-body" v-html="(comment.content || '').replace(/\n/g, '<br>')"></div>
-                <div class="comment-footer">
-                  <span class="comment-like" :class="{ liked: comment.liked }" @click="toggleCommentLike(comment)">
-                    <i class="ri-heart-fill"></i> {{ comment.likeCount || 0 }}
-                  </span>
-                  <span class="comment-reply-btn" @click="startReply(comment)"><i class="ri-reply-line"></i> 回复</span>
-                </div>
-              </div>
+        <!-- 评论输入 -->
+        <div class="comment-input-area">
+          <div class="ci-avatar">U</div>
+          <div class="ci-body">
+            <textarea v-model="newComment" placeholder="说点什么吧..." rows="1" @keydown.enter.ctrl="submitTopComment" @input="autoResize"></textarea>
+            <div class="ci-actions">
+              <button class="ci-send" :class="{ active: newComment.trim() }" @click="submitTopComment" :disabled="!newComment.trim()">发布</button>
             </div>
-            <!-- 子评论 -->
-            <div class="child-comments" v-if="comment.replies && comment.replies.length">
-              <div class="comment-item child-comment" v-for="reply in flattenReplies(comment.replies)" :key="reply.commentId">
-                <div class="c-avatar small">{{ (reply.author?.nickname || 'U').slice(0, 1).toUpperCase() }}</div>
-                <div class="c-main">
-                  <div class="comment-header">
-                    <span class="comment-author">{{ reply.author?.nickname || '匿名用户' }}</span>
-                    <span v-if="reply.replyToNickname" class="reply-to-tag">回复 @{{ reply.replyToNickname }}</span>
-                    <span class="comment-time">{{ formatTime(reply.createdAt) }}</span>
-                  </div>
-                  <div class="comment-body" v-html="(reply.content || '').replace(/\n/g, '<br>')"></div>
-                  <div class="comment-footer">
-                    <span class="comment-like" :class="{ liked: reply.liked }" @click="toggleCommentLike(reply)">
-                      <i class="ri-heart-fill"></i> {{ reply.likeCount || 0 }}
+          </div>
+        </div>
+        <!-- 评论列表 -->
+        <div class="comment-list" v-if="comments.length > 0">
+          <div class="cmt-item" v-for="comment in comments" :key="comment.commentId">
+            <div class="cmt-avatar">{{ (comment.author?.nickname || 'U').slice(0, 1).toUpperCase() }}</div>
+            <div class="cmt-content">
+              <div class="cmt-user">{{ comment.author?.nickname || '匿名用户' }}</div>
+              <div class="cmt-text" v-html="(comment.content || '').replace(/\n/g, '<br>')"></div>
+              <div class="cmt-meta">
+                <span class="cmt-time">{{ formatTime(comment.createdAt) }}</span>
+                <span class="cmt-action" :class="{ liked: comment.liked }" @click="toggleCommentLike(comment)">
+                  <i class="ri-thumb-up-line"></i> {{ comment.likeCount || '' }}
+                </span>
+                <span class="cmt-action" @click="startReply(comment)"><i class="ri-chat-1-line"></i></span>
+              </div>
+              <!-- 子评论 -->
+              <div class="cmt-replies" v-if="comment.replies && comment.replies.length">
+                <div class="cmt-reply-item" v-for="reply in flattenReplies(comment.replies)" :key="reply.commentId">
+                  <span class="cmt-reply-user">{{ reply.author?.nickname || '匿名用户' }}</span>
+                  <span v-if="reply.replyToNickname" class="cmt-reply-to"> 回复 {{ reply.replyToNickname }}：</span>
+                  <span class="cmt-reply-text" v-html="(reply.content || '').replace(/\n/g, '<br>')"></span>
+                  <div class="cmt-reply-meta">
+                    <span class="cmt-time">{{ formatTime(reply.createdAt) }}</span>
+                    <span class="cmt-action" :class="{ liked: reply.liked }" @click="toggleCommentLike(reply)">
+                      <i class="ri-thumb-up-line"></i> {{ reply.likeCount || '' }}
                     </span>
-                    <span class="comment-reply-btn" @click="startReply(reply)"><i class="ri-reply-line"></i> 回复</span>
+                    <span class="cmt-action" @click="startReply(reply)"><i class="ri-chat-1-line"></i></span>
                   </div>
                 </div>
               </div>
@@ -200,7 +205,7 @@
           </div>
         </div>
         <div class="empty-state" v-else>
-          <p>✦ 暂无评论，来说两句吧</p>
+          <p>暂无评论，快来抢沙发吧</p>
         </div>
       </div>
     </div>
@@ -263,11 +268,35 @@ const currentPage = ref(1)
 const pageLoading = ref(true)
 const categoryLoading = ref(false)
 const markdownEnabled = ref(false)
+const catDropdownOpen = ref(false)
+
+const selectedCategoryName = computed(() => {
+  const cat = categories.value.find(c => c.code === newPost.value.categoryCode)
+  return cat ? cat.name : ''
+})
+
+// 点击外部关闭下拉框
+const vClickOutside = {
+  mounted(el, binding) {
+    el._clickOutside = (e) => { if (!el.contains(e.target)) binding.value() }
+    document.addEventListener('click', el._clickOutside)
+  },
+  unmounted(el) {
+    document.removeEventListener('click', el._clickOutside)
+  }
+}
 
 // 回复相关
 const replyTarget = ref(null)
 const replyText = ref('')
 const replyInputRef = ref(null)
+
+/** 自动调整评论输入框高度 */
+function autoResize(e) {
+  const el = e.target
+  el.style.height = 'auto'
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px'
+}
 
 // 将嵌套回复平铺为列表
 function flattenReplies(replies, parentNickname = '') {
@@ -643,23 +672,74 @@ onMounted(async () => {
   border-color: rgba(144,166,196,0.6);
   box-shadow: 0 0 0 3px rgba(144,166,196,0.12);
 }
-.form-select {
-  width: 100%; padding: 12px 40px 12px 16px; border-radius: 12px;
-  background-color: rgba(5,12,26,0.7);
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path fill='%23a8bcd4' d='M6 8 0 0h12z'/></svg>");
-  background-repeat: no-repeat;
-  background-position: right 16px center;
-  background-size: 10px;
-  border: 1px solid rgba(144,166,196,0.25);
-  color: #e8eef7; font-family: inherit; font-size: 0.95rem;
-  outline: none; cursor: pointer; appearance: none;
-  transition: 0.25s;
+/* ===== Custom Select ===== */
+.custom-select {
+  position: relative;
+  width: 100%;
+  cursor: pointer;
+  user-select: none;
 }
-.form-select:focus {
+.cs-value {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: rgba(5,12,26,0.5);
+  border: 1.5px solid rgba(144,166,196,0.2);
+  color: #e8eef7;
+  font-size: 0.92rem;
+  transition: border-color 0.25s, box-shadow 0.25s, background-color 0.25s;
+}
+.cs-value .placeholder { color: rgba(168,188,212,0.45); }
+.cs-arrow {
+  font-size: 1rem;
+  color: #a8bcd4;
+  transition: transform 0.25s;
+}
+.custom-select.open .cs-value {
   border-color: rgba(144,166,196,0.6);
-  box-shadow: 0 0 0 3px rgba(144,166,196,0.12);
+  box-shadow: 0 0 0 3px rgba(144,166,196,0.1);
+  background-color: rgba(5,12,26,0.7);
 }
-.form-select option { background: #0f1428; color: #e8eef7; padding: 8px; }
+.custom-select.open .cs-arrow {
+  transform: rotate(180deg);
+}
+.custom-select:hover .cs-value {
+  border-color: rgba(144,166,196,0.4);
+  background-color: rgba(5,12,26,0.65);
+}
+.cs-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: rgba(12, 16, 34, 0.96);
+  border: 1.5px solid rgba(144,166,196,0.25);
+  border-radius: 14px;
+  padding: 6px;
+  z-index: 50;
+  backdrop-filter: blur(16px);
+  box-shadow: 0 12px 36px rgba(0,0,0,0.4);
+  max-height: 200px;
+  overflow-y: auto;
+}
+.cs-option {
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  color: #c5d5ea;
+  transition: background 0.15s, color 0.15s;
+}
+.cs-option:hover {
+  background: rgba(144,166,196,0.15);
+  color: #fff;
+}
+.cs-option.active {
+  background: rgba(144,166,196,0.22);
+  color: #fff;
+  font-weight: 500;
+}
 
 /* ===== Editor ===== */
 .editor-wrap { display: flex; gap: 14px; align-items: stretch; min-height: 260px; }
@@ -841,71 +921,82 @@ onMounted(async () => {
 .action-btn.starred { background: rgba(240,200,120,0.12); border-color: rgba(240,200,120,0.45); color: #f0c88a; }
 
 /* ===== Comments ===== */
-.comments-section { margin-top: 10px; }
-.comments-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 18px; padding-bottom: 12px; border-bottom: 1px dashed rgba(144,166,196,0.2); }
-.comments-head h3 { font-weight: 500; color: #e8eef7; letter-spacing: 3px; font-size: 1.05rem; display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-display, serif); }
-.comments-head h3 i { color: #a8bcd4; }
-.comments-count { padding: 2px 10px; border-radius: 10px; background: rgba(144,166,196,0.16); color: #a8bcd4; font-size: 0.78rem; border: 1px solid rgba(144,166,196,0.25); font-family: 'JetBrains Mono', monospace; }
+.comments-section { margin-top: 10px; padding: 0 4px; }
+.comments-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 16px; }
+.comments-title { font-size: 1rem; font-weight: 500; color: #e8eef7; letter-spacing: 1px; }
+.comments-count { font-size: 0.78rem; color: #a8bcd4; opacity: 0.6; }
 
-.comment-input-box { position: relative; margin-bottom: 24px; }
-.comment-input-box textarea {
-  width: 100%; padding: 14px 60px 14px 18px; border-radius: 14px;
-  background: rgba(5,12,26,0.7);
-  border: 1px solid rgba(144,166,196,0.25);
-  color: #e8eef7; font-family: inherit; font-size: 0.9rem;
-  outline: none; resize: vertical; min-height: 64px;
-  transition: border-color 0.25s, box-shadow 0.25s; box-sizing: border-box;
-}
-.comment-input-box textarea:focus { border-color: rgba(144,166,196,0.6); box-shadow: 0 0 0 3px rgba(144,166,196,0.12); }
-.comment-send-btn {
-  position: absolute; right: 10px; bottom: 10px;
-  width: 40px; height: 40px; border-radius: 50%;
-  border: none; cursor: pointer;
-  background: linear-gradient(135deg, #7890b5, #a8bcd4);
-  color: white; font-size: 1.05rem;
-  display: flex; align-items: center; justify-content: center;
-  transition: transform 0.25s, box-shadow 0.25s;
-  box-shadow: 0 4px 12px rgba(144,166,196,0.35);
-}
-.comment-send-btn:hover { transform: translateY(-2px) scale(1.05); box-shadow: 0 6px 18px rgba(144,166,196,0.5); }
-
-.comment-list { display: flex; flex-direction: column; gap: 14px; }
-.comment-group {
-  background: rgba(10,18,38,0.5);
-  border: 1px solid rgba(144,166,196,0.14);
-  border-radius: 16px; padding: 16px 20px;
-  transition: border-color 0.25s, background 0.25s;
-}
-.comment-group:hover { border-color: rgba(144,166,196,0.3); background: rgba(10,18,38,0.62); }
-.comment-item { display: flex; gap: 12px; padding: 6px 0; }
-.comment-item.parent-comment { padding-bottom: 10px; }
-.c-avatar {
+/* 评论输入区 */
+.comment-input-area { display: flex; gap: 12px; margin-bottom: 24px; align-items: flex-start; }
+.ci-avatar {
   flex-shrink: 0; width: 36px; height: 36px; border-radius: 50%;
   background: linear-gradient(135deg, #7890b5, #c5d5ea);
-  color: white; font-weight: 500; font-size: 0.95rem;
+  color: white; font-weight: 500; font-size: 0.85rem;
   display: flex; align-items: center; justify-content: center;
-  font-family: var(--font-display, serif);
-  box-shadow: 0 2px 8px rgba(144,166,196,0.3), inset 0 1px 0 rgba(255,255,255,0.18);
 }
-.c-avatar.small { width: 28px; height: 28px; font-size: 0.78rem; background: linear-gradient(135deg, #7890b5, #a8bcd4); }
-.c-main { flex: 1; min-width: 0; }
-.child-comments { padding-left: 14px; margin-top: 4px; border-left: 2px solid rgba(144,166,196,0.18); display: flex; flex-direction: column; gap: 2px; }
-.child-comments .comment-item { padding: 6px 0; }
-.comment-header { display: flex; gap: 10px; align-items: center; margin-bottom: 4px; font-size: 0.82rem; flex-wrap: wrap; }
-.comment-author { color: #a8bcd4; font-weight: 500; }
-.reply-to-tag { color: #a8bcd4; font-size: 0.72rem; padding: 1px 7px; border-radius: 7px; background: rgba(144,166,196,0.1); border: 1px solid rgba(144,166,196,0.2); }
-.comment-time { opacity: 0.5; margin-left: auto; font-size: 0.75rem; font-family: 'JetBrains Mono', monospace; }
-.comment-body { font-size: 0.9rem; opacity: 0.9; line-height: 1.7; color: #e8eef7; word-break: break-word; }
-.comment-footer { display: flex; gap: 8px; margin-top: 8px; font-size: 0.78rem; }
-.comment-like, .comment-reply-btn {
+.ci-body { flex: 1; min-width: 0; }
+.ci-body textarea {
+  width: 100%; padding: 10px 14px; border-radius: 10px;
+  background: rgba(5,12,26,0.5);
+  border: 1px solid rgba(144,166,196,0.18);
+  color: #e8eef7; font-family: inherit; font-size: 0.88rem;
+  outline: none; resize: none; min-height: 36px; max-height: 120px;
+  transition: border-color 0.25s, box-shadow 0.25s; box-sizing: border-box;
+  line-height: 1.5;
+}
+.ci-body textarea:focus { border-color: rgba(144,166,196,0.5); box-shadow: 0 0 0 2px rgba(144,166,196,0.08); }
+.ci-actions { display: flex; justify-content: flex-end; margin-top: 8px; }
+.ci-send {
+  padding: 6px 20px; border-radius: 18px; border: none;
+  background: rgba(144,166,196,0.15); color: rgba(255,255,255,0.35);
+  cursor: not-allowed; font-size: 0.82rem; letter-spacing: 1px;
+  transition: 0.25s;
+}
+.ci-send.active {
+  background: linear-gradient(135deg, #7890b5, #a8bcd4);
+  color: #fff; cursor: pointer;
+  box-shadow: 0 3px 10px rgba(144,166,196,0.3);
+}
+.ci-send.active:hover { box-shadow: 0 5px 16px rgba(144,166,196,0.45); transform: translateY(-1px); }
+
+/* 评论列表 */
+.comment-list { display: flex; flex-direction: column; }
+.cmt-item {
+  display: flex; gap: 12px; padding: 16px 0;
+  border-bottom: 1px solid rgba(144,166,196,0.08);
+}
+.cmt-item:last-child { border-bottom: none; }
+.cmt-avatar {
+  flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%;
+  background: linear-gradient(135deg, #7890b5, #a8bcd4);
+  color: white; font-weight: 500; font-size: 0.82rem;
+  display: flex; align-items: center; justify-content: center;
+}
+.cmt-content { flex: 1; min-width: 0; }
+.cmt-user { font-size: 0.82rem; color: #8a9bb8; margin-bottom: 4px; font-weight: 500; }
+.cmt-text { font-size: 0.9rem; color: #e8eef7; line-height: 1.65; word-break: break-word; }
+.cmt-meta { display: flex; align-items: center; gap: 16px; margin-top: 8px; }
+.cmt-time { font-size: 0.72rem; color: rgba(168,188,212,0.45); }
+.cmt-action {
   display: inline-flex; align-items: center; gap: 4px;
-  cursor: pointer; opacity: 0.55; transition: 0.2s;
-  user-select: none; padding: 4px 10px; border-radius: 10px;
+  font-size: 0.75rem; color: rgba(168,188,212,0.45);
+  cursor: pointer; transition: 0.2s; user-select: none;
 }
-.comment-like:hover { opacity: 1; color: #ff9caa; background: rgba(255,120,140,0.1); }
-.comment-like.liked { opacity: 1; color: #ff9caa; }
-.comment-reply-btn { color: #a8bcd4; }
-.comment-reply-btn:hover { opacity: 1; background: rgba(144,166,196,0.14); color: #c5d5ea; }
+.cmt-action:hover { color: #c5d5ea; }
+.cmt-action.liked { color: #ff9caa; }
+
+/* 子评论 */
+.cmt-replies {
+  margin-top: 10px; padding: 10px 14px;
+  background: rgba(144,166,196,0.04);
+  border-radius: 10px;
+}
+.cmt-reply-item { padding: 6px 0; font-size: 0.85rem; line-height: 1.6; }
+.cmt-reply-item:not(:last-child) { border-bottom: 1px solid rgba(144,166,196,0.06); padding-bottom: 8px; margin-bottom: 2px; }
+.cmt-reply-user { color: #8a9bb8; font-weight: 500; font-size: 0.82rem; }
+.cmt-reply-to { color: rgba(168,188,212,0.5); font-size: 0.82rem; }
+.cmt-reply-text { color: #e8eef7; }
+.cmt-reply-meta { display: flex; align-items: center; gap: 14px; margin-top: 4px; }
 
 /* Reply Modal */
 .reply-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5,8,20,0.85); z-index: 200; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
