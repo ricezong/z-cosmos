@@ -58,7 +58,7 @@
       <div v-if="globalResults.posts && globalResults.posts.length > 0" class="result-section">
         <div class="section-title"><i class="ri-earth-line"></i> 社区帖子</div>
         <div class="results-list">
-          <div class="result-item" v-for="item in globalResults.posts" :key="item.id || item.postId" @click="$router.push('/community?postId=' + (item.postId || item.id))">
+            <div class="result-item" v-for="item in globalResults.posts" :key="item.id || item.postId" @click="$router.push('/community/post/' + (item.postId || item.id))">
             <div class="result-icon"><i class="ri-earth-line"></i></div>
             <div class="result-content">
               <div class="result-title" v-html="highlight(item.title)"></div>
@@ -178,7 +178,7 @@ async function doSearch() {
 
 function navigateResult(r) {
   if (filter.value === 'post') {
-    router.push('/community?postId=' + (r.postId || r.id))
+    router.push('/community/post/' + (r.postId || r.id))
   } else if (filter.value === 'news') {
     router.push('/hot')
   }
@@ -224,25 +224,13 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* Theme vars for back-to-top */
-.page-layout {
-  --bt-bg: rgba(152,136,183,0.3);
-  --bt-border: rgba(152,136,183,0.5);
-  --bt-color: #dcc8f4;
-  --bt-hover-bg: rgba(152,136,183,0.5);
-  --bt-shadow: rgba(152,136,183,0.3);
-}
 .container { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; padding: 20px 20px; }
 .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0; padding: 16px 20px; border-bottom: 1px solid rgba(144,166,196,0.3); }
 .header-left { display: flex; align-items: center; gap: 15px; }
-.planet-icon { line-height: 1; display: flex; align-items: center; }
 .header-title h1 { font-size: 1.8rem; font-weight: 300; letter-spacing: 4px; background: linear-gradient(135deg, #ffffff, #c5d5ea); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 .header-title p { font-size: 0.85rem; opacity: 0.7; margin-top: 2px; }
 .back-btn { padding: 8px 20px; border-radius: 30px; background: rgba(144,166,196,0.2); border: 1px solid rgba(144,166,196,0.4); color: #c5d5ea; cursor: pointer; text-decoration: none; transition: 0.3s; font-size: 0.9rem; }
 .back-btn:hover { background: rgba(144,166,196,0.35); box-shadow: 0 0 15px rgba(144,166,196,0.3); }
-.planet-sphere { width: 36px; height: 36px; border-radius: 50%; position: relative; flex-shrink: 0; }
-.planet-sphere.purple { background: radial-gradient(circle at 35% 35%, #c4aee3, #a996d0 50%, #513c78 100%); box-shadow: 0 0 12px rgba(152,136,183,0.5), inset 0 0 8px rgba(255,255,255,0.15); }
-.planet-sphere.purple::after { content: ''; position: absolute; inset: 10% 25% 40% 20%; background: rgba(255,255,255,0.1); border-radius: 50%; }
 .empty-state { text-align: center; padding: 50px 20px; opacity: 0.5; }
 .empty-state p { margin-bottom: 10px; }
 .search-box { border: 1px solid rgba(144,166,196,0.25); border-radius: 24px; padding: 25px; backdrop-filter: blur(10px); }
@@ -289,20 +277,4 @@ onMounted(() => {
 
 :deep(.highlight) { background: rgba(144,166,196,0.3); padding: 1px 4px; border-radius: 4px; }
 
-@media (max-width: 768px) {
-  .container { padding: 15px 12px; }
-  .header { flex-direction: column; align-items: flex-start; gap: 12px; }
-  .header-title h1 { font-size: 1.4rem; letter-spacing: 2px; }
-  .planet-sphere { width: 28px; height: 28px; }
-  .back-btn { font-size: 0.8rem; padding: 6px 14px; }
-  .search-box { padding: 18px; }
-  .search-input-wrap { flex-direction: column; }
-  .search-btn { width: 100%; }
-  .filter-tags { gap: 6px; }
-  .filter-tag { padding: 5px 12px; font-size: 0.8rem; }
-  .result-item { padding: 14px; gap: 10px; }
-  .result-title { font-size: 0.95rem; }
-  .result-desc { font-size: 0.82rem; }
-  .result-icon { width: 36px; height: 36px; font-size: 1.1rem; }
-}
 </style>

@@ -769,37 +769,4 @@ onUnmounted(() => {
 .star-dot { position: absolute; width: 2px; height: 2px; background: radial-gradient(circle, rgba(255, 255, 255, 0.95) 0%, rgba(200, 220, 255, 0.6) 50%, transparent 100%); border-radius: 50%; animation: starTwinkle 2.5s ease-in-out infinite; opacity: 0; }
 @keyframes starTwinkle { 0%, 100% { opacity: 0.2; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.3); } }
 
-@media (max-width: 768px) {
-  .site-title { top: 16px; left: 16px; }
-  .site-title-text { font-size: 1.2rem; letter-spacing: 3px; }
-  .site-title-sub { font-size: 0.72rem; letter-spacing: 2px; }
-  .star-login { top: 14px; right: 14px; width: 52px; height: 52px; }
-  .star-login .portal-ring.middle { inset: 6px; }
-  .star-login .portal-ring.inner { inset: 12px; }
-  .star-login .portal-core { width: 11px; height: 11px; }
-  .star-login .portal-arrow { bottom: 10px; right: 10px; font-size: 9px; }
-  .profile-btn { top: 14px; right: 14px; width: 54px; height: 54px; }
-  .profile-btn .cosmic-core { width: 30px; height: 30px; }
-  .profile-btn .cosmic-core::before { width: 10px; height: 10px; }
-  .profile-btn .cosmic-aura { inset: -14px; }
-  .profile-btn .orbit-ring.middle { inset: 5px; }
-  .profile-btn .orbit-ring.inner { inset: 10px; }
-  .profile-btn .floating-star { width: 2.5px; height: 2.5px; }
-  .profile-btn .user-icon { bottom: 6px; right: 6px; font-size: 9px; }
-  #function-panel { width: auto; left: 16px; right: 16px; bottom: 16px; padding: 18px 20px; border-radius: 20px; }
-  #function-title { font-size: 1.4rem; padding-bottom: 10px; }
-  #function-desc { font-size: 0.9rem; margin: 10px 0 6px; }
-  #function-action { font-size: 0.88rem; padding: 8px 18px; }
-  .cosmic-footer { bottom: 6px; padding: 4px 12px 6px; }
-  .footer-content { padding: 3px 12px; font-size: 0.7rem; gap: 8px; }
-  .footer-divider { height: 12px; }
-  .footer-link, .footer-copyright { gap: 3px; }
-  .footer-link i { font-size: 0.75rem; }
-}
-
-@media (max-width: 480px) {
-  .footer-content { flex-wrap: wrap; justify-content: center; padding: 4px 10px; font-size: 0.68rem; }
-  .footer-divider { display: none; }
-  .footer-link, .footer-copyright { margin: 2px 4px; }
-}
 </style>

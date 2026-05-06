@@ -1,6 +1,8 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import Home from '../views/Home.vue'
 import Community from '../views/Community.vue'
+import PostDetail from '../views/PostDetail.vue'
+import PostEditor from '../views/PostEditor.vue'
 import Theater from '../views/Theater.vue'
 import Hot from '../views/Hot.vue'
 import Tools from '../views/Tools.vue'
@@ -11,6 +13,8 @@ import Profile from '../views/Profile.vue'
 const routes = [
   { path: '/', component: Home },
   { path: '/community', component: Community },
+  { path: '/community/new', component: PostEditor },
+  { path: '/community/post/:id', component: PostDetail, props: true },
   { path: '/theater', component: Theater },
   { path: '/hot', component: Hot },
   { path: '/tools', component: Tools },

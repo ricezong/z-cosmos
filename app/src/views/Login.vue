@@ -483,33 +483,4 @@ watch(authReady, (ready) => {
   transform: translateX(-50%) translateY(0);
 }
 
-@media (max-width: 768px) {
-  .login-wrap {
-    padding: 12px;
-    align-items: flex-start;
-    padding-top: 40px;
-  }
-  .login-card {
-    padding: 24px 20px;
-    border-radius: 16px;
-  }
-  .login-logo .planet-icon {
-    font-size: 38px;
-  }
-  .login-logo h1 {
-    font-size: 1.3rem;
-  }
-  .qr-box {
-    width: 160px;
-    height: 160px;
-  }
-  .oauth-btn {
-    width: 40px;
-    height: 40px;
-  }
-  .oauth-icon {
-    width: 20px;
-    height: 20px;
-  }
-}
 </style>

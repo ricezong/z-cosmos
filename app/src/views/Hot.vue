@@ -127,26 +127,13 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* Theme vars for back-to-top */
-.page-layout {
-  --bt-bg: rgba(196,142,110,0.3);
-  --bt-border: rgba(196,142,110,0.5);
-  --bt-color: #f0d8b0;
-  --bt-hover-bg: rgba(196,142,110,0.5);
-  --bt-shadow: rgba(196,142,110,0.3);
-}
 .container { position: relative; z-index: 1; max-width: 960px; margin: 0 auto; padding: 20px 20px; }
 .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0; padding: 16px 20px; border-bottom: 1px solid rgba(144,166,196,0.3); }
 .header-left { display: flex; align-items: center; gap: 15px; }
-.planet-icon { line-height: 1; display: flex; align-items: center; }
 .header-title h1 { font-size: 1.8rem; font-weight: 300; letter-spacing: 4px; background: linear-gradient(135deg, #ffffff, #c5d5ea); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 .header-title p { font-size: 0.85rem; opacity: 0.7; margin-top: 2px; }
 .back-btn { padding: 8px 20px; border-radius: 30px; background: rgba(144,166,196,0.15); border: 1px solid rgba(144,166,196,0.4); color: #c5d5ea; cursor: pointer; text-decoration: none; transition: 0.3s; font-size: 0.9rem; }
 .back-btn:hover { background: rgba(144,166,196,0.3); box-shadow: 0 0 15px rgba(144,166,196,0.3); }
-.planet-sphere { width: 36px; height: 36px; border-radius: 50%; position: relative; flex-shrink: 0; }
-.planet-sphere.jupiter { background: radial-gradient(circle at 35% 35%, #e8c699, #d8a987 40%, #b59065 70%, #4a3620 100%); box-shadow: 0 0 12px rgba(196,142,110,0.5), inset 0 0 8px rgba(255,255,255,0.1); overflow: hidden; }
-.planet-sphere.jupiter::before { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(0deg, transparent, transparent 4px, rgba(139,100,60,0.35) 4px, rgba(139,100,60,0.35) 6px); border-radius: 50%; }
-.planet-sphere.jupiter::after { content: ''; position: absolute; inset: 10% 25% 40% 20%; background: rgba(255,255,255,0.1); border-radius: 50%; }
 .empty-state { text-align: center; padding: 50px 20px; opacity: 0.5; }
 .source-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
 .source-tab { padding: 8px 16px; border-radius: 20px; cursor: pointer; background: rgba(144,166,196,0.1); border: 1px solid rgba(144,166,196,0.2); color: #a8bcd4; transition: 0.3s; font-size: 0.85rem; }
@@ -171,18 +158,4 @@ onMounted(() => {
 .modal-body { line-height: 1.8; opacity: 0.9; font-size: 0.95rem; }
 .modal-stats { display: flex; gap: 20px; margin-top: 25px; padding-top: 20px; border-top: 1px solid rgba(144,166,196,0.2); font-size: 0.9rem; opacity: 0.7; }
 
-@media (max-width: 768px) {
-  .container { padding: 0px 20px; }
-  .header { flex-direction: column; align-items: flex-start; gap: 12px; }
-  .header-title h1 { font-size: 1.4rem; letter-spacing: 2px; }
-  .planet-sphere { width: 28px; height: 28px; }
-  .back-btn { font-size: 0.8rem; padding: 6px 14px; }
-  .source-tabs { gap: 6px; }
-  .source-tab { padding: 6px 12px; font-size: 0.8rem; }
-  .hot-item { padding: 14px; gap: 10px; }
-  .hot-title { font-size: 0.95rem; }
-  .hot-desc { font-size: 0.82rem; }
-  .modal-box { padding: 20px; border-radius: 18px; }
-  .modal-title { font-size: 1.1rem; }
-}
 </style>

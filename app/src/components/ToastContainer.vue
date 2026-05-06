@@ -54,10 +54,10 @@ const iconMap = {
   text-overflow: ellipsis;
 }
 .toast-item i { font-size: 1.15rem; flex-shrink: 0; }
-.toast-item.success { background: rgba(56,142,60,0.85); border: 1px solid rgba(76,175,80,0.5); }
-.toast-item.error   { background: rgba(198,40,40,0.85); border: 1px solid rgba(229,57,53,0.5); }
-.toast-item.warning { background: rgba(230,126,34,0.85); border: 1px solid rgba(243,156,18,0.5); }
-.toast-item.info    { background: rgba(41,98,255,0.75); border: 1px solid rgba(66,133,244,0.5); }
+.toast-item.success { background: var(--status-success); border: 1px solid var(--status-success-border); box-shadow: 0 8px 30px rgba(0,0,0,0.4), 0 0 20px var(--status-success-glow); }
+.toast-item.error   { background: var(--status-error); border: 1px solid var(--status-error-border); box-shadow: 0 8px 30px rgba(0,0,0,0.4), 0 0 20px var(--status-error-glow); }
+.toast-item.warning { background: var(--status-warning); border: 1px solid var(--status-warning-border); box-shadow: 0 8px 30px rgba(0,0,0,0.4), 0 0 20px var(--status-warning-glow); }
+.toast-item.info    { background: var(--status-info); border: 1px solid var(--status-info-border); box-shadow: 0 8px 30px rgba(0,0,0,0.4), 0 0 20px var(--status-info-glow); }
 
 .toast-enter-active { animation: toastIn 0.35s cubic-bezier(0.19,1,0.22,1); }
 .toast-leave-active { animation: toastOut 0.25s ease-in forwards; }
