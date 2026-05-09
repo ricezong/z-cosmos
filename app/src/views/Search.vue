@@ -16,13 +16,8 @@
     <div class="container">
     <div class="search-box">
       <div class="search-input-wrap">
-        <input type="text" class="search-input" v-model="query" placeholder="搜索帖子、热点..." @keydown.enter="doSearch">
+        <input type="text" class="search-input" v-model="query" placeholder="搜索笔记、热点..." @keydown.enter="doSearch">
         <button class="search-btn" @click="doSearch"><i class="ri-search-line"></i> 搜索</button>
-      </div>
-      <div class="filter-tags">
-        <div class="filter-tag" :class="{ active: filter === 'all' }" @click="filter = 'all'">全部</div>
-        <div class="filter-tag" :class="{ active: filter === 'post' }" @click="filter = 'post'"><i class="ri-earth-line"></i> 社区</div>
-        <div class="filter-tag" :class="{ active: filter === 'news' }" @click="filter = 'news'"><i class="ri-fire-line"></i> 热点</div>
       </div>
     </div>
     </div><!-- container -->
@@ -31,66 +26,20 @@
     <!-- 滚动区域 -->
     <div class="page-scroll" ref="contentRef" @scroll="onContentScroll">
     <div class="container">
-    <!-- 热门搜索词 -->
-    <div class="hot-keywords" v-if="!searched && hotKeywordsList.length > 0">
-      <div class="keywords-title"><i class="ri-fire-line"></i> 热门搜索</div>
-      <div class="keywords-list">
-        <span class="keyword-item" v-for="(kw, i) in hotKeywordsList" :key="i" @click="query = kw.keyword || kw; doSearch()">{{ kw.keyword || kw }}</span>
-      </div>
-    </div>
-
-    <!-- 输入建议 -->
-    <div class="suggestions" v-if="query && !searched && suggestionsList.length > 0">
-      <div class="suggestion-item" v-for="(s, i) in suggestionsList" :key="i" @click="query = s; doSearch()">
-        <i class="ri-search-line"></i> {{ s }}
-      </div>
-    </div>
-
-    <div class="results-header">
-      <div class="results-count">{{ resultsCount }}</div>
-    </div>
-
+    <!-- 搜索结果 -->
     <LoadingSpinner v-if="searching" text="搜索中..." />
-
-    <!-- 全局搜索结果 -->
-    <div v-if="!searching && searched && filter === 'all' && globalResults">
-      <!-- 社区结果 -->
-      <div v-if="globalResults.posts && globalResults.posts.length > 0" class="result-section">
-        <div class="section-title"><i class="ri-earth-line"></i> 社区帖子</div>
-        <div class="results-list">
-            <div class="result-item" v-for="item in globalResults.posts" :key="item.id || item.postId" @click="$router.push('/community/post/' + (item.postId || item.id))">
-            <div class="result-icon"><i class="ri-earth-line"></i></div>
-            <div class="result-content">
-              <div class="result-title" v-html="highlight(item.title)"></div>
-              <div class="result-desc" v-html="highlight(item.summary || item.desc || '')"></div>
-            </div>
-          </div>
+    <div class="results-list" v-else-if="!searching && searched && searchResults.length > 0">
+      <div class="result-item" v-for="(r, i) in searchResults" :key="r.id || i" @click="navigateResult(r)">
+        <div class="result-icon">
+          <i :class="r.type === 'NOTE' ? 'ri-article-line' : 'ri-fire-line'"></i>
         </div>
-      </div>
-      <!-- 新闻结果 -->
-      <div v-if="globalResults.news && globalResults.news.length > 0" class="result-section">
-        <div class="section-title"><i class="ri-fire-line"></i> 热点新闻</div>
-        <div class="results-list">
-          <div class="result-item" v-for="item in globalResults.news" :key="item.id || item.newsId" @click="$router.push('/hot')">
-            <div class="result-icon"><i class="ri-fire-line"></i></div>
-            <div class="result-content">
-              <div class="result-title" v-html="highlight(item.title)"></div>
-              <div class="result-desc" v-html="highlight(item.summary || item.desc || '')"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 按类型搜索结果 -->
-    <div v-if="!searching && searched && filter !== 'all'" class="results-list">
-      <div class="result-item" v-for="(r, i) in typedResults" :key="i" @click="navigateResult(r)">
-        <div class="result-icon"><i :class="filter === 'post' ? 'ri-earth-line' : 'ri-fire-line'"></i></div>
         <div class="result-content">
           <div class="result-title" v-html="highlight(r.title)"></div>
-          <div class="result-desc" v-html="highlight(r.summary || r.desc || '')"></div>
+          <div class="result-desc" v-html="highlight(r.summary || r.content || '')"></div>
           <div class="result-meta">
-            <span class="result-type" :class="filter">{{ filter === 'post' ? '社区' : '热点' }}</span>
+            <span class="result-type" :class="r.type === 'NOTE' ? 'note' : 'hot'">
+              {{ r.type === 'NOTE' ? '笔记' : '热点' }}
+            </span>
           </div>
         </div>
       </div>
@@ -111,21 +60,15 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { globalSearch, searchByType, hotKeywords, suggestions } from '../api/search'
+import { globalSearch } from '../api/search'
 import LoadingSpinner from '../components/LoadingSpinner.vue'
 
 const router = useRouter()
 const query = ref('')
-const filter = ref('all')
 const searched = ref(false)
-const globalResults = ref(null)
-const typedResults = ref([])
-const hotKeywordsList = ref([])
-const suggestionsList = ref([])
+const searchResults = ref([])
 const resultsCountNum = ref(0)
 const searching = ref(false)
-
-let searchTimer = null
 
 const resultsCount = computed(() => {
   if (!searched.value) return '输入关键词开始搜索'
@@ -148,28 +91,20 @@ async function doSearch() {
   const q = query.value.trim()
   searched.value = true
   searching.value = true
-  suggestionsList.value = []
-  if (!q) { globalResults.value = null; typedResults.value = []; resultsCountNum.value = 0; searching.value = false; return }
+  if (!q) { 
+    searchResults.value = []
+    resultsCountNum.value = 0
+    searching.value = false
+    return 
+  }
 
   try {
-    if (filter.value === 'all') {
-      const data = await globalSearch(q, 10)
-      globalResults.value = data || {}
-      let count = 0
-      if (data?.posts) count += data.posts.length
-      if (data?.news) count += data.news.length
-      if (data?.videos) count += data.videos.length
-      if (data?.users) count += data.users.length
-      resultsCountNum.value = count
-    } else {
-      const data = await searchByType(filter.value, q, 1, 20)
-      typedResults.value = data?.records || []
-      resultsCountNum.value = typedResults.value.length
-    }
+    const data = await globalSearch(q, 1, 50)
+    searchResults.value = data?.records || []
+    resultsCountNum.value = searchResults.value.length
   } catch (e) {
     console.error('搜索失败:', e)
-    globalResults.value = null
-    typedResults.value = []
+    searchResults.value = []
     resultsCountNum.value = 0
   } finally {
     searching.value = false
@@ -177,33 +112,10 @@ async function doSearch() {
 }
 
 function navigateResult(r) {
-  if (filter.value === 'post') {
-    router.push('/community/post/' + (r.postId || r.id))
-  } else if (filter.value === 'news') {
+  if (r.type === 'NOTE') {
+    router.push('/notes/' + r.id)
+  } else if (r.type === 'HOT') {
     router.push('/hot')
-  }
-}
-
-// 输入建议
-watch(query, (val) => {
-  if (searchTimer) clearTimeout(searchTimer)
-  if (!val.trim()) { suggestionsList.value = []; return }
-  searchTimer = setTimeout(async () => {
-    try {
-      const data = await suggestions(val.trim(), 8)
-      suggestionsList.value = data || []
-    } catch (e) {
-      suggestionsList.value = []
-    }
-  }, 300)
-})
-
-async function loadHotKeywords() {
-  try {
-    const data = await hotKeywords(10)
-    hotKeywordsList.value = data || []
-  } catch (e) {
-    hotKeywordsList.value = []
   }
 }
 
@@ -217,10 +129,6 @@ function onContentScroll() {
 function scrollToTop() {
   contentRef.value?.scrollTo({ top: 0, behavior: 'smooth' })
 }
-
-onMounted(() => {
-  loadHotKeywords()
-})
 </script>
 
 <style scoped>

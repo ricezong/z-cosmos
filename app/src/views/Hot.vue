@@ -26,7 +26,7 @@
     <div class="container">
     <LoadingSpinner v-if="loading" text="加载中..." />
     <div class="hot-list" v-else-if="newsList.length > 0">
-      <div class="hot-item" v-for="(item, idx) in newsList" :key="item.newsId" @click="openModal(item)">
+      <div class="hot-item" v-for="(item, idx) in newsList" :key="item.topicId" @click="openModal(item)">
         <div class="hot-rank" :class="{ top3: idx < 3 }">{{ idx + 1 }}</div>
         <div class="hot-content">
           <div class="hot-title">{{ item.title }}</div>
@@ -68,7 +68,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { listNews, getNews } from '../api/hot'
+import { listHotTopics, getHotTopic } from '../api/hot'
 import LoadingSpinner from '../components/LoadingSpinner.vue'
 
 const currentSort = ref('latest')
@@ -101,10 +101,10 @@ function formatTime(dateStr) {
 async function loadNews() {
   loading.value = true
   try {
-    const data = await listNews({ sort: currentSort.value, page: 1, size: 50 })
+    const data = await listHotTopics({ page: 1, size: 50 })
     newsList.value = data?.records || []
   } catch (e) {
-    console.error('加载新闻失败:', e)
+    console.error('加载热点失败:', e)
     newsList.value = []
   } finally {
     loading.value = false
@@ -114,7 +114,7 @@ async function loadNews() {
 async function openModal(item) {
   // 加载详情
   try {
-    const detail = await getNews(item.newsId)
+    const detail = await getHotTopic(item.topicId)
     modalItem.value = detail || item
   } catch (e) {
     modalItem.value = item

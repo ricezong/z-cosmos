@@ -14,8 +14,14 @@ public class CorsConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
-                // 生产环境请替换为具体域名，如：https://yourdomain.com
-                .allowedOriginPatterns("*")
+                // 开发环境允许所有来源，生产环境请替换为具体域名
+                .allowedOriginPatterns(
+                    "http://localhost:*",
+                    "http://127.0.0.1:*",
+                    // 生产环境请取消下方注释并替换为实际域名
+                    // "https://yourdomain.com"
+                    "${cors.allowed-origins:*}"
+                )
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
                 .allowCredentials(true)

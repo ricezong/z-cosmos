@@ -1,31 +1,30 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import Home from '../views/Home.vue'
-import Community from '../views/Community.vue'
-import PostDetail from '../views/PostDetail.vue'
-import PostEditor from '../views/PostEditor.vue'
-import Theater from '../views/Theater.vue'
+import Notes from '../views/Notes.vue'
+import NoteDetail from '../views/NoteDetail.vue'
 import Hot from '../views/Hot.vue'
-import Tools from '../views/Tools.vue'
+import Theater from '../views/Theater.vue'
+import Skills from '../views/Skills.vue'
 import Search from '../views/Search.vue'
-import Login from '../views/Login.vue'
-import Profile from '../views/Profile.vue'
+import About from '../views/About.vue'
 
 const routes = [
-  { path: '/', component: Home },
-  { path: '/community', component: Community },
-  { path: '/community/new', component: PostEditor },
-  { path: '/community/post/:id', component: PostDetail, props: true },
-  { path: '/theater', component: Theater },
-  { path: '/hot', component: Hot },
-  { path: '/tools', component: Tools },
-  { path: '/search', component: Search },
-  { path: '/login', component: Login },
-  { path: '/profile', component: Profile },
+  { path: '/', component: Home, name: 'Home' },
+  { path: '/notes', component: Notes, name: 'Notes' },
+  { path: '/notes/:id', component: NoteDetail, name: 'NoteDetail', props: true },
+  { path: '/hot', component: Hot, name: 'Hot' },
+  { path: '/theater', component: Theater, name: 'Theater' },
+  { path: '/skills', component: Skills, name: 'Skills' },
+  { path: '/search', component: Search, name: 'Search' },
+  { path: '/about', component: About, name: 'About' },
 ]
 
 const router = createRouter({
   history: createWebHashHistory(),
   routes,
+  scrollBehavior(to, from, savedPosition) {
+    return { top: 0 }
+  }
 })
 
 export default router

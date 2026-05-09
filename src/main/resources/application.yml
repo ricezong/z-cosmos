@@ -59,8 +59,9 @@ mybatis-plus:
   #mapper-locations: classpath*:/mapper/**/*.xml
   type-aliases-package:
     - cn.kong.cosmos.auth.entity
-    - cn.kong.cosmos.biz.community.entity
+    - cn.kong.cosmos.biz.note.entity
     - cn.kong.cosmos.biz.hot.entity
+    - cn.kong.cosmos.biz.search.entity
   global-config:
     db-config:
       id-type: auto
@@ -72,38 +73,12 @@ mybatis-plus:
     cache-enabled: false
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
 
-# 第三方 OAuth 配置（生产环境必须通过环境变量注入，此处仅作开发参考）
-oauth:
-  github:
-    client-id: ${OAUTH_GITHUB_CLIENT_ID:}
-    client-secret: ${OAUTH_GITHUB_CLIENT_SECRET:}
-    redirect-uri: ${OAUTH_GITHUB_REDIRECT_URI:http://localhost:8080/api/auth/oauth/callback?provider=github}
-  gitee:
-    client-id: ${OAUTH_GITEE_CLIENT_ID:}
-    client-secret: ${OAUTH_GITEE_CLIENT_SECRET:}
-    redirect-uri: ${OAUTH_GITEE_REDIRECT_URI:http://localhost:8080/api/auth/oauth/callback?provider=gitee}
-  qq:
-    client-id: ${OAUTH_QQ_CLIENT_ID:}
-    client-secret: ${OAUTH_QQ_CLIENT_SECRET:}
-    redirect-uri: ${OAUTH_QQ_REDIRECT_URI:http://localhost:8080/api/auth/oauth/callback?provider=qq}
-
-
-jwt:
-  secret: ${JWT_SECRET:}  # 必须通过环境变量设置，不提供默认值防止误用
-  access-expiration: 7200000 # 2 小时
-  refresh-expiration: 2592000000 # 30 天
-
-# Cookie 配置（用于 HttpOnly Refresh Token Cookie）
-cookie:
-  name: REFRESH_TOKEN
-  domain: ${COOKIE_DOMAIN:localhost}
-  secure: ${COOKIE_SECURE:false} # 生产环境必须为 true (HTTPS)
-  same-site: Lax # Strict / Lax / None
-  max-age: 2592000 # 30 天（与 refresh-expiration 对齐）
-
-# 前端地址（OAuth 回调后重定向目标，生产环境默认同源 "/"）
-frontend:
-  base-url: ${FRONTEND_BASE_URL:/}
+# 备案信息配置
+site:
+  icp-number: ${ICP_NUMBER:京ICP备XXXXXXXX号}
+  police-number: ${POLICE_NUMBER:京公网安备 XXXXXXXXX号}
+  copyright: ${COPYRIGHT:© 2026 Z-Cosmos}
+  contact-email: ${CONTACT_EMAIL:contact@example.com}
 
 # 微信公众号配置（生产环境通过环境变量注入）
 wechat:
@@ -117,19 +92,6 @@ wechat:
 rate-limit:
   window-seconds: 60
   max-requests: 10
-
-# 社区平台业务配置
-community:
-  # 发帖限制配置
-  post:
-    daily-limit: 50  # 每日发帖上限
-    min-content-length: 10  # 最小内容长度
-    max-content-length: 10000  # 最大内容长度
-
-  # 缓存配置
-  cache:
-    ttl: 3600  # 缓存TTL(秒)
-    user-cache-ttl: 1800  # 用户缓存TTL(秒)
 
 # 本地文件存储配置
 storage:

@@ -1056,12 +1056,12 @@ src/main/java/cn/kong/cosmos/
 
 ```java
 // controller/AuthUnlockController.java
-package cn.kong.cosmos.biz.auth.controller;
+package cn.kong.cosmos.auth.controller;
 
-import cn.kong.cosmos.biz.auth.dto.req.UnlockRequestDTO;
-import cn.kong.cosmos.biz.auth.dto.resp.UnlockCodeDTO;
-import cn.kong.cosmos.biz.auth.dto.resp.UnlockStatusDTO;
-import cn.kong.cosmos.biz.auth.service.AuthUnlockService;
+import cn.kong.cosmos.auth.dto.req.UnlockRequestDTO;
+import cn.kong.cosmos.auth.dto.resp.UnlockCodeDTO;
+import cn.kong.cosmos.auth.dto.resp.UnlockStatusDTO;
+import cn.kong.cosmos.auth.service.AuthUnlockService;
 import cn.kong.cosmos.common.core.Result;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -1070,44 +1070,44 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/auth/unlock")
 @RequiredArgsConstructor
 public class AuthUnlockController {
-    
-    private final AuthUnlockService authUnlockService;
-    
-    /**
-     * 请求动态口令
-     */
-    @PostMapping("/request")
-    public Result<UnlockCodeDTO> requestUnlockCode(@RequestBody UnlockRequestDTO request) {
-        UnlockCodeDTO code = authUnlockService.requestUnlockCode(
-            request.getDeviceId(),
-            request.getModuleType(),
-            request.getTargetId()
-        );
-        return Result.success(code);
-    }
-    
-    /**
-     * 检查解锁状态
-     */
-    @GetMapping("/status")
-    public Result<UnlockStatusDTO> checkUnlockStatus(
-            @RequestParam String deviceId,
-            @RequestParam String moduleType,
-            @RequestParam String targetId) {
-        UnlockStatusDTO status = authUnlockService.checkUnlockStatus(
-            deviceId, moduleType, targetId
-        );
-        return Result.success(status);
-    }
-    
-    /**
-     * 微信公众号回调验证
-     * 注意：此接口需要放行，不经过认证拦截器
-     */
-    @PostMapping("/wechat/callback")
-    public String handleWechatCallback(@RequestBody String xmlMessage) {
-        return authUnlockService.handleWechatCallback(xmlMessage);
-    }
+
+   private final AuthUnlockService authUnlockService;
+
+   /**
+    * 请求动态口令
+    */
+   @PostMapping("/request")
+   public Result<UnlockCodeDTO> requestUnlockCode(@RequestBody UnlockRequestDTO request) {
+      UnlockCodeDTO code = authUnlockService.requestUnlockCode(
+              request.getDeviceId(),
+              request.getModuleType(),
+              request.getTargetId()
+      );
+      return Result.success(code);
+   }
+
+   /**
+    * 检查解锁状态
+    */
+   @GetMapping("/status")
+   public Result<UnlockStatusDTO> checkUnlockStatus(
+           @RequestParam String deviceId,
+           @RequestParam String moduleType,
+           @RequestParam String targetId) {
+      UnlockStatusDTO status = authUnlockService.checkUnlockStatus(
+              deviceId, moduleType, targetId
+      );
+      return Result.success(status);
+   }
+
+   /**
+    * 微信公众号回调验证
+    * 注意：此接口需要放行，不经过认证拦截器
+    */
+   @PostMapping("/wechat/callback")
+   public String handleWechatCallback(@RequestBody String xmlMessage) {
+      return authUnlockService.handleWechatCallback(xmlMessage);
+   }
 }
 ```
 
@@ -1115,48 +1115,48 @@ public class AuthUnlockController {
 
 ```java
 // service/AuthUnlockService.java
-package cn.kong.cosmos.biz.auth.service;
+package cn.kong.cosmos.auth.service;
 
-import cn.kong.cosmos.biz.auth.dto.resp.UnlockCodeDTO;
-import cn.kong.cosmos.biz.auth.dto.resp.UnlockStatusDTO;
+import cn.kong.cosmos.auth.dto.resp.UnlockCodeDTO;
+import cn.kong.cosmos.auth.dto.resp.UnlockStatusDTO;
 
 public interface AuthUnlockService {
-    /**
-     * 生成动态口令
-     * @param deviceId 设备ID
-     * @param moduleType 模块类型
-     * @param targetId 目标内容ID
-     * @return 动态口令和过期时间
-     */
-    UnlockCodeDTO requestUnlockCode(String deviceId, String moduleType, String targetId);
-    
-    /**
-     * 检查解锁状态
-     * @param deviceId 设备ID
-     * @param moduleType 模块类型
-     * @param targetId 目标内容ID
-     * @return 解锁状态
-     */
-    UnlockStatusDTO checkUnlockStatus(String deviceId, String moduleType, String targetId);
-    
-    /**
-     * 微信公众号回调验证
-     * @param xmlMessage 微信XML消息
-     * @return 微信响应XML
-     */
-    String handleWechatCallback(String xmlMessage);
+   /**
+    * 生成动态口令
+    * @param deviceId 设备ID
+    * @param moduleType 模块类型
+    * @param targetId 目标内容ID
+    * @return 动态口令和过期时间
+    */
+   UnlockCodeDTO requestUnlockCode(String deviceId, String moduleType, String targetId);
+
+   /**
+    * 检查解锁状态
+    * @param deviceId 设备ID
+    * @param moduleType 模块类型
+    * @param targetId 目标内容ID
+    * @return 解锁状态
+    */
+   UnlockStatusDTO checkUnlockStatus(String deviceId, String moduleType, String targetId);
+
+   /**
+    * 微信公众号回调验证
+    * @param xmlMessage 微信XML消息
+    * @return 微信响应XML
+    */
+   String handleWechatCallback(String xmlMessage);
 }
 ```
 
 ```java
 // service/impl/AuthUnlockServiceImpl.java
-package cn.kong.cosmos.biz.auth.service.impl;
+package cn.kong.cosmos.auth.service.impl;
 
-import cn.kong.cosmos.biz.auth.dto.resp.UnlockCodeDTO;
-import cn.kong.cosmos.biz.auth.dto.resp.UnlockStatusDTO;
-import cn.kong.cosmos.biz.auth.entity.AuthUnlock;
-import cn.kong.cosmos.biz.auth.mapper.AuthUnlockMapper;
-import cn.kong.cosmos.biz.auth.service.AuthUnlockService;
+import cn.kong.cosmos.auth.dto.resp.UnlockCodeDTO;
+import cn.kong.cosmos.auth.dto.resp.UnlockStatusDTO;
+import cn.kong.cosmos.auth.entity.AuthUnlock;
+import cn.kong.cosmos.auth.mapper.AuthUnlockMapper;
+import cn.kong.cosmos.auth.service.AuthUnlockService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -1171,117 +1171,117 @@ import java.util.concurrent.TimeUnit;
 @Service
 @RequiredArgsConstructor
 public class AuthUnlockServiceImpl implements AuthUnlockService {
-    
-    private final AuthUnlockMapper authUnlockMapper;
-    private final StringRedisTemplate redisTemplate;
-    
-    @Override
-    @Transactional
-    public UnlockCodeDTO requestUnlockCode(String deviceId, String moduleType, String targetId) {
-        // 生成6位随机口令（数字）
-        String unlockCode = String.valueOf((int)((Math.random() * 9 + 1) * 100000));
-        
-        // 删除旧的未解锁记录
-        authUnlockMapper.delete(
-            new LambdaQueryWrapper<AuthUnlock>()
-                .eq(AuthUnlock::getDeviceId, deviceId)
-                .eq(AuthUnlock::getModuleType, moduleType)
-                .eq(AuthUnlock::getTargetId, targetId)
-                .eq(AuthUnlock::getStatus, 0)
-        );
-        
-        // 保存到数据库（12小时过期）
-        AuthUnlock authUnlock = new AuthUnlock();
-        authUnlock.setDeviceId(deviceId);
-        authUnlock.setModuleType(moduleType);
-        authUnlock.setTargetId(targetId);
-        authUnlock.setUnlockCode(unlockCode);
-        authUnlock.setStatus(0);
-        authUnlock.setExpiresAt(LocalDateTime.now().plusHours(12));
-        authUnlockMapper.insert(authUnlock);
-        
-        // 缓存到Redis（快速查询）
-        String redisKey = "unlock:code:" + unlockCode;
-        String redisValue = deviceId + ":" + moduleType + ":" + targetId;
-        redisTemplate.opsForValue().set(redisKey, redisValue, 12, TimeUnit.HOURS);
-        
-        log.info("生成解锁口令: deviceId={}, moduleType={}, targetId={}, code={}", 
-            deviceId, moduleType, targetId, unlockCode);
-        
-        return new UnlockCodeDTO(unlockCode, 43200); // 43200秒 = 12小时
-    }
-    
-    @Override
-    public UnlockStatusDTO checkUnlockStatus(String deviceId, String moduleType, String targetId) {
-        AuthUnlock authUnlock = authUnlockMapper.selectOne(
-            new LambdaQueryWrapper<AuthUnlock>()
-                .eq(AuthUnlock::getDeviceId, deviceId)
-                .eq(AuthUnlock::getModuleType, moduleType)
-                .eq(AuthUnlock::getTargetId, targetId)
-                .eq(AuthUnlock::getStatus, 1)
-                .gt(AuthUnlock::getExpiresAt, LocalDateTime.now())
-        );
-        
-        return new UnlockStatusDTO(authUnlock != null);
-    }
-    
-    @Override
-    @Transactional
-    public String handleWechatCallback(String xmlMessage) {
-        try {
-            // 1. 解析微信XML消息
-            // 使用 WxJava 库解析
-            // WxMpXmlMessage wxMessage = WxMpXmlMessage.fromXml(xmlMessage);
-            
-            // 2. 提取用户发送的口令
-            // String content = wxMessage.getContent();
-            
-            // 3. 从Redis中查找口令
-            // String redisKey = "unlock:code:" + content;
-            // String redisValue = redisTemplate.opsForValue().get(redisKey);
-            
-            // 4. 验证口令并更新状态
-            // if (redisValue != null) {
-            //     String[] parts = redisValue.split(":");
-            //     String deviceId = parts[0];
-            //     String moduleType = parts[1];
-            //     String targetId = parts[2];
-            //     
-            //     authUnlockMapper.update(
-            //         new AuthUnlock().setStatus(1),
-            //         new LambdaQueryWrapper<AuthUnlock>()
-            //             .eq(AuthUnlock::getDeviceId, deviceId)
-            //             .eq(AuthUnlock::getModuleType, moduleType)
-            //             .eq(AuthUnlock::getTargetId, targetId)
-            //             .eq(AuthUnlock::getUnlockCode, content)
-            //     );
-            //     
-            //     // 返回成功消息
-            //     return buildWechatReply(wxMessage, "解锁成功！请返回页面查看完整内容。");
-            // }
-            
-            // 临时实现：返回空响应
-            return "";
-            
-        } catch (Exception e) {
-            log.error("处理微信回调失败", e);
-            return "";
-        }
-    }
-    
-    /**
-     * 构建微信回复消息
-     */
-    private String buildWechatReply(Object wxMessage, String content) {
-        // 使用 WxJava 库构建回复消息
-        // WxMpXmlOutTextMessage outMessage = WxMpXmlOutMessage.TEXT()
-        //     .content(content)
-        //     .fromUser(wxMessage.getToUser())
-        //     .toUser(wxMessage.getFromUser())
-        //     .build();
-        // return outMessage.toXml();
-        return "";
-    }
+
+   private final AuthUnlockMapper authUnlockMapper;
+   private final StringRedisTemplate redisTemplate;
+
+   @Override
+   @Transactional
+   public UnlockCodeDTO requestUnlockCode(String deviceId, String moduleType, String targetId) {
+      // 生成6位随机口令（数字）
+      String unlockCode = String.valueOf((int) ((Math.random() * 9 + 1) * 100000));
+
+      // 删除旧的未解锁记录
+      authUnlockMapper.delete(
+              new LambdaQueryWrapper<AuthUnlock>()
+                      .eq(AuthUnlock::getDeviceId, deviceId)
+                      .eq(AuthUnlock::getModuleType, moduleType)
+                      .eq(AuthUnlock::getTargetId, targetId)
+                      .eq(AuthUnlock::getStatus, 0)
+      );
+
+      // 保存到数据库（12小时过期）
+      AuthUnlock authUnlock = new AuthUnlock();
+      authUnlock.setDeviceId(deviceId);
+      authUnlock.setModuleType(moduleType);
+      authUnlock.setTargetId(targetId);
+      authUnlock.setUnlockCode(unlockCode);
+      authUnlock.setStatus(0);
+      authUnlock.setExpiresAt(LocalDateTime.now().plusHours(12));
+      authUnlockMapper.insert(authUnlock);
+
+      // 缓存到Redis（快速查询）
+      String redisKey = "unlock:code:" + unlockCode;
+      String redisValue = deviceId + ":" + moduleType + ":" + targetId;
+      redisTemplate.opsForValue().set(redisKey, redisValue, 12, TimeUnit.HOURS);
+
+      log.info("生成解锁口令: deviceId={}, moduleType={}, targetId={}, code={}",
+              deviceId, moduleType, targetId, unlockCode);
+
+      return new UnlockCodeDTO(unlockCode, 43200); // 43200秒 = 12小时
+   }
+
+   @Override
+   public UnlockStatusDTO checkUnlockStatus(String deviceId, String moduleType, String targetId) {
+      AuthUnlock authUnlock = authUnlockMapper.selectOne(
+              new LambdaQueryWrapper<AuthUnlock>()
+                      .eq(AuthUnlock::getDeviceId, deviceId)
+                      .eq(AuthUnlock::getModuleType, moduleType)
+                      .eq(AuthUnlock::getTargetId, targetId)
+                      .eq(AuthUnlock::getStatus, 1)
+                      .gt(AuthUnlock::getExpiresAt, LocalDateTime.now())
+      );
+
+      return new UnlockStatusDTO(authUnlock != null);
+   }
+
+   @Override
+   @Transactional
+   public String handleWechatCallback(String xmlMessage) {
+      try {
+         // 1. 解析微信XML消息
+         // 使用 WxJava 库解析
+         // WxMpXmlMessage wxMessage = WxMpXmlMessage.fromXml(xmlMessage);
+
+         // 2. 提取用户发送的口令
+         // String content = wxMessage.getContent();
+
+         // 3. 从Redis中查找口令
+         // String redisKey = "unlock:code:" + content;
+         // String redisValue = redisTemplate.opsForValue().get(redisKey);
+
+         // 4. 验证口令并更新状态
+         // if (redisValue != null) {
+         //     String[] parts = redisValue.split(":");
+         //     String deviceId = parts[0];
+         //     String moduleType = parts[1];
+         //     String targetId = parts[2];
+         //     
+         //     authUnlockMapper.update(
+         //         new AuthUnlock().setStatus(1),
+         //         new LambdaQueryWrapper<AuthUnlock>()
+         //             .eq(AuthUnlock::getDeviceId, deviceId)
+         //             .eq(AuthUnlock::getModuleType, moduleType)
+         //             .eq(AuthUnlock::getTargetId, targetId)
+         //             .eq(AuthUnlock::getUnlockCode, content)
+         //     );
+         //     
+         //     // 返回成功消息
+         //     return buildWechatReply(wxMessage, "解锁成功！请返回页面查看完整内容。");
+         // }
+
+         // 临时实现：返回空响应
+         return "";
+
+      } catch (Exception e) {
+         log.error("处理微信回调失败", e);
+         return "";
+      }
+   }
+
+   /**
+    * 构建微信回复消息
+    */
+   private String buildWechatReply(Object wxMessage, String content) {
+      // 使用 WxJava 库构建回复消息
+      // WxMpXmlOutTextMessage outMessage = WxMpXmlOutMessage.TEXT()
+      //     .content(content)
+      //     .fromUser(wxMessage.getToUser())
+      //     .toUser(wxMessage.getFromUser())
+      //     .build();
+      // return outMessage.toXml();
+      return "";
+   }
 }
 ```
 

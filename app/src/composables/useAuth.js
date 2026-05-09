@@ -1,82 +1,104 @@
-import { ref, computed } from 'vue'
-
-/**
- * 全局认证状态（单一数据源 + Vue 响应式）
- *
- * 双 Token 策略：
- *   - Access Token: 存 localStorage + 内存响应式 ref，请求头 Authorization: Bearer <token>
- *   - Refresh Token: 后端 HttpOnly Cookie 管理，前端不接触
- */
-const token = ref(localStorage.getItem('cosmos_access_token'))
-const authReady = ref(false)
-
-// 监听 localStorage 变化（跨标签页同步）
-if (typeof window !== 'undefined') {
-  window.addEventListener('storage', (e) => {
-    if (e.key === 'cosmos_access_token') {
-      token.value = e.newValue
-    }
-  })
-}
-
-// ---- 底层 API（供 http.js / auth.js 等非 Vue 上下文调用）----
-
-export function getAccessToken() {
-  return token.value || localStorage.getItem('cosmos_access_token')
-}
-
-export function setAccessToken(val) {
-  token.value = val
-  if (val) {
-    localStorage.setItem('cosmos_access_token', val)
-  } else {
-    localStorage.removeItem('cosmos_access_token')
-  }
-}
-
-/**
- * 登录成功后设置 Token
- * 只存 accessToken 到 localStorage，refreshToken 由后端 HttpOnly Cookie 管理
- */
-export function setAuthTokens(tokens) {
-  if (!tokens) return
-  const accessToken = tokens.accessToken || tokens.access_token
-  if (accessToken) {
-    token.value = accessToken
-    localStorage.setItem('cosmos_access_token', accessToken)
-  }
-}
-
-/**
- * 清除本地认证状态（登出或 Token 失效时调用）
- * 不清除 HttpOnly Cookie（由后端 /logout 端点负责）
- */
-export function clearAuthTokens() {
-  token.value = null
-  localStorage.removeItem('cosmos_access_token')
-}
-
-export function isApiLoggedIn() {
-  return !!token.value || !!localStorage.getItem('cosmos_access_token')
-}
-
-// ---- Vue Composable ----
+import { ref } from 'vue'
+import { requestUnlockCode, checkUnlockStatus } from '../api/auth.js'
 
 export function useAuth() {
-  const isLoggedIn = computed(() => !!token.value)
+  const unlockState = ref({})
+
+  /**
+   * 生成或获取device_id
+   */
+  function getDeviceId() {
+    let deviceId = localStorage.getItem('device_id')
+    if (!deviceId) {
+      deviceId = crypto.randomUUID()
+      localStorage.setItem('device_id', deviceId)
+    }
+    return deviceId
+  }
+
+  /**
+   * 请求全局解锁
+   * @param {string} moduleType - 模块类型（NOTE/OTHER）
+   * @returns {Promise<{code: string, expires_in: number, deviceId: string}>}
+   */
+  async function requestUnlock(moduleType) {
+    const deviceId = getDeviceId()
+    const result = await requestUnlockCode({
+      device_id: deviceId,
+      module_type: moduleType
+      // 移除 target_id，改为全局解锁
+    })
+    return { ...result, deviceId }
+  }
+
+  /**
+   * 轮询检查全局解锁状态
+   * @param {string} moduleType - 模块类型
+   * @param {Function} onSuccess - 解锁成功回调
+   * @returns {Function} 停止轮询的函数
+   */
+  function startPolling(moduleType, onSuccess) {
+    const deviceId = getDeviceId()
+    const timer = setInterval(async () => {
+      try {
+        const status = await checkUnlockStatus({
+          device_id: deviceId,
+          module_type: moduleType
+          // 移除 target_id，检查全局状态
+        })
+        if (status.unlocked) {
+          clearInterval(timer)
+          // 保存全局解锁状态到localStorage（12小时有效期）
+          const unlockKey = `unlock_${moduleType}`
+          localStorage.setItem(unlockKey, JSON.stringify({
+            unlocked: true,
+            expires: Date.now() + 12 * 60 * 60 * 1000
+          }))
+          onSuccess()
+        }
+      } catch (error) {
+        console.error('轮询解锁状态失败:', error)
+      }
+    }, 3000)
+    
+    // 返回停止轮询的函数
+    return () => clearInterval(timer)
+  }
+
+  /**
+   * 检查全局解锁状态
+   * @param {string} moduleType - 模块类型
+   * @returns {boolean} 是否已解锁
+   */
+  function isLocallyUnlocked(moduleType) {
+    const unlockKey = `unlock_${moduleType}`
+    const state = localStorage.getItem(unlockKey)
+    if (state) {
+      const { unlocked, expires } = JSON.parse(state)
+      if (unlocked && Date.now() < expires) {
+        return true
+      }
+      // 已过期，清除本地状态
+      localStorage.removeItem(unlockKey)
+    }
+    return false
+  }
+
+  /**
+   * 清除全局解锁状态
+   * @param {string} moduleType - 模块类型
+   */
+  function clearLocalUnlock(moduleType) {
+    const unlockKey = `unlock_${moduleType}`
+    localStorage.removeItem(unlockKey)
+  }
 
   return {
-    isLoggedIn,
-    authReady,
-    token: computed(() => token.value),
-    setToken(val) {
-      setAccessToken(val)
-    },
-    clearToken() {
-      clearAuthTokens()
-    },
-    markReady() {
-      authReady.value = true
-    },
+    unlockState,
+    getDeviceId,
+    requestUnlock,
+    startPolling,
+    isLocallyUnlocked,
+    clearLocalUnlock
   }
 }

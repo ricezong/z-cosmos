@@ -1,17 +1,15 @@
 import { get } from './http'
 
-export function listNews(params = {}) {
-  return get('/api/news', params)
+/**
+ * 获取热点话题列表
+ */
+export function listHotTopics(params = {}) {
+  return get('/api/hot/topics', params)
 }
 
-export function getNews(newsId) {
-  return get(`/api/news/${encodeURIComponent(newsId)}`)
-}
-
-export function topNews(limit = 20) {
-  return get('/api/news/top', { limit })
-}
-
-export function rankingNews(period = 'day', limit = 20) {
-  return get('/api/news/ranking', { period, limit })
+/**
+ * 获取热点话题详情
+ */
+export function getHotTopic(topicId) {
+  return get(`/api/hot/topics/${encodeURIComponent(topicId)}`)
 }

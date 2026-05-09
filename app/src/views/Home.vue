@@ -12,27 +12,7 @@
     <div class="title-particles"></div>
   </div>
 
-  <div v-if="!isLoggedIn" class="star-login" @click="router.push('/login')" title="登录">
-    <div class="portal-ring outer"></div>
-    <div class="portal-ring middle"></div>
-    <div class="portal-ring inner"></div>
-    <div class="portal-core"></div>
-    <div class="portal-glow"></div>
-    <div class="portal-arrow"><i class="ri-arrow-right-up-line"></i></div>
-    <div class="portal-particles"></div>
-  </div>
-  <button v-if="isLoggedIn" class="profile-btn" @click="router.push('/profile')" title="个人主页">
-    <div class="cosmic-aura"></div>
-    <div class="orbit-ring outer"></div>
-    <div class="orbit-ring middle"></div>
-    <div class="orbit-ring inner"></div>
-    <div class="cosmic-core"></div>
-    <span class="floating-star"></span>
-    <span class="floating-star"></span>
-    <span class="floating-star"></span>
-    <span class="floating-star"></span>
-    <span class="user-icon"><i class="ri-user-line"></i></span>
-  </button>
+  <!-- 已移除登录/注册入口（备案合规：无用户系统） -->
 
   <div id="function-panel">
     <div class="panel-decoration top-left"></div>
@@ -79,8 +59,6 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import * as THREE from 'three'
 import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js'
-import { useAuth } from '../composables/useAuth'
-
 const router = useRouter()
 const sceneContainer = ref(null)
 
@@ -92,8 +70,6 @@ let currentLink = null
 function goToLink() {
   if (currentLink) router.push(currentLink)
 }
-
-const { isLoggedIn } = useAuth()
 
 let renderer, cssRenderer, scene, camera, animationId
 let draggedPlanet = null, hasMoved = false, dragStartPos
@@ -545,9 +521,15 @@ function init() {
   dirLight.shadow.camera.left = -d; dirLight.shadow.camera.right = d; dirLight.shadow.camera.top = d; dirLight.shadow.camera.bottom = -d
   dirLight.shadow.camera.near = 1; dirLight.shadow.camera.far = 30; dirLight.shadow.bias = -0.001
   scene.add(dirLight)
-  scene.add(new THREE.DirectionalLight(0x4488ff, 0.6).position.set(-6, 3, -8) || scene.children[scene.children.length - 1])
-  scene.add(new THREE.PointLight(0xff7744, 0.4).position.set(-4, -3, 5) || scene.children[scene.children.length - 1])
-  scene.add(new THREE.PointLight(0x6644cc, 0.5).position.set(5, -2, -12) || scene.children[scene.children.length - 1])
+  const fillLight = new THREE.DirectionalLight(0x4488ff, 0.6)
+  fillLight.position.set(-6, 3, -8)
+  scene.add(fillLight)
+  const warmPoint = new THREE.PointLight(0xff7744, 0.4)
+  warmPoint.position.set(-4, -3, 5)
+  scene.add(warmPoint)
+  const coolPoint = new THREE.PointLight(0x6644cc, 0.5)
+  coolPoint.position.set(5, -2, -12)
+  scene.add(coolPoint)
   for (let L = 0; L < 3; L++) {
     const sg = new THREE.BufferGeometry()
     const c = [4000, 2000, 800][L], sz = [0.12, 0.08, 0.05][L], cl = [0xffffff, 0xddeeff, 0xaabbff][L]
@@ -564,7 +546,7 @@ function init() {
   const planet1 = new THREE.Mesh(new THREE.SphereGeometry(1.6, 64, 64), new THREE.MeshStandardMaterial({ map: tex1, roughness: 0.7, metalness: 0.05 }))
   planet1.castShadow = planet1.receiveShadow = true
   planet1.add(createAtmosphere(1.72, 0x66a3ff, 0.2))
-  planet1.userData = { name: '地球', func: '技术社区', desc: '技术交流，知识共享', link: '/community', spin: 0.004 }
+  planet1.userData = { name: '地球', func: '技术笔记', desc: '站长技术笔记，知识共享', link: '/notes', spin: 0.004 }
   const tex2 = createMarsTexture()
   const planet2 = new THREE.Mesh(new THREE.SphereGeometry(1.4, 64, 64), new THREE.MeshStandardMaterial({ map: tex2, roughness: 0.88, metalness: 0 }))
   planet2.castShadow = planet2.receiveShadow = true
@@ -579,7 +561,7 @@ function init() {
   const planet4 = new THREE.Mesh(new THREE.SphereGeometry(1.5, 64, 64), new THREE.MeshStandardMaterial({ map: tex4, roughness: 0.35, metalness: 0.12 }))
   planet4.castShadow = planet4.receiveShadow = true
   planet4.add(createAtmosphere(1.6, 0x88ccee, 0.22))
-  planet4.userData = { name: '冰巨星', func: '自助区', desc: '自定义工具集合', link: '/tools', spin: 0.003 }
+  planet4.userData = { name: '冰巨星', func: '技能展示', desc: '个人技术栈展示', link: '/skills', spin: 0.003 }
   const ringInner = new THREE.Mesh(new THREE.TorusGeometry(2.1, 0.08, 16, 200), new THREE.MeshStandardMaterial({ color: 0xd8e8f5, transparent: true, opacity: 0.8, side: THREE.DoubleSide }))
   const ringOuter = new THREE.Mesh(new THREE.TorusGeometry(2.45, 0.12, 16, 200), new THREE.MeshStandardMaterial({ color: 0xc0d5ea, transparent: true, opacity: 0.55, side: THREE.DoubleSide }))
   ringInner.rotation.x = ringOuter.rotation.x = Math.PI / 2.8
