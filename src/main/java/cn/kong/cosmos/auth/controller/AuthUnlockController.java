@@ -4,7 +4,6 @@ import cn.kong.cosmos.auth.dto.req.UnlockRequestDTO;
 import cn.kong.cosmos.auth.dto.resp.UnlockCodeDTO;
 import cn.kong.cosmos.auth.dto.resp.UnlockStatusDTO;
 import cn.kong.cosmos.auth.service.AuthUnlockService;
-import cn.kong.cosmos.common.config.RateLimit;
 import cn.kong.cosmos.common.core.Result;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -22,7 +21,6 @@ public class AuthUnlockController {
     /**
      * 请求动态口令（限流：每分钟最多5次）
      */
-    @RateLimit(windowSeconds = 60, maxRequests = 5, keyPrefix = "auth_unlock_request")
     @PostMapping("/request")
     public Result<UnlockCodeDTO> requestUnlockCode(@RequestBody UnlockRequestDTO request) {
         UnlockCodeDTO code = authUnlockService.requestUnlockCode(
