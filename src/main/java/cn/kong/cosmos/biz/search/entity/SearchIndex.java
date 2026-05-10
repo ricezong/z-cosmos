@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 /**
  * 搜索索引实体 - 对应 z_search_index 表
@@ -25,13 +24,11 @@ public class SearchIndex {
     /** 标题 */
     private String title;
 
-    /** 关键词数组（JSON） */
-    @TableField(typeHandler = com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler.class)
-    private List<String> keywords;
+    /** 关键词（逗号分隔） */
+    private String keywords;
 
-    /** 标签数组（JSON） */
-    @TableField(typeHandler = com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler.class)
-    private List<String> tags;
+    /** 标签（逗号分隔） */
+    private String tags;
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;

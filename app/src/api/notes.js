@@ -22,3 +22,10 @@ export function getNoteDetail(id, deviceId) {
 export function getNotePreview(id) {
   return get(`/api/notes/${id}/preview`)
 }
+
+/**
+ * 获取所有启用的笔记类别列表
+ */
+export function getNoteCategories() {
+  return get('/api/note-categories/enabled')
+}

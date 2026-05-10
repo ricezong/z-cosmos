@@ -28,12 +28,12 @@
             </div>
             <div
                 v-for="cat in categories"
-                :key="cat"
+                :key="cat.categoryCode"
                 class="cat-tab"
-                :class="{ active: selectedCategory === cat }"
-                @click="selectedCategory = cat; loadNotes()"
+                :class="{ active: selectedCategory === cat.categoryCode }"
+                @click="selectedCategory = cat.categoryCode; loadNotes()"
             >
-              {{ cat }}
+              {{ cat.categoryName }}
             </div>
           </div>
         </div>
@@ -95,7 +95,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { getNotes } from '../api/notes.js'
+import { getNotes, getNoteCategories } from '../api/notes.js'
 import LoadingSpinner from '../components/LoadingSpinner.vue'
 
 const router = useRouter()
@@ -120,8 +120,18 @@ function scrollToTop() {
 }
 
 onMounted(async () => {
+  await loadCategories()
   await loadNotes()
 })
+
+async function loadCategories() {
+  try {
+    const data = await getNoteCategories()
+    categories.value = data || []
+  } catch (error) {
+    console.error('加载笔记类别失败:', error)
+  }
+}
 
 async function loadNotes() {
   loading.value = true
@@ -136,12 +146,6 @@ async function loadNotes() {
     const pageData = await getNotes(params)
     notes.value = pageData.records || []
     total.value = pageData.total || 0
-
-    // 提取分类（仅在首次获取且分类为空时）
-    if (categories.value.length === 0 && notes.value.length > 0) {
-      const categorySet = new Set(notes.value.map(n => n.category).filter(Boolean))
-      categories.value = Array.from(categorySet)
-    }
   } catch (error) {
     console.error('加载笔记列表失败:', error)
   } finally {

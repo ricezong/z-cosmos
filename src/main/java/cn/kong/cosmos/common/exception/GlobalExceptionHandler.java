@@ -1,9 +1,6 @@
 package cn.kong.cosmos.common.exception;
 
 import cn.kong.cosmos.common.core.Result;
-import io.jsonwebtoken.ExpiredJwtException;
-import io.jsonwebtoken.JwtException;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.BindException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -26,18 +23,6 @@ public class GlobalExceptionHandler {
         return Result.error(e.getCode(), e.getMessage());
     }
 
-    /**
-     * JWT 验证失败 → HTTP 401
-     */
-    @ExceptionHandler(JwtException.class)
-    public Result<Void> handleJwtException(JwtException e, HttpServletResponse response) {
-        log.warn("JWT 验证失败：{}", e.getMessage());
-        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-        if (e instanceof ExpiredJwtException) {
-            return Result.unauthorized("Token 已过期");
-        }
-        return Result.unauthorized("Token 无效");
-    }
 
     /**
      * 参数校验失败（@Valid/@Validated）

@@ -55,7 +55,28 @@ CREATE TABLE z_notes (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='技术笔记表';
 
 -- ============================================================================
--- 3. 热点话题表（AI生成内容）
+-- 3. 笔记类别表
+-- ============================================================================
+DROP TABLE IF EXISTS z_note_categories;
+
+CREATE TABLE z_note_categories (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '自增主键ID',
+    category_code VARCHAR(32) NOT NULL COMMENT '类别编码（唯一标识）',
+    category_name VARCHAR(64) NOT NULL COMMENT '类别名称',
+    description VARCHAR(256) DEFAULT NULL COMMENT '类别描述',
+    icon_url VARCHAR(512) DEFAULT NULL COMMENT '图标URL',
+    sort_order INT NOT NULL DEFAULT 0 COMMENT '排序权重',
+    is_enabled TINYINT NOT NULL DEFAULT 1 COMMENT '是否启用：0-禁用 1-启用',
+    note_count BIGINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '笔记数量（冗余字段，便于统计）',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    UNIQUE KEY uk_category_code (category_code),
+    INDEX idx_sort_order (sort_order),
+    INDEX idx_is_enabled (is_enabled)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='笔记类别表';
+
+-- ============================================================================
+-- 4. 热点话题表（AI生成内容）
 -- ============================================================================
 DROP TABLE IF EXISTS z_hot_topics;
 
@@ -78,7 +99,7 @@ CREATE TABLE z_hot_topics (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='热点话题表';
 
 -- ============================================================================
--- 4. 搜索索引表（简化版，支持标题/标签/关键词匹配）
+-- 5. 搜索索引表（简化版，支持标题/标签/关键词匹配）
 -- ============================================================================
 DROP TABLE IF EXISTS z_search_index;
 
@@ -87,8 +108,8 @@ CREATE TABLE z_search_index (
     content_type VARCHAR(32) NOT NULL COMMENT '内容类型（NOTE/HOT）',
     content_id VARCHAR(32) NOT NULL COMMENT '内容业务ID',
     title VARCHAR(256) NOT NULL COMMENT '标题',
-    keywords JSON DEFAULT NULL COMMENT '关键词数组',
-    tags JSON DEFAULT NULL COMMENT '标签数组',
+    keywords TEXT DEFAULT NULL COMMENT '关键词（逗号分隔）',
+    tags TEXT DEFAULT NULL COMMENT '标签（逗号分隔）',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     UNIQUE KEY uk_content (content_type, content_id),
     FULLTEXT INDEX ft_search (title, keywords, tags) WITH PARSER ngram
