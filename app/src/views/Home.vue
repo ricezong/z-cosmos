@@ -12,8 +12,6 @@
     <div class="title-particles"></div>
   </div>
 
-  <!-- 已移除登录/注册入口（备案合规：无用户系统） -->
-
   <div id="function-panel">
     <div class="panel-decoration top-left"></div>
     <div class="panel-decoration top-right"></div>
@@ -84,7 +82,7 @@ const boundary = { x: 9, y: 5.5, z: 7 }
 function rand(min, max) { return min + Math.random() * (max - min) }
 function randInt(min, max) { return Math.floor(rand(min, max + 1)) }
 
-// 备案栏星光随机位置生成
+// 备案栏星光随机位置生成（移除内联 opacity 避免覆盖动画）
 function starStyle(index) {
   const positions = [
     { top: '-8px', left: '15%' },
@@ -99,8 +97,7 @@ function starStyle(index) {
   const pos = positions[(index - 1) % positions.length]
   return {
     ...pos,
-    animationDelay: `${index * 0.3}s`,
-    opacity: 0.3 + Math.random() * 0.5
+    animationDelay: `${index * 0.3}s`
   }
 }
 
@@ -651,57 +648,6 @@ onUnmounted(() => {
 
 .glow { position: absolute; width: 100%; height: 100%; pointer-events: none; background: radial-gradient(circle at 20% 30%, rgba(30, 60, 120, 0.12) 0%, transparent 45%), radial-gradient(circle at 80% 70%, rgba(60, 30, 80, 0.1) 0%, transparent 40%); z-index: 1; }
 
-.star-login { position: absolute; top: 18px; right: 26px; z-index: 15; width: 70px; height: 70px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
-.star-login:hover { transform: scale(1.1); }
-.portal-ring { position: absolute; border-radius: 50%; pointer-events: none; transition: all 0.4s ease; }
-.portal-ring.outer { inset: 0; border: 1px dashed rgba(197, 213, 234, 0.6); animation: portalSpin 16s linear infinite; box-shadow: 0 0 16px rgba(168, 188, 212, 0.35), inset 0 0 12px rgba(168, 188, 212, 0.15); }
-.portal-ring.middle { inset: 8px; border: 1px solid rgba(168, 188, 212, 0.25); animation: portalSpin 24s linear infinite reverse; background: radial-gradient(circle, rgba(168, 188, 212, 0.1) 0%, transparent 70%); }
-.portal-ring.inner { inset: 16px; border: 1px solid rgba(197, 213, 234, 0.45); background: radial-gradient(circle, rgba(197, 213, 234, 0.25) 0%, rgba(150, 180, 220, 0.12) 50%, transparent 100%); animation: portalBreath 3.5s ease-in-out infinite; }
-.portal-core { position: relative; width: 16px; height: 16px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #ffffff 0%, #e0ecff 30%, #a0c0e0 70%, #6080b0 100%); box-shadow: 0 0 8px #ffffff, 0 0 16px rgba(197, 213, 234, 0.95), 0 0 32px rgba(168, 188, 212, 0.6), 0 0 50px rgba(140, 170, 210, 0.3); z-index: 2; animation: coreTwinkle 2.6s ease-in-out infinite; }
-.portal-glow { position: absolute; inset: -15px; border-radius: 50%; background: radial-gradient(circle, rgba(168, 188, 212, 0.15) 0%, rgba(140, 170, 210, 0.08) 40%, transparent 70%); animation: glowPulse 3s ease-in-out infinite; z-index: 1; }
-.portal-arrow { position: absolute; bottom: 14px; right: 14px; font-size: 12px; color: #e8eef7; display: flex; align-items: center; justify-content: center; opacity: 0.8; transition: all 0.3s ease; z-index: 3; text-shadow: 0 0 8px rgba(168, 188, 212, 0.9); }
-.portal-particles { position: absolute; inset: 0; pointer-events: none; }
-.portal-particles::before, .portal-particles::after { content: ''; position: absolute; width: 4px; height: 4px; background: rgba(197, 213, 234, 0.7); border-radius: 50%; animation: particleOrbit 4s linear infinite; }
-.portal-particles::before { top: 50%; left: -2px; animation-delay: 0s; }
-.portal-particles::after { bottom: 50%; right: -2px; animation-delay: -2s; }
-@keyframes particleOrbit { 0% { transform: rotate(0deg) translateX(35px) rotate(0deg); opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { transform: rotate(360deg) translateX(35px) rotate(-360deg); opacity: 0; } }
-.star-login:hover .portal-arrow { transform: translate(3px, -3px); opacity: 1; }
-.star-login:hover .portal-ring.outer { animation-duration: 4s; border-color: rgba(197, 213, 234, 0.95); box-shadow: 0 0 28px rgba(168, 188, 212, 0.7), inset 0 0 18px rgba(168, 188, 212, 0.3); }
-.star-login:hover .portal-core { box-shadow: 0 0 12px #ffffff, 0 0 28px rgba(197, 213, 234, 1), 0 0 50px rgba(168, 188, 212, 0.8), 0 0 70px rgba(140, 170, 210, 0.4); }
-.star-login:hover .portal-glow { inset: -25px; background: radial-gradient(circle, rgba(168, 188, 212, 0.25) 0%, rgba(140, 170, 210, 0.15) 40%, transparent 70%); }
-@keyframes portalSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-@keyframes portalBreath { 0%, 100% { opacity: 0.8; transform: scale(1); } 50% { opacity: 1; transform: scale(1.08); } }
-@keyframes coreTwinkle { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.85; transform: scale(0.92); } }
-@keyframes glowPulse { 0%, 100% { opacity: 0.6; transform: scale(1); } 50% { opacity: 1; transform: scale(1.1); } }
-
-.profile-btn { position: absolute; top: 18px; right: 26px; z-index: 15; width: 72px; height: 72px; border-radius: 50%; border: none; background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
-.profile-btn:hover { transform: scale(1.12); }
-.cosmic-aura { position: absolute; inset: -18px; border-radius: 50%; background: radial-gradient(circle, rgba(180, 160, 255, 0.18) 0%, rgba(160, 140, 220, 0.08) 35%, transparent 65%); animation: auraBreath 4s ease-in-out infinite; pointer-events: none; z-index: 0; transition: all 0.4s ease; }
-@keyframes auraBreath { 0%, 100% { opacity: 0.7; transform: scale(1); } 50% { opacity: 1; transform: scale(1.08); } }
-.orbit-ring { position: absolute; border-radius: 50%; pointer-events: none; transition: all 0.4s ease; }
-.orbit-ring.outer { inset: 0; border: 1px dashed rgba(200, 180, 255, 0.45); animation: orbitSpin 18s linear infinite; box-shadow: 0 0 12px rgba(180, 160, 240, 0.2), inset 0 0 10px rgba(180, 160, 240, 0.08); }
-.orbit-ring.middle { inset: 6px; border: 1px solid rgba(220, 200, 255, 0.25); animation: orbitSpinReverse 26s linear infinite; background: radial-gradient(circle, rgba(180, 160, 240, 0.08) 0%, transparent 65%); }
-.orbit-ring.inner { inset: 14px; border: 1px solid rgba(230, 210, 255, 0.35); animation: orbitSpin 34s linear infinite; }
-@keyframes orbitSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-@keyframes orbitSpinReverse { from { transform: rotate(360deg); } to { transform: rotate(0deg); } }
-.cosmic-core { position: relative; width: 40px; height: 40px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.9) 0%, rgba(240, 230, 255, 0.7) 20%, rgba(200, 180, 255, 0.5) 45%, rgba(160, 140, 220, 0.35) 70%, rgba(120, 100, 180, 0.2) 100%); box-shadow: 0 0 12px rgba(220, 200, 255, 0.7), 0 0 28px rgba(200, 180, 255, 0.5), 0 0 50px rgba(180, 160, 240, 0.25), inset 0 2px 6px rgba(255, 255, 255, 0.6), inset 0 -3px 8px rgba(140, 120, 200, 0.3); animation: corePulse 3.5s ease-in-out infinite; z-index: 2; display: flex; align-items: center; justify-content: center; transition: all 0.4s ease; }
-.cosmic-core::before { content: ''; position: absolute; width: 14px; height: 14px; border-radius: 50%; background: radial-gradient(circle at 40% 40%, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.8) 30%, rgba(240, 230, 255, 0.6) 60%, transparent 100%); box-shadow: 0 0 6px rgba(255, 255, 255, 0.8); }
-@keyframes corePulse { 0%, 100% { filter: brightness(1); transform: scale(1); } 50% { filter: brightness(1.1); transform: scale(1.04); } }
-.floating-star { position: absolute; width: 3px; height: 3px; background: radial-gradient(circle, rgba(255, 255, 255, 0.95) 0%, rgba(220, 200, 255, 0.6) 50%, transparent 100%); border-radius: 50%; pointer-events: none; animation: starTwinkle 2.5s ease-in-out infinite; }
-.floating-star:nth-child(1) { top: 8px; left: 18px; animation-delay: 0s; }
-.floating-star:nth-child(2) { top: 20px; right: 10px; animation-delay: -0.8s; }
-.floating-star:nth-child(3) { bottom: 14px; left: 10px; animation-delay: -1.6s; }
-.floating-star:nth-child(4) { bottom: 18px; right: 16px; animation-delay: -0.4s; }
-@keyframes starTwinkle { 0%, 100% { opacity: 0.3; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.2); } }
-.profile-btn:hover .cosmic-aura { inset: -28px; background: radial-gradient(circle, rgba(200, 180, 255, 0.28) 0%, rgba(180, 160, 240, 0.12) 35%, transparent 65%); }
-.profile-btn:hover .orbit-ring.outer { border-color: rgba(220, 200, 255, 0.8); box-shadow: 0 0 22px rgba(180, 160, 240, 0.4), inset 0 0 15px rgba(180, 160, 240, 0.15); animation-duration: 6s; }
-.profile-btn:hover .orbit-ring.middle { border-color: rgba(230, 210, 255, 0.5); animation-duration: 8s; }
-.profile-btn:hover .orbit-ring.inner { border-color: rgba(240, 220, 255, 0.6); animation-duration: 12s; }
-.profile-btn:hover .cosmic-core { box-shadow: 0 0 18px rgba(220, 200, 255, 0.9), 0 0 40px rgba(200, 180, 255, 0.65), 0 0 70px rgba(180, 160, 240, 0.35), inset 0 2px 6px rgba(255, 255, 255, 0.7), inset 0 -3px 8px rgba(140, 120, 200, 0.4); }
-.profile-btn:hover .floating-star { opacity: 1; transform: scale(1.4); }
-.user-icon { position: absolute; bottom: 8px; right: 8px; font-size: 11px; color: rgba(200, 185, 255, 0.9); display: flex; align-items: center; justify-content: center; z-index: 3; transition: all 0.3s ease; text-shadow: 0 0 6px rgba(200, 180, 255, 0.8); }
-.profile-btn:hover .user-icon { transform: translate(2px, -2px) scale(1.15); color: rgba(230, 215, 255, 1); }
-
 #function-panel { position: absolute; bottom: 30px; right: 30px; z-index: 20; width: 300px; background: linear-gradient(135deg, rgba(15, 28, 52, 0.75) 0%, rgba(12, 20, 38, 0.85) 100%); backdrop-filter: blur(20px) saturate(1.2); -webkit-backdrop-filter: blur(20px) saturate(1.2); border-radius: 24px; padding: 24px 28px; border: 1px solid rgba(255, 255, 255, 0.12); box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(100, 180, 255, 0.08) inset, 0 0 60px rgba(60, 130, 220, 0.08) inset; color: #e0f0ff; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); pointer-events: none; overflow: hidden; }
 #function-panel::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent 0%, rgba(100, 180, 255, 0.4) 50%, transparent 100%); }
 .panel-decoration { position: absolute; width: 40px; height: 40px; pointer-events: none; opacity: 0.3; }
@@ -750,5 +696,4 @@ onUnmounted(() => {
 .footer-stars { position: absolute; inset: 0; pointer-events: none; overflow: visible; }
 .star-dot { position: absolute; width: 2px; height: 2px; background: radial-gradient(circle, rgba(255, 255, 255, 0.95) 0%, rgba(200, 220, 255, 0.6) 50%, transparent 100%); border-radius: 50%; animation: starTwinkle 2.5s ease-in-out infinite; opacity: 0; }
 @keyframes starTwinkle { 0%, 100% { opacity: 0.2; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.3); } }
-
 </style>
