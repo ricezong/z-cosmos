@@ -1,78 +1,106 @@
 <template>
-  <div v-if="visible" class="unlock-modal-overlay" @click.self="close">
-    <div class="unlock-modal">
-      <div class="modal-header">
-        <h3>解锁全文</h3>
-        <button class="close-btn" @click="close">×</button>
+  <div class="modal-overlay" @click.self="$emit('close')">
+    <div class="modal-content">
+      <button class="close-btn" @click="$emit('close')">×</button>
+      
+      <h2>🔐 获取解锁口令</h2>
+      
+      <div v-if="step === 1" class="step step-1">
+        <p class="instruction">
+          1. 扫描下方二维码或搜索公众号<br>
+          2. 发送任意消息获取 6 位口令<br>
+          3. 在下方输入口令完成解锁
+        </p>
+        
+        <div class="qr-code">
+          <!-- 这里可以放公众号二维码 -->
+          <div class="qr-placeholder">公众号二维码</div>
+        </div>
+        
+        <button @click="goToStep2" class="next-btn">我已关注公众号</button>
       </div>
       
-      <div class="modal-body">
-        <div class="step-tips">
-          <p class="step">步骤 1：复制下方口令</p>
-          <div class="code-display">{{ unlockCode }}</div>
-          <button class="copy-btn" @click="copyCode">复制口令</button>
+      <div v-if="step === 2" class="step step-2">
+        <div class="input-group">
+          <label>输入 6 位口令</label>
+          <input 
+            type="text" 
+            v-model="unlockCode"
+            maxlength="6"
+            placeholder="请输入 6 位数字"
+            class="code-input"
+          />
         </div>
         
-        <div class="step-tips">
-          <p class="step">步骤 2：扫码关注公众号</p>
-          <img :src="qrCodeUrl" alt="微信公众号二维码" class="qr-code" />
-        </div>
+        <button 
+          @click="submitCode" 
+          :disabled="!isValidCode || submitting"
+          class="submit-btn"
+        >
+          {{ submitting ? '验证中...' : '确认解锁' }}
+        </button>
         
-        <div class="step-tips">
-          <p class="step">步骤 3：发送口令到公众号</p>
-          <p class="hint">发送后等待3-5秒，内容将自动解锁</p>
-        </div>
-        
-        <div class="loading-indicator" v-if="polling">
-          <LoadingSpinner size="small" />
-          <span>等待解锁中...</span>
-        </div>
+        <p v-if="error" class="error">{{ error }}</p>
+      </div>
+      
+      <div v-if="step === 3" class="step step-3 success">
+        <div class="success-icon">✓</div>
+        <h3>解锁成功！</h3>
+        <p>您已解锁全站内容，有效期 12 小时</p>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import LoadingSpinner from './LoadingSpinner.vue'
+import { ref, computed } from 'vue'
+import { requestUnlockCode, validateUnlockCode } from '../api/auth'
+import { getDeviceId } from '../composables/useAuth'
 
-const props = defineProps({
-  visible: {
-    type: Boolean,
-    default: false
-  },
-  qrCodeUrl: {
-    type: String,
-    required: true
-  },
-  unlockCode: {
-    type: String,
-    required: true
-  },
-  polling: {
-    type: Boolean,
-    default: false
-  }
+const emit = defineEmits(['close', 'unlocked'])
+
+const step = ref(1)
+const unlockCode = ref('')
+const submitting = ref(false)
+const error = ref('')
+
+const isValidCode = computed(() => {
+  return /^\d{6}$/.test(unlockCode.value)
 })
 
-const emit = defineEmits(['update:visible', 'close'])
-
-function close() {
-  emit('update:visible', false)
-  emit('close')
+function goToStep2() {
+  step.value = 2
 }
 
-function copyCode() {
-  navigator.clipboard.writeText(props.unlockCode).then(() => {
-    // 可以使用toast提示
-    alert('口令已复制')
-  }).catch(err => {
-    console.error('复制失败:', err)
-  })
+async function submitCode() {
+  if (!isValidCode.value) return
+  
+  submitting.value = true
+  error.value = ''
+  
+  try {
+    const deviceId = getDeviceId()
+    const res = await validateUnlockCode(deviceId, unlockCode.value)
+    
+    if (res.code === 0 && res.data?.success) {
+      step.value = 3
+      setTimeout(() => {
+        emit('unlocked')
+      }, 1500)
+    } else {
+      error.value = res.message || '口令无效或已过期'
+    }
+  } catch (e) {
+    error.value = '网络错误，请重试'
+    console.error(e)
+  } finally {
+    submitting.value = false
+  }
 }
 </script>
 
 <style scoped>
-.unlock-modal-overlay {
+.modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -83,132 +111,130 @@ function copyCode() {
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  animation: fadeIn 0.3s ease;
 }
 
-.unlock-modal {
+.modal-content {
   background: white;
-  border-radius: 12px;
-  max-width: 400px;
+  border-radius: 16px;
+  padding: 40px;
+  max-width: 450px;
   width: 90%;
-  max-height: 90vh;
-  overflow-y: auto;
-  animation: slideUp 0.3s ease;
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px;
-  border-bottom: 1px solid #eee;
-}
-
-.modal-header h3 {
-  margin: 0;
-  font-size: 18px;
-  color: #333;
+  position: relative;
+  text-align: center;
 }
 
 .close-btn {
+  position: absolute;
+  top: 15px;
+  right: 15px;
   background: none;
   border: none;
-  font-size: 24px;
+  font-size: 28px;
   cursor: pointer;
   color: #999;
-  padding: 0;
-  width: 30px;
-  height: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
-.close-btn:hover {
-  color: #333;
-}
-
-.modal-body {
-  padding: 20px;
-}
-
-.step-tips {
-  margin-bottom: 20px;
-}
-
-.step {
-  font-weight: bold;
-  color: #333;
-  margin-bottom: 10px;
-  font-size: 14px;
-}
-
-.code-display {
-  background: #f5f5f5;
-  padding: 15px;
-  border-radius: 8px;
+h2 {
+  margin: 0 0 20px 0;
   font-size: 24px;
-  font-weight: bold;
-  text-align: center;
-  letter-spacing: 8px;
-  color: #1890ff;
-  margin-bottom: 10px;
-  font-family: monospace;
+  color: #333;
 }
 
-.copy-btn {
-  width: 100%;
-  padding: 10px;
-  background: #1890ff;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: background 0.3s;
-}
-
-.copy-btn:hover {
-  background: #40a9ff;
+.instruction {
+  color: #666;
+  line-height: 1.8;
+  margin-bottom: 25px;
 }
 
 .qr-code {
+  margin: 25px 0;
+}
+
+.qr-placeholder {
   width: 200px;
   height: 200px;
-  display: block;
-  margin: 10px auto;
-  border-radius: 8px;
-}
-
-.hint {
-  color: #999;
-  font-size: 12px;
-  text-align: center;
-}
-
-.loading-indicator {
+  background: #f5f5f5;
+  margin: 0 auto;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  padding: 15px;
-  color: #1890ff;
+  color: #999;
+  border-radius: 8px;
+}
+
+.next-btn, .submit-btn {
+  background: #4a90d9;
+  color: white;
+  border: none;
+  padding: 14px 40px;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.3s;
+  margin-top: 15px;
+}
+
+.next-btn:hover, .submit-btn:hover {
+  background: #3a7bc8;
+}
+
+.submit-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.input-group {
+  margin: 25px 0;
+}
+
+.input-group label {
+  display: block;
+  margin-bottom: 10px;
+  color: #666;
   font-size: 14px;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+.code-input {
+  width: 100%;
+  padding: 15px;
+  font-size: 24px;
+  text-align: center;
+  letter-spacing: 8px;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  outline: none;
+  transition: border-color 0.3s;
 }
 
-@keyframes slideUp {
-  from {
-    transform: translateY(50px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
+.code-input:focus {
+  border-color: #4a90d9;
+}
+
+.error {
+  color: #f44336;
+  font-size: 14px;
+  margin-top: 15px;
+}
+
+.success-icon {
+  width: 80px;
+  height: 80px;
+  background: #4caf50;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+  margin: 0 auto 20px;
+}
+
+.success h3 {
+  color: #4caf50;
+  margin: 0 0 10px 0;
+}
+
+.success p {
+  color: #666;
 }
 </style>

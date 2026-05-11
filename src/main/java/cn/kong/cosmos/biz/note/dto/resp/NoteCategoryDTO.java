@@ -2,21 +2,24 @@ package cn.kong.cosmos.biz.note.dto.resp;
 
 import lombok.Data;
 
-import java.time.LocalDateTime;
-
 /**
- * 笔记类别DTO
+ * 笔记分类 DTO
  */
 @Data
 public class NoteCategoryDTO {
-    private Long id;
+    
+    /** 分类编码 */
     private String categoryCode;
+    
+    /** 分类名称 */
     private String categoryName;
+    
+    /** 分类描述 */
     private String description;
+    
+    /** 分类图标 URL */
     private String iconUrl;
-    private Integer sortOrder;
-    private Integer isEnabled;
+    
+    /** 关联笔记总数 */
     private Long noteCount;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
 }

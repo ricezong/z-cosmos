@@ -3,50 +3,55 @@ package cn.kong.cosmos.biz.note.entity;
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * 技术笔记实体 - 对应 z_notes 表
+ * 技术笔记元数据实体 - 对应 z_notes 表
  */
 @Data
-@TableName(value = "z_notes", autoResultMap = true)
+@TableName("z_notes")
 public class Note {
 
     @TableId(type = IdType.AUTO)
     private Long id;
 
-    /** 笔记业务ID（雪花算法） */
+    /** 笔记业务 ID（雪花算法） */
     private String noteId;
 
     /** 笔记标题 */
     private String title;
 
-    /** 笔记完整内容（HTML格式） */
-    private String content;
-
-    /** 预览比例（0.30表示前30%） */
-    private BigDecimal previewRatio;
-
-    /** 简短摘要（SEO用，100字以内） */
-    private String shortSummary;
-
-    /** 封面图URL */
-    private String coverImage;
-
-    /** 分类标签 */
-    private String category;
+    /** 分类编码 */
+    private String categoryCode;
 
     /** 标签数组（JSON） */
     @TableField(typeHandler = com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler.class)
     private List<String> tags;
 
-    /** 已读数 */
+    /** 内容类型：0-原创 1-转载 */
+    private Integer contentType;
+
+    /** 转载来源链接 */
+    private String sourceUrl;
+
+    /** 累计阅读数 */
     private Long viewCount;
 
-    /** 是否锁定：0-公开 1-需解锁 */
+    /** 预估阅读耗时 (分钟) */
+    private Integer readMinutes;
+
+    /** 访问控制：0-公开 1-需解锁 */
     private Integer isLocked;
+
+    /** SEO 摘要/列表副标题 */
+    private String shortSummary;
+
+    /** 预览策略：1-按字数 2-按分隔符 */
+    private Integer previewType;
+
+    /** 预览截取字数阈值 */
+    private Integer previewLimit;
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;

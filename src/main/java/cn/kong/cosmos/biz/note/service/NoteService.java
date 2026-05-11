@@ -2,26 +2,27 @@ package cn.kong.cosmos.biz.note.service;
 
 import cn.kong.cosmos.biz.note.dto.resp.NoteDetailDTO;
 import cn.kong.cosmos.biz.note.dto.resp.NoteListDTO;
-import cn.kong.cosmos.biz.note.dto.resp.NotePreviewDTO;
-import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+
+import java.util.List;
 
 /**
- * 技术笔记服务接口
+ * 笔记服务接口
  */
 public interface NoteService {
     
     /**
-     * 获取笔记列表
+     * 分页查询笔记列表
      */
-    IPage<NoteListDTO> listNotes(Integer page, Integer size, String category, String tag);
+    Page<NoteListDTO> listNotes(Integer page, Integer size, String categoryCode);
     
     /**
-     * 获取笔记详情
+     * 获取笔记详情（根据解锁状态返回预览或全文）
      */
-    NoteDetailDTO getNoteDetail(String noteId);
+    NoteDetailDTO getNoteDetail(String noteId, String deviceId);
     
     /**
-     * 获取笔记预览
+     * 获取所有启用的分类
      */
-    NotePreviewDTO getNotePreview(String noteId);
+    List<cn.kong.cosmos.biz.note.dto.resp.NoteCategoryDTO> listCategories();
 }

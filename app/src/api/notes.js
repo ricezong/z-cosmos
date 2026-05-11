@@ -1,31 +1,24 @@
-import { get } from './http.js'
+import http from './http'
 
 /**
- * 获取笔记列表
+ * 获取笔记列表（分页）
  */
-export function getNotes(params) {
-  return get('/api/notes', params)
+export function getNoteList(page = 1, size = 10, categoryCode = '') {
+  return http.get('/api/notes/list', {
+    params: { page, size, categoryCode }
+  })
 }
 
 /**
- * 获取笔记详情（需传递deviceId验证解锁状态）
+ * 获取笔记详情
  */
-export function getNoteDetail(id, deviceId) {
-  const params = {}
-  if (deviceId) params.deviceId = deviceId
-  return get(`/api/notes/${id}`, params)
+export function getNoteDetail(noteId) {
+  return http.get(`/api/notes/${noteId}`)
 }
 
 /**
- * 获取笔记预览（根据preview_ratio动态生成）
+ * 获取分类列表
  */
-export function getNotePreview(id) {
-  return get(`/api/notes/${id}/preview`)
-}
-
-/**
- * 获取所有启用的笔记类别列表
- */
-export function getNoteCategories() {
-  return get('/api/note-categories/enabled')
+export function getCategories() {
+  return http.get('/api/notes/categories')
 }

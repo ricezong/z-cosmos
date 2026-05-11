@@ -1,18 +1,18 @@
 package cn.kong.cosmos.biz.note.controller;
 
+import cn.kong.cosmos.biz.note.dto.resp.NoteCategoryDTO;
 import cn.kong.cosmos.biz.note.dto.resp.NoteDetailDTO;
 import cn.kong.cosmos.biz.note.dto.resp.NoteListDTO;
-import cn.kong.cosmos.biz.note.dto.resp.NotePreviewDTO;
 import cn.kong.cosmos.biz.note.service.NoteService;
-import cn.kong.cosmos.auth.service.AuthUnlockService;
 import cn.kong.cosmos.common.core.Result;
-import cn.kong.cosmos.common.exception.BusinessException;
-import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 /**
- * 技术笔记控制器
+ * 笔记控制器
  */
 @RestController
 @RequestMapping("/api/notes")
@@ -20,48 +20,38 @@ import org.springframework.web.bind.annotation.*;
 public class NoteController {
     
     private final NoteService noteService;
-    private final AuthUnlockService authUnlockService;
     
     /**
-     * 获取笔记列表
+     * 分页查询笔记列表
      */
-    @GetMapping
-    public Result<IPage<NoteListDTO>> listNotes(
+    @GetMapping("/list")
+    public Result<Page<NoteListDTO>> listNotes(
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer size,
-            @RequestParam(required = false) String category,
-            @RequestParam(required = false) String tag) {
-        return Result.success(noteService.listNotes(page, size, category, tag));
+            @RequestParam(required = false) String categoryCode
+    ) {
+        Page<NoteListDTO> result = noteService.listNotes(page, size, categoryCode);
+        return Result.success(result);
     }
     
     /**
-     * 获取笔记详情（需验证解锁状态）
+     * 获取笔记详情
      */
-    @GetMapping("/{id}")
+    @GetMapping("/{noteId}")
     public Result<NoteDetailDTO> getNoteDetail(
-            @PathVariable String id,
-            @RequestParam(required = false) String deviceId) {
-        // 检查笔记是否需要解锁
-        NotePreviewDTO previewDTO = noteService.getNotePreview(id);
-        if (previewDTO.getNote() != null && previewDTO.getNote().getIsLocked() != null 
-                && previewDTO.getNote().getIsLocked() == 1) {
-            // 需要解锁，验证设备解锁状态
-            if (deviceId == null || deviceId.isEmpty()) {
-                throw new BusinessException("此笔记需要解锁后查看，请先完成解锁");
-            }
-            var unlockStatus = authUnlockService.checkUnlockStatus(deviceId, "NOTE");
-            if (!Boolean.TRUE.equals(unlockStatus.getUnlocked())) {
-                throw new BusinessException("此笔记需要解锁后查看，请先完成解锁");
-            }
-        }
-        return Result.success(noteService.getNoteDetail(id));
+            @PathVariable String noteId,
+            @RequestHeader(value = "X-Device-ID", required = false) String deviceId
+    ) {
+        NoteDetailDTO result = noteService.getNoteDetail(noteId, deviceId);
+        return Result.success(result);
     }
     
     /**
-     * 获取笔记预览
+     * 获取所有分类
      */
-    @GetMapping("/{id}/preview")
-    public Result<NotePreviewDTO> getNotePreview(@PathVariable String id) {
-        return Result.success(noteService.getNotePreview(id));
+    @GetMapping("/categories")
+    public Result<List<NoteCategoryDTO>> listCategories() {
+        List<NoteCategoryDTO> result = noteService.listCategories();
+        return Result.success(result);
     }
 }
