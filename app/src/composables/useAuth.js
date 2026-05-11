@@ -1,20 +1,20 @@
 import { ref } from 'vue'
 import { requestUnlockCode, checkUnlockStatus } from '../api/auth.js'
 
+/**
+ * 生成或获取device_id（独立导出，供其他模块直接使用）
+ */
+export function getDeviceId() {
+  let deviceId = localStorage.getItem('device_id')
+  if (!deviceId) {
+    deviceId = crypto.randomUUID()
+    localStorage.setItem('device_id', deviceId)
+  }
+  return deviceId
+}
+
 export function useAuth() {
   const unlockState = ref({})
-
-  /**
-   * 生成或获取device_id
-   */
-  function getDeviceId() {
-    let deviceId = localStorage.getItem('device_id')
-    if (!deviceId) {
-      deviceId = crypto.randomUUID()
-      localStorage.setItem('device_id', deviceId)
-    }
-    return deviceId
-  }
 
   /**
    * 请求全局解锁

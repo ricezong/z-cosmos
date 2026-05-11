@@ -72,10 +72,11 @@ const renderedContent = computed(() => {
 // 加载笔记详情
 async function loadNote() {
   try {
-    const res = await getNoteDetail(route.params.noteId)
-    if (res.code === 0 && res.data) {
-      note.value = res.data
-      unlocked.value = res.data.unlocked || false
+    // http.js 已解包 Result，直接返回 NoteDetailDTO
+    const data = await getNoteDetail(route.params.id)
+    if (data) {
+      note.value = data
+      unlocked.value = data.unlocked || false
     }
   } catch (e) {
     console.error('加载笔记失败', e)

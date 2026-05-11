@@ -75,10 +75,9 @@ const hasMore = ref(true)
 // 加载分类
 async function loadCategories() {
   try {
-    const res = await getCategories()
-    if (res.code === 0) {
-      categories.value = res.data || []
-    }
+    // http.js 已解包 Result，直接返回 data
+    const data = await getCategories()
+    categories.value = data || []
   } catch (e) {
     console.error('加载分类失败', e)
   }
@@ -95,11 +94,12 @@ async function loadNotes(reset = false) {
       notes.value = []
     }
     
-    const res = await getNoteList(page.value, size.value, selectedCategory.value)
-    if (res.code === 0 && res.data) {
-      const newNotes = res.data.records || []
+    // http.js 已解包 Result，直接返回 Page 对象
+    const pageData = await getNoteList(page.value, size.value, selectedCategory.value)
+    if (pageData) {
+      const newNotes = pageData.records || []
       notes.value = reset ? newNotes : [...notes.value, ...newNotes]
-      hasMore.value = notes.value.length < res.data.total
+      hasMore.value = notes.value.length < pageData.total
       page.value++
     }
   } catch (e) {
@@ -117,7 +117,7 @@ function selectCategory(code) {
 
 // 跳转详情
 function goToDetail(noteId) {
-  router.push(`/note/${noteId}`)
+  router.push(`/notes/${noteId}`)
 }
 
 // 触底加载

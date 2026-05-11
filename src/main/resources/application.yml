@@ -1,4 +1,3 @@
-# 服务端口
 server:
   port: 8080
 
@@ -6,24 +5,12 @@ spring:
   application:
     name: z-cosmos
 
-  ai:
-    deepseek:
-      chat:
-        api-key: sk-1ffa55ae66********************
-
-  # 文件上传配置
-  servlet:
-    multipart:
-      enabled: true
-      max-file-size: 10MB
-      max-request-size: 100MB
-
   # 数据源配置
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/z-cosmos?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
-    username: user
-    password: pwd
+    url: jdbc:mysql://124.223.110.114:13306/z-cosmos?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:2025#dx}
     hikari:
       minimum-idle: 5
       maximum-pool-size: 20
@@ -34,8 +21,8 @@ spring:
   # Redis配置
   data:
     redis:
-      host: localhost
-      port: 6379
+      host: ${REDIS_HOST:124.223.110.114}
+      port: ${REDIS_PORT:16379}
       database: 0
       timeout: 3000ms
       lettuce:
@@ -45,6 +32,19 @@ spring:
           min-idle: 0
           max-wait: 1000ms
 
+  # 微信公众号配置
+  wechat:
+    mp:
+      app-id: ${WECHAT_MP_APP_ID:}
+      secret: ${WECHAT_MP_SECRET:}
+      token: ${WECHAT_MP_TOKEN:}
+      aes-key: ${WECHAT_MP_AES_KEY:}
+
+  # AI配置
+  ai:
+    deepseek:
+      chat:
+        api-key: ${DEEPSEEK_API_KEY:sk-298eaa5393c44cc9a87c83b1560c20d5}
 
   # Jackson配置
   jackson:
@@ -53,10 +53,8 @@ spring:
     serialization:
       write-dates-as-timestamps: false
 
-
 # MyBatis Plus配置
 mybatis-plus:
-  #mapper-locations: classpath*:/mapper/**/*.xml
   type-aliases-package:
     - cn.kong.cosmos.auth.entity
     - cn.kong.cosmos.biz.note.entity
@@ -65,39 +63,10 @@ mybatis-plus:
   global-config:
     db-config:
       id-type: auto
-      logic-delete-field: isDeleted
-      logic-delete-value: 1
-      logic-not-delete-value: 0
   configuration:
     map-underscore-to-camel-case: true
     cache-enabled: false
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
-
-# 备案信息配置
-site:
-  icp-number: ${ICP_NUMBER:京ICP备XXXXXXXX号}
-  police-number: ${POLICE_NUMBER:京公网安备 XXXXXXXXX号}
-  copyright: ${COPYRIGHT:© 2026 Z-Cosmos}
-  contact-email: ${CONTACT_EMAIL:contact@example.com}
-
-# 微信公众号配置（生产环境通过环境变量注入）
-wechat:
-  mp:
-    app-id: ${WECHAT_MP_APP_ID:}
-    secret: ${WECHAT_MP_SECRET:}
-    token: ${WECHAT_MP_TOKEN:}
-    aes-key: ${WECHAT_MP_AES_KEY:}
-
-# IP 限流配置
-rate-limit:
-  window-seconds: 60
-  max-requests: 10
-
-# 本地文件存储配置
-storage:
-  local:
-    root: ${STORAGE_LOCAL_ROOT:./uploads}      # 物理存储根目录
-    url-prefix: /uploads                        # HTTP 访问前缀（需放行）
 
 # 日志配置
 logging:

@@ -5,4 +5,7 @@ import vue from '@vitejs/plugin-vue'
 export default defineConfig({
   plugins: [vue()],
   base: './',
+  optimizeDeps: {
+    include: ['three', 'three/examples/jsm/renderers/CSS2DRenderer.js'],
+  },
 })
