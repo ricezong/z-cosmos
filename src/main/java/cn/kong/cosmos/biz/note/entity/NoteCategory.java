@@ -6,34 +6,34 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 /**
- * 笔记类别实体类
+ * 笔记分类实体 - 对应 z_note_categories 表
  */
 @Data
-@TableName(value = "z_note_categories", autoResultMap = true)
+@TableName("z_note_categories")
 public class NoteCategory {
 
     @TableId(type = IdType.AUTO)
     private Long id;
 
-    /** 类别编码（唯一标识） */
+    /** 分类编码 (唯一) */
     private String categoryCode;
 
-    /** 类别名称 */
+    /** 分类名称 */
     private String categoryName;
 
-    /** 类别描述 */
+    /** 分类描述 */
     private String description;
 
-    /** 图标URL */
+    /** 分类图标 URL */
     private String iconUrl;
 
     /** 排序权重 */
     private Integer sortOrder;
 
-    /** 是否启用：0-禁用 1-启用 */
+    /** 启用状态：0-禁用 1-启用 */
     private Integer isEnabled;
 
-    /** 笔记数量（冗余字段，便于统计） */
+    /** 关联笔记总数 (冗余) */
     private Long noteCount;
 
     @TableField(fill = FieldFill.INSERT)

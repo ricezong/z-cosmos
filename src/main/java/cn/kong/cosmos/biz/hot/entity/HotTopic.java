@@ -9,34 +9,34 @@ import java.time.LocalDateTime;
  * 热点话题实体 - 对应 z_hot_topics 表
  */
 @Data
-@TableName(value = "z_hot_topics", autoResultMap = true)
+@TableName("z_hot_topics")
 public class HotTopic {
 
     @TableId(type = IdType.AUTO)
     private Long id;
 
-    /** 热点业务ID */
+    /** 热点业务 ID */
     private String topicId;
 
-    /** AI提炼标题 */
+    /** AI 提炼标题 */
     private String title;
 
-    /** AI完整总结 */
+    /** AI 完整总结 */
     private String summary;
 
     /** 原始链接 */
     private String sourceUrl;
 
-    /** 来源平台名称 */
+    /** 来源平台 */
     private String sourceName;
 
     /** 原始发布时间 */
     private LocalDateTime publishTime;
 
-    /** 分类标签 */
+    /** 所属分类 */
     private String category;
 
-    /** 是否有效：0-下架 1-展示 */
+    /** 展示状态：0-下架 1-展示 */
     private Integer isActive;
 
     @TableField(fill = FieldFill.INSERT)

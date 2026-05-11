@@ -1,394 +1,272 @@
 <template>
-  <div class="star-bg"></div>
-  <div class="page-layout">
-    <div class="page-fixed">
-      <header class="header">
-        <div class="header-left">
-          <div class="planet-icon">
-            <div class="planet-sphere earth"></div>
-          </div>
-          <div class="header-title">
-            <h1>技术笔记</h1>
-            <p>地球 · 知识库</p>
-          </div>
+  <div class="notes-page">
+    <!-- 分类筛选 -->
+    <div class="category-filter">
+      <button 
+        :class="{ active: selectedCategory === '' }" 
+        @click="selectCategory('')"
+      >
+        全部
+      </button>
+      <button 
+        v-for="cat in categories" 
+        :key="cat.categoryCode"
+        :class="{ active: selectedCategory === cat.categoryCode }"
+        @click="selectCategory(cat.categoryCode)"
+      >
+        {{ cat.categoryName }}
+      </button>
+    </div>
+
+    <!-- 笔记列表 -->
+    <div class="notes-list">
+      <div 
+        v-for="note in notes" 
+        :key="note.noteId" 
+        class="note-card"
+        @click="goToDetail(note.noteId)"
+      >
+        <div class="note-header">
+          <span class="note-type" :class="note.contentType === 0 ? 'original' : 'reprint'">
+            {{ note.contentType === 0 ? '原创' : '转载' }}
+          </span>
+          <span class="category-tag">{{ note.categoryName }}</span>
         </div>
-        <router-link to="/" class="back-btn">
-          <i class="ri-arrow-left-line"></i> 返回星域
-        </router-link>
-      </header>
-      <div class="container">
-        <div class="list-toolbar">
-          <div class="category-tabs" v-if="categories.length > 0">
-            <div
-                class="cat-tab"
-                :class="{ active: selectedCategory === '' }"
-                @click="selectedCategory = ''; loadNotes()"
-            >
-              全部
-            </div>
-            <div
-                v-for="cat in categories"
-                :key="cat.categoryCode"
-                class="cat-tab"
-                :class="{ active: selectedCategory === cat.categoryCode }"
-                @click="selectedCategory = cat.categoryCode; loadNotes()"
-            >
-              {{ cat.categoryName }}
-            </div>
+        <h3 class="note-title">{{ note.title }}</h3>
+        <p class="note-summary">{{ note.shortSummary }}</p>
+        <div class="note-footer">
+          <div class="tags">
+            <span v-for="tag in note.tags" :key="tag" class="tag">{{ tag }}</span>
+          </div>
+          <div class="meta">
+            <span>{{ note.readMinutes }}分钟阅读</span>
+            <span v-if="note.isLocked === 1" class="locked">🔒 需解锁</span>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="page-scroll" ref="contentRef" @scroll="onContentScroll">
-      <div class="container">
-        <LoadingSpinner v-if="loading" text="加载中..." />
+    <!-- 加载状态 -->
+    <div v-if="loading" class="loading">加载中...</div>
+    <div v-if="!hasMore && notes.length > 0" class="no-more">没有更多了</div>
 
-        <div class="notes-grid" v-else-if="notes.length > 0">
-          <div
-              v-for="note in notes"
-              :key="note.noteId"
-              class="note-card"
-              @click="goToNote(note.noteId)"
-          >
-            <div class="note-cover-wrapper" v-if="note.coverImage">
-              <img :src="note.coverImage" class="note-cover" alt="封面" />
-            </div>
-            <div class="note-content">
-              <h3 class="note-title">{{ note.title }}</h3>
-              <p class="note-summary">{{ note.shortSummary }}</p>
-              <div class="note-meta">
-                <span v-if="note.category" class="note-category-tag">{{ note.category }}</span>
-                <span class="meta-chip">
-                  <i class="ri-eye-line"></i> {{ note.viewCount || 0 }}
-                </span>
-                <span class="meta-chip">
-                  <i class="ri-time-line"></i> {{ formatTime(note.updatedAt) }}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="empty-state" v-else-if="!loading">
-          <p>暂无笔记</p>
-        </div>
-
-        <div class="pagination" v-if="total > pageSize">
-          <button :disabled="currentPage === 1" @click="currentPage--; loadNotes()">
-            <i class="ri-arrow-left-s-line"></i> 上一页
-          </button>
-          <span class="page-info">{{ currentPage }} / {{ Math.ceil(total / pageSize) }}</span>
-          <button :disabled="currentPage >= Math.ceil(total / pageSize)" @click="currentPage++; loadNotes()">
-            下一页 <i class="ri-arrow-right-s-line"></i>
-          </button>
-        </div>
-      </div>
+    <!-- 空状态 -->
+    <div v-if="!loading && notes.length === 0" class="empty">
+      <p>暂无笔记</p>
     </div>
-
-    <button class="back-to-top" v-show="showBackTop" @click="scrollToTop">
-      <i class="ri-arrow-up-line"></i>
-    </button>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { getNotes, getNoteCategories } from '../api/notes.js'
-import LoadingSpinner from '../components/LoadingSpinner.vue'
+import { getNoteList, getCategories } from '../api/notes'
 
 const router = useRouter()
 
-const loading = ref(false)
-const notes = ref([])
 const categories = ref([])
+const notes = ref([])
 const selectedCategory = ref('')
-const currentPage = ref(1)
-const pageSize = ref(10)
-const total = ref(0)
+const page = ref(1)
+const size = ref(10)
+const loading = ref(false)
+const hasMore = ref(true)
 
-// 回到顶部
-const showBackTop = ref(false)
-const contentRef = ref(null)
-function onContentScroll() {
-  const el = contentRef.value
-  if (el) showBackTop.value = el.scrollTop > 300
-}
-function scrollToTop() {
-  contentRef.value?.scrollTo({ top: 0, behavior: 'smooth' })
-}
-
-onMounted(async () => {
-  await loadCategories()
-  await loadNotes()
-})
-
+// 加载分类
 async function loadCategories() {
   try {
-    const data = await getNoteCategories()
-    categories.value = data || []
-  } catch (error) {
-    console.error('加载笔记类别失败:', error)
+    const res = await getCategories()
+    if (res.code === 0) {
+      categories.value = res.data || []
+    }
+  } catch (e) {
+    console.error('加载分类失败', e)
   }
 }
 
-async function loadNotes() {
+// 加载笔记列表
+async function loadNotes(reset = false) {
+  if (loading.value || (!reset && !hasMore.value)) return
+  
   loading.value = true
   try {
-    const params = {
-      page: currentPage.value,
-      size: pageSize.value
+    if (reset) {
+      page.value = 1
+      notes.value = []
     }
-    if (selectedCategory.value) {
-      params.category = selectedCategory.value
+    
+    const res = await getNoteList(page.value, size.value, selectedCategory.value)
+    if (res.code === 0 && res.data) {
+      const newNotes = res.data.records || []
+      notes.value = reset ? newNotes : [...notes.value, ...newNotes]
+      hasMore.value = notes.value.length < res.data.total
+      page.value++
     }
-    const pageData = await getNotes(params)
-    notes.value = pageData.records || []
-    total.value = pageData.total || 0
-  } catch (error) {
-    console.error('加载笔记列表失败:', error)
+  } catch (e) {
+    console.error('加载笔记失败', e)
   } finally {
     loading.value = false
   }
 }
 
-function goToNote(noteId) {
-  router.push({ name: 'NoteDetail', params: { id: noteId } })
+// 选择分类
+function selectCategory(code) {
+  selectedCategory.value = code
+  loadNotes(true)
 }
 
-function formatTime(time) {
-  if (!time) return ''
-  const date = new Date(time)
-  return date.toLocaleDateString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit'
-  })
+// 跳转详情
+function goToDetail(noteId) {
+  router.push(`/note/${noteId}`)
 }
+
+// 触底加载
+function handleScroll() {
+  const scrollTop = window.scrollY
+  const windowHeight = window.innerHeight
+  const documentHeight = document.documentElement.scrollHeight
+  
+  if (scrollTop + windowHeight >= documentHeight - 100) {
+    loadNotes()
+  }
+}
+
+onMounted(() => {
+  loadCategories()
+  loadNotes(true)
+  window.addEventListener('scroll', handleScroll)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', handleScroll)
+})
 </script>
 
 <style scoped>
-.container {
-  position: relative;
-  z-index: 1;
-  max-width: 960px;
+.notes-page {
+  max-width: 800px;
   margin: 0 auto;
-  padding: 20px 20px;
-}
-
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 0;
-  padding: 16px 20px;
-  border-bottom: 1px solid rgba(144, 166, 196, 0.3);
-}
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-}
-.header-title h1 {
-  font-size: 1.8rem;
-  font-weight: 300;
-  letter-spacing: 4px;
-  background: linear-gradient(135deg, #ffffff, #c5d5ea);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-.header-title p {
-  font-size: 0.85rem;
-  opacity: 0.7;
-  margin-top: 2px;
-}
-.back-btn {
-  padding: 8px 20px;
-  border-radius: 30px;
-  background: rgba(144, 166, 196, 0.2);
-  border: 1px solid rgba(144, 166, 196, 0.4);
-  color: #c5d5ea;
-  cursor: pointer;
-  text-decoration: none;
-  transition: 0.3s;
-  font-size: 0.9rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-.back-btn:hover {
-  background: rgba(144, 166, 196, 0.35);
-  box-shadow: 0 0 15px rgba(144, 166, 196, 0.15);
-}
-
-.list-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-top: 10px;
-  margin-bottom: 5px;
-}
-.category-tabs {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  overflow-x: auto;
-}
-.cat-tab {
-  padding: 6px 14px;
-  border-radius: 16px;
-  cursor: pointer;
-  background: rgba(144, 166, 196, 0.08);
-  border: 1px solid rgba(144, 166, 196, 0.18);
-  color: #a8bcd4;
-  font-size: 0.82rem;
-  white-space: nowrap;
-  transition: 0.3s;
-}
-.cat-tab.active,
-.cat-tab:hover {
-  background: rgba(144, 166, 196, 0.3);
-  border-color: rgba(144, 166, 196, 0.5);
-  color: #fff;
-}
-
-.notes-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
-  margin-bottom: 40px;
-}
-
-.note-card {
-  border: 1px solid rgba(144, 166, 196, 0.2);
-  border-radius: 16px;
-  overflow: hidden;
-  cursor: pointer;
-  transition: 0.3s;
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(10px);
-}
-.note-card:hover {
-  border-color: rgba(144, 166, 196, 0.5);
-  box-shadow: 0 5px 25px rgba(144, 166, 196, 0.15);
-  transform: translateY(-4px);
-}
-
-.note-cover-wrapper {
-  width: 100%;
-  height: 160px;
-  overflow: hidden;
-  border-bottom: 1px solid rgba(144, 166, 196, 0.2);
-}
-.note-cover {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.4s;
-}
-.note-card:hover .note-cover {
-  transform: scale(1.04);
-}
-
-.note-content {
   padding: 20px;
 }
 
+.category-filter {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.category-filter button {
+  padding: 8px 16px;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.category-filter button.active {
+  background: #4a90d9;
+  color: white;
+  border-color: #4a90d9;
+}
+
+.notes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.note-card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  cursor: pointer;
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.note-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+}
+
+.note-header {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.note-type {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.note-type.original {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.note-type.reprint {
+  background: #f5f5f5;
+  color: #666;
+}
+
+.category-tag {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  background: #f0f0f0;
+  color: #666;
+}
+
 .note-title {
-  font-size: 1.15rem;
-  color: #fff;
-  font-weight: 500;
-  margin: 0 0 10px;
-  line-height: 1.4;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  margin: 0 0 10px 0;
+  font-size: 18px;
+  color: #333;
 }
 
 .note-summary {
-  font-size: 0.9rem;
-  color: #a8bcd4;
-  opacity: 0.8;
-  margin: 0 0 15px;
+  margin: 0 0 15px 0;
+  color: #666;
+  font-size: 14px;
   line-height: 1.6;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
 }
 
-.note-meta {
+.note-footer {
   display: flex;
-  gap: 12px;
+  justify-content: space-between;
   align-items: center;
-  flex-wrap: wrap;
-  margin-top: 10px;
 }
 
-.note-category-tag {
-  display: inline-block;
-  padding: 3px 10px;
-  border-radius: 10px;
-  font-size: 0.75rem;
-  background: rgba(144, 166, 196, 0.15);
-  color: #c5d5ea;
-  border: 1px solid rgba(144, 166, 196, 0.25);
+.tags {
+  display: flex;
+  gap: 8px;
 }
 
-.meta-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 0.75rem;
-  color: #a8bcd4;
-  opacity: 0.7;
-}
-.meta-chip i {
-  font-size: 0.85rem;
+.tag {
+  padding: 2px 8px;
+  background: #f5f5f5;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #666;
 }
 
-.empty-state {
+.meta {
+  display: flex;
+  gap: 10px;
+  font-size: 12px;
+  color: #999;
+}
+
+.meta .locked {
+  color: #ff9800;
+}
+
+.loading, .no-more, .empty {
   text-align: center;
-  padding: 60px 20px;
-  opacity: 0.5;
-  color: #a8bcd4;
-}
-
-.pagination {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 20px;
-  margin-top: 20px;
-  padding: 20px 0;
-}
-.pagination button {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 8px 18px;
-  border-radius: 20px;
-  background: rgba(144, 166, 196, 0.12);
-  border: 1px solid rgba(144, 166, 196, 0.25);
-  color: #c5d5ea;
-  cursor: pointer;
-  font-size: 0.82rem;
-  transition: 0.2s;
-}
-.pagination button:hover:not(:disabled) {
-  background: rgba(144, 166, 196, 0.25);
-  border-color: rgba(144, 166, 196, 0.5);
-}
-.pagination button:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-}
-.page-info {
-  color: #a8bcd4;
-  font-size: 0.85rem;
-  letter-spacing: 0.5px;
+  padding: 20px;
+  color: #999;
 }
 </style>

@@ -9,25 +9,25 @@ import java.time.LocalDateTime;
  * 全局认证解锁实体 - 对应 z_auth_unlock 表
  */
 @Data
-@TableName(value = "z_auth_unlock", autoResultMap = true)
+@TableName("z_auth_unlock")
 public class AuthUnlock {
 
     @TableId(type = IdType.AUTO)
     private Long id;
 
-    /** 设备唯一标识（UUID v4） */
+    /** 设备指纹或 SessionID */
     private String deviceId;
 
-    /** 模块类型（NOTE/OTHER） */
+    /** 业务模块标识 */
     private String moduleType;
 
-    /** 6位动态口令 */
+    /** 6 位动态口令 */
     private String unlockCode;
 
-    /** 状态：0-未解锁 1-已解锁 */
+    /** 解锁状态：0-未解锁 1-已解锁 */
     private Integer status;
 
-    /** 过期时间（12小时后） */
+    /** 授权过期时间 */
     private LocalDateTime expiresAt;
 
     @TableField(fill = FieldFill.INSERT)
