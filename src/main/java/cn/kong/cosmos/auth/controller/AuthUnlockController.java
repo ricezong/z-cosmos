@@ -1,8 +1,10 @@
 package cn.kong.cosmos.auth.controller;
 
 import cn.kong.cosmos.auth.dto.req.UnlockRequestDTO;
+import cn.kong.cosmos.auth.dto.req.UnlockValidateDTO;
 import cn.kong.cosmos.auth.dto.resp.UnlockCodeDTO;
 import cn.kong.cosmos.auth.dto.resp.UnlockStatusDTO;
+import cn.kong.cosmos.auth.dto.resp.UnlockValidateResultDTO;
 import cn.kong.cosmos.auth.service.AuthUnlockService;
 import cn.kong.cosmos.common.core.Result;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +41,15 @@ public class AuthUnlockController {
             @RequestParam String moduleType) {
         UnlockStatusDTO status = authUnlockService.checkUnlockStatus(deviceId, moduleType);
         return Result.success(status);
+    }
+    
+    /**
+     * 验证解锁口令
+     */
+    @PostMapping("/validate")
+    public Result<UnlockValidateResultDTO> validateUnlockCode(@RequestBody UnlockValidateDTO request) {
+        boolean success = authUnlockService.validateUnlockCode(request.getDeviceId(), request.getUnlockCode());
+        return Result.success(new UnlockValidateResultDTO(success));
     }
     
     /**

@@ -31,16 +31,4 @@ public class Result<T> {
     public static <T> Result<T> error(Integer code, String msg) {
         return new Result<>(code, msg, null);
     }
-
-    public static <T> Result<T> unauthorized(String msg) {
-        return new Result<>(401, msg, null);
-    }
-
-    public static <T> Result<T> forbidden(String msg) {
-        return new Result<>(403, msg, null);
-    }
-
-    public static <T> Result<T> tooManyRequests(String msg) {
-        return new Result<>(429, msg, null);
-    }
 }

@@ -127,7 +127,7 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.container { position: relative; z-index: 1; max-width: 960px; margin: 0 auto; padding: 20px 20px; }
+.container { position: relative; z-index: 1; max-width: 960px; margin: 0 auto; padding: 20px; }
 .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0; padding: 16px 20px; border-bottom: 1px solid rgba(144,166,196,0.3); }
 .header-left { display: flex; align-items: center; gap: 15px; }
 .header-title h1 { font-size: 1.8rem; font-weight: 300; letter-spacing: 4px; background: linear-gradient(135deg, #ffffff, #c5d5ea); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }

@@ -19,6 +19,11 @@ public interface AuthUnlockService {
     UnlockStatusDTO checkUnlockStatus(String deviceId, String moduleType);
     
     /**
+     * 验证解锁口令
+     */
+    boolean validateUnlockCode(String deviceId, String unlockCode);
+
+    /**
      * 微信公众号回调验证
      */
     String handleWechatCallback(String xmlMessage);

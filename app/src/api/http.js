@@ -1,20 +1,6 @@
+import { getDeviceId } from '../utils/device.js'
+
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080').replace(/\/$/, '')
-
-// 全局认证：基于device_id
-
-/**
- * 获取device_id
- */
-function getDeviceId() {
-  let deviceId = localStorage.getItem('device_id')
-  if (!deviceId) {
-    deviceId = crypto.randomUUID()
-    localStorage.setItem('device_id', deviceId)
-  }
-  return deviceId
-}
-
-export { getDeviceId }
 
 // ========== 请求封装 ==========
 

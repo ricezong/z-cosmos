@@ -22,10 +22,10 @@ public class SearchController {
      */
     @GetMapping
     public Result<IPage<SearchResultDTO>> search(
-            @RequestParam String keyword,
+            @RequestParam String q,
             @RequestParam(required = false) String type,
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer size) {
-        return Result.success(searchService.search(keyword, type, page, size));
+        return Result.success(searchService.search(q, type, page, size));
     }
 }

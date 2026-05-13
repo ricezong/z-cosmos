@@ -79,6 +79,46 @@ public class AuthUnlockServiceImpl implements AuthUnlockService {
     
     @Override
     @Transactional
+    public boolean validateUnlockCode(String deviceId, String unlockCode) {
+        // 从Redis中查找口令
+        String redisKey = "unlock:code:" + unlockCode;
+        String redisValue = redisTemplate.opsForValue().get(redisKey);
+
+        if (redisValue == null) {
+            return false;
+        }
+
+        // 解析Redis中的设备和模块信息
+        String[] parts = redisValue.split(":");
+        String redisDeviceId = parts[0];
+        String moduleType = parts[1];
+
+        // 验证设备ID匹配
+        if (!deviceId.equals(redisDeviceId)) {
+            return false;
+        }
+
+        // 验证口令并更新数据库状态
+        boolean updated = authUnlockMapper.update(
+            null,
+            new LambdaQueryWrapper<AuthUnlock>()
+                .eq(AuthUnlock::getDeviceId, deviceId)
+                .eq(AuthUnlock::getModuleType, moduleType)
+                .eq(AuthUnlock::getUnlockCode, unlockCode)
+                .eq(AuthUnlock::getStatus, 0)
+        ) > 0;
+
+        if (updated) {
+            // 删除Redis中的口令缓存（口令验证后立即失效）
+            redisTemplate.delete(redisKey);
+            log.info("解锁成功: deviceId={}, moduleType={}, code={}", deviceId, moduleType, unlockCode);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    @Transactional
     public String handleWechatCallback(String xmlMessage) {
         try {
             // 使用 WxJava 库解析微信XML消息
