@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>技术笔记 - 探索·记录·分享</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11/styles/atom-one-dark.min.css">
+<script src="https://cdn.jsdelivr.net/npm/highlight.js@11/highlight.min.js"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      fontFamily: { sans: ['-apple-system','BlinkMacSystemFont','Segoe UI','Roboto','Helvetica Neue','Arial','sans-serif'] }
+    }
+  }
+}
+</script>
+<style>
+* { box-sizing: border-box; }
+body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #ffffff; color: #18181b; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.25); }
+
+@keyframes shake {
+  0%,100%{transform:translateX(0)}
+  10%,30%,50%,70%,90%{transform:translateX(-4px)}
+  20%,40%,60%,80%{transform:translateX(4px)}
+}
+.animate-shake { animation: shake 0.5s ease-in-out; }
+
+@keyframes fadeIn { from{opacity:0;transform:scale(0.95)} to{opacity:1;transform:scale(1)} }
+@keyframes slideUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+@keyframes pulse-glow { 0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,0.4)} 50%{box-shadow:0 0 0 8px rgba(16,185,129,0)} }
+@keyframes preview-in { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+
+.fade-in { animation: fadeIn 0.2s ease-out; }
+.slide-up { animation: slideUp 0.3s ease-out; }
+.pulse-glow { animation: pulse-glow 2s infinite; }
+.preview-in { animation: preview-in 0.3s ease-out; }
+
+.md-body { font-size: 15px; line-height: 1.8; color: #3f3f46; }
+.md-body h1 { font-size: 1.75rem; font-weight: 700; margin: 1.5rem 0 1rem; color: #18181b; }
+.md-body h2 { font-size: 1.35rem; font-weight: 600; margin: 1.5rem 0 0.75rem; color: #27272a; padding-bottom: 0.5rem; border-bottom: 1px solid #e4e4e7; }
+.md-body h3 { font-size: 1.15rem; font-weight: 600; margin: 1.25rem 0 0.5rem; color: #3f3f46; }
+.md-body p { margin: 0.75rem 0; }
+.md-body ul, .md-body ol { margin: 0.75rem 0; padding-left: 1.5rem; }
+.md-body li { margin: 0.25rem 0; }
+.md-body strong { font-weight: 600; color: #18181b; }
+.md-body a { color: #059669; text-decoration: underline; }
+.md-body blockquote { border-left: 3px solid #059669; padding: 0.5rem 1rem; margin: 1rem 0; background: #f0fdf4; border-radius: 0 0.5rem 0.5rem 0; }
+.md-body table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+.md-body th, .md-body td { border: 1px solid #e4e4e7; padding: 0.5rem 0.75rem; text-align: left; }
+.md-body th { background: #f4f4f5; font-weight: 600; }
+.md-body pre { background: #18181b; border-radius: 0.75rem; padding: 1rem; margin: 1rem 0; overflow-x: auto; }
+.md-body code { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.875rem; }
+.md-body :not(pre) > code { background: #f4f4f5; padding: 0.15rem 0.4rem; border-radius: 0.25rem; color: #be123c; font-size: 0.85em; }
+.md-body img { max-width: 100%; border-radius: 0.75rem; margin: 1rem 0; }
+.md-body hr { border: none; border-top: 1px solid #e4e4e7; margin: 1.5rem 0; }
+
+.lock-mask {
+  position: relative;
+}
+.lock-mask::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 320px;
+  background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0.6) 30%, rgba(255,255,255,0.95));
+  pointer-events: none;
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback, useMemo } = React;
+
+const tagColorMap = {
+  '原创': 'bg-emerald-50 text-emerald-700',
+  '转载': 'bg-amber-50 text-amber-700',
+  'AI': 'bg-violet-50 text-violet-700',
+  '前端': 'bg-sky-50 text-sky-700',
+  '后端': 'bg-orange-50 text-orange-700',
+  '移动端': 'bg-pink-50 text-pink-700',
+  'DevOps': 'bg-teal-50 text-teal-700',
+  '数据库': 'bg-indigo-50 text-indigo-700',
+  '架构': 'bg-rose-50 text-rose-700',
+  'React': 'bg-cyan-50 text-cyan-700',
+  'TypeScript': 'bg-blue-50 text-blue-700',
+  'Python': 'bg-yellow-50 text-yellow-700',
+  'LLM': 'bg-purple-50 text-purple-700',
+  'RAG': 'bg-fuchsia-50 text-fuchsia-700',
+  'Node.js': 'bg-lime-50 text-lime-700',
+  'Go': 'bg-cyan-50 text-cyan-700',
+  'Docker': 'bg-sky-50 text-sky-700',
+  'K8s': 'bg-blue-50 text-blue-700',
+  '微服务': 'bg-red-50 text-red-700',
+};
+
+const mockNotes = [
+  { id:'1', title:'深入理解 React 19 的新特性', summary:'React 19 带来了 Server Components、Actions、use() Hook 等重要新特性，本文将深入分析这些变化对实际开发的影响。', coverImage:'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=600&h=400&fit=crop', tags:[{label:'原创',color:tagColorMap['原创']},{label:'前端',color:tagColorMap['前端']},{label:'React',color:tagColorMap['React']}], viewCount:3842, mainCategory:'原创', techCategory:'前端', createdAt:'2025-12-15', author:'技术小站',
+    content:`# 深入理解 React 19 的新特性\n\nReact 19 带来了许多令人兴奋的新特性，这些特性将显著改变我们编写 React 应用的方式。\n\n## 1. Server Components 的正式发布\n\nServer Components 允许组件在服务器端渲染，从而减少客户端 JavaScript 的体积。\n\n\`\`\`tsx\nasync function ArticleList() {\n  const articles = await db.article.findMany();\n  return (\n    <ul>\n      {articles.map(article => (\n        <li key={article.id}>{article.title}</li>\n      ))}\n    </ul>\n  );\n}\n\`\`\`\n\n### 优势分析\n\n- **更小的 Bundle 体积**：服务端组件不会被打包到客户端\n- **直接访问后端资源**：可以在组件中直接访问数据库\n- **自动代码分割**：客户端和服务端组件之间自动实现代码分割\n\n## 2. Actions 的引入\n\nActions 简化了表单提交和数据变更的处理流程。\n\n## 3. use() Hook\n\n新的 \`use()\` Hook 允许在渲染期间读取 Promise 和 Context 的值。\n\n## 4. 性能优化\n\nReact 19 在性能方面做了大量改进，包括编译器优化、自动记忆化等。\n\n## 5. 文档元数据支持\n\nReact 19 原生支持在组件中声明 \`<title>\`、\`<meta>\` 和 \`<link>\` 标签。\n\n## 总结\n\nReact 19 的这些新特性标志着 React 生态系统的重大进步。` },
+  { id:'2', title:'大语言模型 RAG 架构实战指南', summary:'RAG 是当前大语言模型应用中最热门的架构模式，本文从原理到实践全面介绍如何构建高质量的 RAG 系统。', coverImage:'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=600&h=400&fit=crop', tags:[{label:'原创',color:tagColorMap['原创']},{label:'AI',color:tagColorMap['AI']},{label:'LLM',color:tagColorMap['LLM']},{label:'RAG',color:tagColorMap['RAG']}], viewCount:5621, mainCategory:'原创', techCategory:'AI', createdAt:'2025-11-28', author:'技术小站',
+    content:`# 大语言模型 RAG 架构实战指南\n\nRAG（Retrieval-Augmented Generation）是当前大语言模型应用中最热门的架构模式之一。\n\n## 什么是 RAG？\n\nRAG 的核心思想是将信息检索与文本生成相结合，通过检索相关文档来增强 LLM 的回答质量。\n\n## 向量数据库选型\n\n| 数据库 | 特点 | 适用场景 |\n|--------|------|----------|\n| Pinecone | 全托管，易用 | 快速原型 |\n| Weaviate | 开源，功能丰富 | 生产环境 |\n| Milvus | 高性能，可扩展 | 大规模数据 |\n| Chroma | 轻量，Python 友好 | 开发测试 |\n\n## Embedding 模型选择\n\n## 高级优化策略\n\n### 1. Chunk 策略优化\n\n### 2. 混合检索\n\n### 3. Re-ranking\n\n## 总结\n\n构建高质量的 RAG 系统需要在文档处理、检索策略和生成优化等多个环节进行精心设计。` },
+  { id:'3', title:'Node.js 微服务架构设计', summary:'微服务架构是现代后端开发的主流模式，本文介绍如何使用 Node.js 构建可扩展的微服务系统。', coverImage:'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=600&h=400&fit=crop', tags:[{label:'原创',color:tagColorMap['原创']},{label:'后端',color:tagColorMap['后端']},{label:'Node.js',color:tagColorMap['Node.js']},{label:'微服务',color:tagColorMap['微服务']}], viewCount:2915, mainCategory:'原创', techCategory:'后端', createdAt:'2025-11-10', author:'技术小站',
+    content:`# Node.js 微服务架构设计\n\n微服务架构将一个大型应用拆分为多个小型、独立的服务。\n\n## 核心原则\n\n1. **单一职责**：每个服务只负责一个业务领域\n2. **松耦合**：服务之间通过 API 通信\n3. **独立部署**：每个服务可以独立部署和扩展\n4. **去中心化**：每个服务有自己的数据库\n\n## 服务间通信\n\n### 同步通信\n\n### 异步通信\n\n## API 网关\n\n## 数据管理\n\n### 数据库每服务一个模式\n\n### Saga 模式\n\n## 容器化部署\n\n## 总结\n\nNode.js 微服务架构需要在服务拆分、通信方式、数据管理和部署运维等方面做出合理的技术选择。` },
+  { id:'4', title:'Flutter 跨平台开发最佳实践', summary:'Flutter 已成为跨平台移动应用开发的首选框架，本文分享在实际项目中积累的 Flutter 开发最佳实践。', coverImage:'https://images.unsplash.com/photo-1551650975-87deedd944c3?w=600&h=400&fit=crop', tags:[{label:'转载',color:tagColorMap['转载']},{label:'移动端',color:tagColorMap['移动端']}], viewCount:1876, mainCategory:'转载', techCategory:'移动端', createdAt:'2025-10-22', author:'技术小站',
+    content:`# Flutter 跨平台开发最佳实践\n\nFlutter 已经成为跨平台移动应用开发的首选框架之一。\n\n## 项目架构\n\n## 状态管理\n\n### BLoC 模式\n\n## 性能优化\n\n## 网络请求\n\n## 本地存储\n\n## 总结\n\nFlutter 跨平台开发需要在架构设计、状态管理、性能优化和测试等方面遵循最佳实践。` },
+  { id:'5', title:'Docker 容器化部署完全指南', summary:'Docker 是现代软件开发中不可或缺的工具，本文从基础概念到高级实践全面介绍 Docker 的使用方法。', coverImage:'https://images.unsplash.com/photo-1605745341112-85968b19335b?w=600&h=400&fit=crop', tags:[{label:'原创',color:tagColorMap['原创']},{label:'DevOps',color:tagColorMap['DevOps']},{label:'Docker',color:tagColorMap['Docker']}], viewCount:4230, mainCategory:'原创', techCategory:'DevOps', createdAt:'2025-10-05', author:'技术小站',
+    content:`# Docker 容器化部署完全指南\n\nDocker 是现代软件开发中不可或缺的工具。\n\n## Docker 基础概念\n\n## Dockerfile 最佳实践\n\n## Docker Compose\n\n## 镜像优化\n\n## 安全最佳实践\n\n## 总结\n\nDocker 容器化技术极大地简化了应用的部署和运维流程。` },
+  { id:'6', title:'PostgreSQL 高级查询优化技巧', summary:'PostgreSQL 是功能最强大的开源关系型数据库之一，本文深入探讨 PostgreSQL 的高级查询优化技巧。', coverImage:'https://images.unsplash.com/photo-1544383835-bda2bc66a55d?w=600&h=400&fit=crop', tags:[{label:'原创',color:tagColorMap['原创']},{label:'数据库',color:tagColorMap['数据库']}], viewCount:2156, mainCategory:'原创', techCategory:'数据库', createdAt:'2025-09-18', author:'技术小站',
+    content:`# PostgreSQL 高级查询优化技巧\n\nPostgreSQL 是功能最强大的开源关系型数据库之一。\n\n## 查询执行计划分析\n\n## 索引优化\n\n## 查询重写优化\n\n## 总结\n\nPostgreSQL 查询优化需要综合考虑索引策略、查询重写和分区设计等多个方面。` },
+  { id:'7', title:'分布式系统架构设计模式', summary:'分布式系统是现代大规模应用的基础，本文介绍常见的分布式系统架构设计模式及其应用场景。', coverImage:'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=600&h=400&fit=crop', tags:[{label:'原创',color:tagColorMap['原创']},{label:'架构',color:tagColorMap['架构']},{label:'微服务',color:tagColorMap['微服务']}], viewCount:3789, mainCategory:'原创', techCategory:'架构', createdAt:'2025-09-01', author:'技术小站',
+    content:`# 分布式系统架构设计模式\n\n分布式系统是现代大规模应用的基础。\n\n## CAP 定理\n\n## 常见设计模式\n\n### 1. CQRS\n\n### 2. Event Sourcing\n\n### 3. Circuit Breaker\n\n### 4. Saga 模式\n\n## 数据一致性\n\n## 总结\n\n分布式系统设计需要在一致性、可用性和性能之间做出权衡。` },
+  { id:'8', title:'Transformer 架构深度解析', summary:'Transformer 是现代 AI 的基石架构，本文深入分析 Transformer 的工作原理和关键创新。', coverImage:'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=600&h=400&fit=crop', tags:[{label:'转载',color:tagColorMap['转载']},{label:'AI',color:tagColorMap['AI']},{label:'LLM',color:tagColorMap['LLM']}], viewCount:6102, mainCategory:'转载', techCategory:'AI', createdAt:'2025-08-15', author:'技术小站',
+    content:`# Transformer 架构深度解析\n\nTransformer 是现代 AI 的基石架构。\n\n## 自注意力机制\n\n## 多头注意力\n\n## 位置编码\n\n## Transformer Block\n\n## 从 Transformer 到 GPT\n\n## 总结\n\nTransformer 架构通过自注意力机制实现了对序列数据的并行处理，彻底改变了 NLP 领域。` },
+  { id:'9', title:'Go 语言高并发编程模式', summary:'Go 语言以其出色的并发支持而闻名，本文介绍 Go 语言中的高并发编程模式和最佳实践。', coverImage:'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=600&h=400&fit=crop', tags:[{label:'原创',color:tagColorMap['原创']},{label:'后端',color:tagColorMap['后端']},{label:'Go',color:tagColorMap['Go']}], viewCount:2543, mainCategory:'原创', techCategory:'后端', createdAt:'2025-08-02', author:'技术小站',
+    content:`# Go 语言高并发编程模式\n\nGo 语言以其出色的并发支持而闻名。\n\n## Goroutine 与 Channel\n\n## Fan-out/Fan-in 模式\n\n## Context 与取消\n\n## 并发安全\n\n## 错误处理\n\n## 总结\n\nGo 语言的并发模型基于 CSP，通过 Goroutine 和 Channel 提供了优雅的并发编程方式。` },
+  { id:'10', title:'Kubernetes 生产环境最佳实践', summary:'Kubernetes 已成为容器编排的事实标准，本文分享在生产环境中运行 Kubernetes 的最佳实践。', coverImage:'https://images.unsplash.com/photo-1667372393119-3d4c48d07fc9?w=600&h=400&fit=crop', tags:[{label:'原创',color:tagColorMap['原创']},{label:'DevOps',color:tagColorMap['DevOps']},{label:'K8s',color:tagColorMap['K8s']}], viewCount:4567, mainCategory:'原创', techCategory:'DevOps', createdAt:'2025-07-20', author:'技术小站',
+    content:`# Kubernetes 生产环境最佳实践\n\nKubernetes 已成为容器编排的事实标准。\n\n## 集群架构设计\n\n## 资源管理\n\n## 部署策略\n\n### 滚动更新\n\n### 金丝雀发布\n\n## 安全加固\n\n## 监控告警\n\n## 总结\n\nKubernetes 生产环境需要在架构设计、资源管理、部署策略和安全加固等方面进行全面考虑。` },
+  { id:'11', title:'Prompt Engineering 高级技巧', summary:'Prompt Engineering 是与大语言模型高效交互的关键技能，本文介绍高级 Prompt 设计技巧。', coverImage:'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=600&h=400&fit=crop', tags:[{label:'原创',color:tagColorMap['原创']},{label:'AI',color:tagColorMap['AI']}], viewCount:7821, mainCategory:'原创', techCategory:'AI', createdAt:'2025-07-05', author:'技术小站',
+    content:`# Prompt Engineering 高级技巧\n\nPrompt Engineering 是与大语言模型高效交互的关键技能。\n\n## 基础原则\n\n## 高级技巧\n\n### Chain of Thought\n\n### Few-Shot Learning\n\n### 自我反思\n\n## 结构化输出\n\n## 防止幻觉\n\n## 总结\n\nPrompt Engineering 是一门实践性很强的技能。` },
+  { id:'12', title:'TypeScript 类型体操进阶', summary:'TypeScript 的类型系统是图灵完备的，本文介绍 TypeScript 类型系统的高级用法和类型编程实战。', coverImage:'https://images.unsplash.com/photo-1516116216624-53e697fedbea?w=600&h=400&fit=crop', tags:[{label:'转载',color:tagColorMap['转载']},{label:'前端',color:tagColorMap['前端']},{label:'TypeScript',color:tagColorMap['TypeScript']}], viewCount:3210, mainCategory:'转载', techCategory:'前端', createdAt:'2025-06-18', author:'技术小站',
+    content:`# TypeScript 类型体操进阶\n\nTypeScript 的类型系统是图灵完备的。\n\n## 条件类型\n\n## 模板字面量类型\n\n## 递归类型\n\n## 类型编程实战\n\n## 总结\n\nTypeScript 的类型系统非常强大。` },
+];
+
+const mainCategories = [
+  { label: '全部', value: '全部' },
+  { label: '原创', value: '原创' },
+  { label: '转载', value: '转载' },
+];
+
+const techCategories = [
+  { label: '全部', value: '全部' },
+  { label: '前端', value: '前端' },
+  { label: '后端', value: '后端' },
+  { label: 'AI', value: 'AI' },
+  { label: '移动端', value: '移动端' },
+  { label: 'DevOps', value: 'DevOps' },
+  { label: '数据库', value: '数据库' },
+  { label: '架构', value: '架构' },
+];
+
+const PAGE_SIZE = 8;
+const CORRECT_PASSWORD = 'tech2025';
+
+function formatViewCount(count) {
+  if (count >= 10000) return (count / 10000).toFixed(1) + '万';
+  if (count >= 1000) return (count / 1000).toFixed(1) + 'k';
+  return count.toString();
+}
+
+function getFilteredNotes(mainCat, techCat) {
+  return mockNotes.filter(n => {
+    const m = mainCat === '全部' || n.mainCategory === mainCat;
+    const t = techCat === '全部' || n.techCategory === techCat;
+    return m && t;
+  });
+}
+
+function renderMarkdown(md) {
+  marked.setOptions({
+    highlight: function(code, lang) {
+      if (lang && hljs.getLanguage(lang)) {
+        return hljs.highlight(code, { language: lang }).value;
+      }
+      return hljs.highlightAuto(code).value;
+    },
+    breaks: true,
+    gfm: true,
+  });
+  return { __html: marked.parse(md) };
+}
+
+const Icons = {
+  Eye: () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>,
+  ArrowLeft: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>,
+  ArrowRight: () => <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>,
+  Lock: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>,
+  LockSmall: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>,
+  KeyRound: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m2 18 1.4-1.4A2 2 0 0 1 4.8 16H5"/><path d="M6 12h2"/><path d="M9 12h2"/><path d="m14.5 17.5.5.5"/><circle cx="16" cy="10" r="5"/><path d="M21 10a5 5 0 0 1-5 5c-1.2 0-2.4-.4-3.3-1.2L7 21"/></svg>,
+  ShieldCheck: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>,
+  QrCode: () => <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h1"/><path d="M21 12v.01"/><path d="M12 21v-1"/></svg>,
+  X: () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>,
+  Sparkles: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg>,
+  BookOpen: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>,
+  Search: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>,
+};
+
+function MinimalListItem({ note, isActive, onHover, onClick, index }) {
+  return (
+    <div
+      onMouseEnter={() => onHover(note)}
+      onMouseLeave={() => onHover(null)}
+      onClick={() => onClick(note)}
+      className={`group cursor-pointer py-4 px-4 border-b border-zinc-100 transition-all duration-200 ${
+        isActive ? 'bg-zinc-50' : 'hover:bg-zinc-50/50'
+      }`}
+    >
+      <div className="flex items-start gap-4">
+        {/* 序号 */}
+        <span className={`text-xs font-mono mt-1 transition-colors ${
+          isActive ? 'text-emerald-600' : 'text-zinc-300'
+        }`}>
+          {String(index + 1).padStart(2, '0')}
+        </span>
+
+        <div className="flex-1 min-w-0">
+          <h3 className={`text-sm font-semibold mb-1 transition-colors ${
+            isActive ? 'text-emerald-700' : 'text-zinc-900 group-hover:text-emerald-700'
+          }`}>
+            {note.title}
+          </h3>
+          <p className="text-xs text-zinc-400 line-clamp-1 mb-2" style={{display:'-webkit-box',WebkitLineClamp:1,WebkitBoxOrient:'vertical',overflow:'hidden'}}>
+            {note.summary}
+          </p>
+          <div className="flex items-center gap-2 flex-wrap">
+            {note.tags.slice(0, 2).map(tag => (
+              <span key={tag.label} className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${tag.color}`}>
+                {tag.label}
+              </span>
+            ))}
+            <span className="text-[10px] text-zinc-400 ml-auto flex items-center gap-1">
+              <Icons.Eye /> {formatViewCount(note.viewCount)}
+            </span>
+          </div>
+        </div>
+
+        {/* 箭头 */}
+        <div className={`flex-shrink-0 mt-1 transition-all duration-200 ${
+          isActive ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2'
+        }`}>
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-600"><path d="m9 18 6-6-6-6"/></svg>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PreviewPanel({ note, onClick }) {
+  if (!note) {
+    return (
+      <div className="sticky top-24 rounded-2xl border border-zinc-200 bg-zinc-50 p-8 text-center">
+        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-zinc-100 flex items-center justify-center">
+          <Icons.BookOpen />
+        </div>
+        <p className="text-sm text-zinc-400">悬停左侧列表查看预览</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="sticky top-24 rounded-2xl border border-zinc-200 bg-white overflow-hidden shadow-sm preview-in">
+      <div className="relative h-48 overflow-hidden">
+        <img
+          src={note.coverImage}
+          alt={note.title}
+          className="w-full h-full object-cover"
+          loading="lazy"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+        <div className="absolute bottom-3 left-3 right-3">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {note.tags.map(tag => (
+              <span key={tag.label} className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${tag.color}`}>
+                {tag.label}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="p-5">
+        <h3 className="text-base font-bold text-zinc-900 mb-2">{note.title}</h3>
+        <p className="text-sm text-zinc-500 mb-4 line-clamp-3 leading-relaxed" style={{display:'-webkit-box',WebkitLineClamp:3,WebkitBoxOrient:'vertical',overflow:'hidden'}}>
+          {note.summary}
+        </p>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3 text-xs text-zinc-400">
+            <span className="flex items-center gap-1"><Icons.Eye /> {formatViewCount(note.viewCount)}</span>
+            <span>{note.createdAt}</span>
+          </div>
+          <button
+            onClick={() => onClick(note)}
+            className="text-xs font-medium text-emerald-600 hover:text-emerald-700 flex items-center gap-1 transition-colors"
+          >
+            阅读全文 <Icons.ArrowRight />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MobileCard({ note, onClick }) {
+  return (
+    <article
+      onClick={() => onClick(note)}
+      className="group cursor-pointer rounded-2xl border border-zinc-200 bg-white overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300"
+    >
+      <div className="relative h-44 overflow-hidden">
+        <img
+          src={note.coverImage}
+          alt={note.title}
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+          loading="lazy"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+      </div>
+      <div className="p-4">
+        <h3 className="text-base font-semibold text-zinc-900 group-hover:text-emerald-700 transition-colors mb-1">
+          {note.title}
+        </h3>
+        <p className="text-sm text-zinc-500 line-clamp-2 mb-3" style={{display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical',overflow:'hidden'}}>
+          {note.summary}
+        </p>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5 text-xs text-zinc-400">
+            <Icons.Eye /> {formatViewCount(note.viewCount)}
+          </div>
+          <span className="text-xs text-zinc-400">{note.createdAt}</span>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function NoteList({ onOpenNote }) {
+  const [mainCat, setMainCat] = useState('全部');
+  const [techCat, setTechCat] = useState('全部');
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [hoveredNote, setHoveredNote] = useState(null);
+  const loadMoreRef = useRef(null);
+  const fetchingRef = useRef(false);
+
+  const filtered = useMemo(() => getFilteredNotes(mainCat, techCat), [mainCat, techCat]);
+  const displayedNotes = useMemo(() => filtered.slice(0, page * PAGE_SIZE), [filtered, page]);
+  const hasMore = displayedNotes.length < filtered.length;
+
+  const handleMainCatChange = (cat) => {
+    setMainCat(cat);
+    setPage(1);
+  };
+
+  const handleTechCatChange = (cat) => {
+    setTechCat(cat);
+    setPage(1);
+  };
+
+  const loadMore = useCallback(() => {
+    if (fetchingRef.current || !hasMore) return;
+    fetchingRef.current = true;
+    setLoading(true);
+    setTimeout(() => {
+      setPage(p => p + 1);
+      setLoading(false);
+      fetchingRef.current = false;
+    }, 400);
+  }, [hasMore]);
+
+  useEffect(() => {
+    const el = loadMoreRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      entries => { if (entries[0].isIntersecting) loadMore(); },
+      { threshold: 0.1 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [loadMore]);
+
+  return (
+    <div className="min-h-screen bg-white">
+      <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-zinc-200">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-zinc-900 flex items-center justify-center shadow-lg">
+                <Icons.BookOpen />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-zinc-900">技术笔记</h1>
+                <p className="text-xs text-zinc-400 -mt-0.5">探索 · 记录 · 分享</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-zinc-400">
+              <Icons.Search />
+              <span className="hidden sm:inline">搜索</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
+        <div className="flex items-center gap-2 mb-4">
+          {mainCategories.map(cat => (
+            <button
+              key={cat.value}
+              onClick={() => handleMainCatChange(cat.value)}
+              className={`px-5 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                mainCat === cat.value
+                  ? 'bg-zinc-900 text-white shadow-lg'
+                  : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
+              }`}
+            >
+              {cat.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex items-center gap-2 mb-8 overflow-x-auto pb-2">
+          {techCategories.map(cat => (
+            <button
+              key={cat.value}
+              onClick={() => handleTechCatChange(cat.value)}
+              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap ${
+                techCat === cat.value
+                  ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200'
+                  : 'bg-white text-zinc-500 hover:bg-zinc-50 ring-1 ring-zinc-200'
+              }`}
+            >
+              {cat.label}
+            </button>
+          ))}
+        </div>
+
+        {/* 方案8：极简列表 + 悬浮预览 */}
+        <div className="flex gap-8">
+          {/* 左侧列表 - PC端 */}
+          <div className="hidden md:block flex-1 min-w-0">
+            <div className="rounded-2xl border border-zinc-200 bg-white overflow-hidden">
+              <div className="px-4 py-3 border-b border-zinc-100 bg-zinc-50/50">
+                <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">文章列表</h3>
+              </div>
+              <div>
+                {displayedNotes.map((note, index) => (
+                  <MinimalListItem
+                    key={note.id}
+                    note={note}
+                    isActive={hoveredNote?.id === note.id}
+                    onHover={setHoveredNote}
+                    onClick={onOpenNote}
+                    index={index}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* 右侧预览面板 - PC端 */}
+          <div className="hidden md:block w-80 flex-shrink-0">
+            <PreviewPanel note={hoveredNote || displayedNotes[0]} onClick={onOpenNote} />
+          </div>
+
+          {/* 移动端卡片 */}
+          <div className="md:hidden w-full grid grid-cols-1 gap-4">
+            {displayedNotes.map(note => (
+              <MobileCard key={note.id} note={note} onClick={onOpenNote} />
+            ))}
+          </div>
+        </div>
+
+        {loading && (
+          <div className="mt-6">
+            <div className="hidden md:block rounded-2xl border border-zinc-200 bg-white overflow-hidden">
+              {[1,2,3].map(i => (
+                <div key={i} className="py-4 px-4 border-b border-zinc-100">
+                  <div className="flex items-start gap-4">
+                    <div className="w-6 h-4 bg-zinc-100 rounded animate-pulse mt-1" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 bg-zinc-100 rounded w-3/4 animate-pulse" />
+                      <div className="h-3 bg-zinc-100 rounded w-1/2 animate-pulse" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="md:hidden grid grid-cols-1 gap-4">
+              {[1,2].map(i => (
+                <div key={i} className="rounded-2xl border border-zinc-200 bg-white overflow-hidden">
+                  <div className="h-44 bg-zinc-100 animate-pulse" />
+                  <div className="p-4 space-y-2">
+                    <div className="h-4 bg-zinc-100 rounded animate-pulse" />
+                    <div className="h-3 bg-zinc-100 rounded w-3/4 animate-pulse" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div ref={loadMoreRef} className="h-10 mt-8" />
+
+        {!hasMore && displayedNotes.length > 0 && (
+          <div className="text-center py-8 text-sm text-zinc-400">— 已经到底了 —</div>
+        )}
+        {!loading && displayedNotes.length === 0 && (
+          <div className="text-center py-20">
+            <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-zinc-100 flex items-center justify-center">
+              <svg className="w-10 h-10 text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+              </svg>
+            </div>
+            <p className="text-zinc-500 text-lg font-medium">暂无笔记</p>
+            <p className="text-zinc-400 text-sm mt-1">换个分类试试吧</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function NoteDetail({ note, isUnlocked, onBack, onShowUnlock }) {
+  const relatedNotes = mockNotes.filter(n => n.id !== note.id && n.techCategory === note.techCategory).slice(0, 5);
+  const contentLines = note.content.split('\n');
+  const visibleLineCount = Math.ceil(contentLines.length * 0.4);
+  const visibleContent = contentLines.slice(0, visibleLineCount).join('\n');
+
+  return (
+    <div className="min-h-screen bg-white">
+      <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-zinc-200">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-4">
+          <button onClick={onBack} className="flex items-center gap-2 text-sm text-zinc-500 hover:text-zinc-900 transition-colors">
+            <Icons.ArrowLeft /> 返回列表
+          </button>
+          <h1 className="text-sm font-medium text-zinc-900 truncate">{note.title}</h1>
+        </div>
+      </header>
+
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+        <div className="flex gap-8">
+          <aside className="hidden lg:block w-56 flex-shrink-0">
+            <div className="sticky top-20 space-y-6">
+              <div>
+                <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3">笔记分类</h3>
+                <nav className="space-y-1">
+                  {techCategories.filter(c => c.value !== '全部').map(cat => (
+                    <button key={cat.value} className="block w-full text-left px-3 py-1.5 text-sm rounded-lg text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 transition-colors">
+                      {cat.label}
+                    </button>
+                  ))}
+                </nav>
+              </div>
+              {relatedNotes.length > 0 && (
+                <div>
+                  <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3">相关推荐</h3>
+                  <div className="space-y-2">
+                    {relatedNotes.map(n => (
+                      <div key={n.id} className="text-sm text-zinc-500 hover:text-emerald-600 cursor-pointer transition-colors leading-snug py-1">
+                        <span className="line-clamp-1 font-medium">{n.title}</span>
+                        <span className="text-xs text-zinc-400">{n.createdAt}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </aside>
+
+          <main className="flex-1 min-w-0">
+            <div className="flex items-center flex-wrap gap-2 mb-4">
+              {note.tags.map(tag => (
+                <span key={tag.label} className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${tag.color}`}>
+                  {tag.label}
+                </span>
+              ))}
+            </div>
+
+            <h1 className="text-3xl font-bold text-zinc-900 mb-4">{note.title}</h1>
+
+            <div className="flex items-center gap-4 text-sm text-zinc-400 mb-6">
+              <span className="flex items-center gap-1"><Icons.Eye /> {formatViewCount(note.viewCount)} 阅读</span>
+              <span>{note.author}</span>
+              <span>{note.createdAt}</span>
+            </div>
+
+            <img src={note.coverImage} alt={note.title} className="w-full h-64 object-cover rounded-2xl mb-8 shadow-lg" />
+
+            <div className="relative">
+              {isUnlocked ? (
+                <div className="md-body" dangerouslySetInnerHTML={renderMarkdown(note.content)} />
+              ) : (
+                <div>
+                  <div className="lock-mask">
+                    <div className="md-body" dangerouslySetInnerHTML={renderMarkdown(visibleContent)} />
+                  </div>
+                  <div className="relative z-10 flex flex-col items-center justify-center py-16 mt-4">
+                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center mb-4 shadow-lg pulse-glow">
+                      <Icons.Lock />
+                    </div>
+                    <h3 className="text-lg font-semibold text-zinc-900 mb-2">内容已锁定</h3>
+                    <p className="text-sm text-zinc-500 mb-6 text-center max-w-md">
+                      扫描二维码并输入口令，即可解锁全站所有文章
+                    </p>
+                    <button
+                      onClick={onShowUnlock}
+                      className="flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all duration-300 px-8 py-2.5 rounded-xl text-sm font-medium"
+                    >
+                      <Icons.LockSmall /> 阅读全文
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </main>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function UnlockModal({ show, onClose, onUnlock }) {
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [isShaking, setIsShaking] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+
+  if (!show) return null;
+
+  const handleSubmit = () => {
+    if (password.trim() === CORRECT_PASSWORD) {
+      setIsSuccess(true);
+      setTimeout(() => {
+        onUnlock();
+        setPassword('');
+        setError('');
+        setIsSuccess(false);
+      }, 1500);
+    } else {
+      setError('口令不正确，请重新输入');
+      setIsShaking(true);
+      setTimeout(() => setIsShaking(false), 500);
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') handleSubmit();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+      <div className={`relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden fade-in ${isShaking ? 'animate-shake' : ''}`} onClick={e => e.stopPropagation()}>
+        <div className="relative bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-500 px-6 py-8 text-center">
+          <div className="absolute inset-0 opacity-10" style={{backgroundImage:'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'0.4\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")'}} />
+          <div className="relative">
+            <div className="w-16 h-16 mx-auto mb-3 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
+              <Icons.QrCode />
+            </div>
+            <h2 className="text-xl font-bold text-white">解锁全文</h2>
+            <p className="text-emerald-100 text-sm mt-1">扫描下方二维码关注公众号，获取口令</p>
+          </div>
+        </div>
+
+        <div className="p-6 space-y-5">
+          <div className="flex items-center gap-3 text-sm">
+            <div className="flex items-center justify-center w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 font-bold text-xs">1</div>
+            <span className="text-zinc-600">扫描二维码关注公众号</span>
+          </div>
+          <div className="flex items-center gap-3 text-sm">
+            <div className="flex items-center justify-center w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 font-bold text-xs">2</div>
+            <span className="text-zinc-600">在公众号内回复「<strong>解锁</strong>」获取口令</span>
+          </div>
+          <div className="flex items-center gap-3 text-sm">
+            <div className="flex items-center justify-center w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 font-bold text-xs">3</div>
+            <span className="text-zinc-600">输入口令解锁全站文章</span>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-zinc-700 mb-2">输入口令</label>
+            <input
+              type="text"
+              value={password}
+              onChange={e => { setPassword(e.target.value); setError(''); }}
+              onKeyDown={handleKeyDown}
+              placeholder="请输入口令"
+              className="w-full h-11 px-4 rounded-xl border border-zinc-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none text-center text-lg tracking-widest font-mono transition-all"
+            />
+            {error && (
+              <p className="text-sm text-red-500 flex items-center gap-1 mt-2">
+                <Icons.X /> {error}
+              </p>
+            )}
+          </div>
+
+          <button
+            onClick={handleSubmit}
+            disabled={!password.trim() || isSuccess}
+            className={`w-full h-11 rounded-xl text-sm font-medium transition-all duration-300 flex items-center justify-center gap-2 ${
+              isSuccess
+                ? 'bg-emerald-500 text-white'
+                : 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40'
+            }`}
+          >
+            {isSuccess ? <><Icons.ShieldCheck /> 解锁成功！</> : <><Icons.KeyRound /> 验证并解锁</>}
+          </button>
+
+          <p className="text-xs text-center text-zinc-400">
+            解锁后可阅读全站所有文章 · 演示口令: tech2025
+          </p>
+        </div>
+
+        <button onClick={onClose} className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-colors">
+          <Icons.X />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  const [selectedNote, setSelectedNote] = useState(null);
+  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [showUnlock, setShowUnlock] = useState(false);
+
+  const handleOpenNote = (note) => {
+    setSelectedNote(note);
+    window.scrollTo(0, 0);
+  };
+
+  const handleBack = () => {
+    setSelectedNote(null);
+    window.scrollTo(0, 0);
+  };
+
+  return (
+    <div>
+      {selectedNote ? (
+        <NoteDetail
+          note={selectedNote}
+          isUnlocked={isUnlocked}
+          onBack={handleBack}
+          onShowUnlock={() => setShowUnlock(true)}
+        />
+      ) : (
+        <NoteList onOpenNote={handleOpenNote} />
+      )}
+      <UnlockModal
+        show={showUnlock}
+        onClose={() => setShowUnlock(false)}
+        onUnlock={() => { setIsUnlocked(true); setShowUnlock(false); }}
+      />
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
+</script>
+</body>
+</html>
