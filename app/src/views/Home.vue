@@ -9,6 +9,7 @@
   <div class="site-title">
     <span class="site-title-text">Z的探索小站</span>
     <span class="site-title-sub">COSMOS 星域</span>
+    <router-link to="/about" class="about-link"><i class="ri-user-star-line"></i> 关于</router-link>
     <div class="title-particles"></div>
   </div>
 
@@ -558,7 +559,7 @@ function init() {
   const planet4 = new THREE.Mesh(new THREE.SphereGeometry(1.5, 64, 64), new THREE.MeshStandardMaterial({ map: tex4, roughness: 0.35, metalness: 0.12 }))
   planet4.castShadow = planet4.receiveShadow = true
   planet4.add(createAtmosphere(1.6, 0x88ccee, 0.22))
-  planet4.userData = { name: '冰巨星', func: '技能展示', desc: '个人技术栈展示', link: '/skills', spin: 0.003 }
+  planet4.userData = { name: '冰巨星', func: '工具箱', desc: '常用工具与资源', link: '/tools', spin: 0.003 }
   const ringInner = new THREE.Mesh(new THREE.TorusGeometry(2.1, 0.08, 16, 200), new THREE.MeshStandardMaterial({ color: 0xd8e8f5, transparent: true, opacity: 0.8, side: THREE.DoubleSide }))
   const ringOuter = new THREE.Mesh(new THREE.TorusGeometry(2.45, 0.12, 16, 200), new THREE.MeshStandardMaterial({ color: 0xc0d5ea, transparent: true, opacity: 0.55, side: THREE.DoubleSide }))
   ringInner.rotation.x = ringOuter.rotation.x = Math.PI / 2.8
@@ -640,6 +641,10 @@ onUnmounted(() => {
 .site-title-text { font-size: 1.7rem; font-weight: 600; letter-spacing: 6px; font-family: var(--font-display, 'Cinzel', 'Noto Serif SC', serif); background: linear-gradient(135deg, #fff 0%, #e0d4ff 25%, #c8b8ff 50%, #e0d4ff 75%, #fff 100%); background-size: 200% 200%; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 20px rgba(180, 160, 255, 0.6)) drop-shadow(0 0 40px rgba(180, 160, 255, 0.3)); animation: titleShimmer 4s ease-in-out infinite; }
 .site-title-sub { font-size: 0.85rem; letter-spacing: 5px; color: rgba(180, 170, 220, 0.75); text-transform: uppercase; font-family: var(--font-display, 'Cinzel', serif); position: relative; }
 .site-title-sub::before { content: ''; position: absolute; left: -12px; top: 50%; transform: translateY(-50%); width: 6px; height: 6px; background: radial-gradient(circle, rgba(200, 180, 255, 0.9), transparent); border-radius: 50%; animation: dotPulse 2s ease-in-out infinite; }
+.about-link { font-size: 0.8rem; letter-spacing: 2px; color: rgba(180, 170, 220, 0.6); text-decoration: none; font-family: var(--font-ui, 'Segoe UI', sans-serif); display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, 0.08); backdrop-filter: blur(6px); background: rgba(255, 255, 255, 0.04); transition: all 0.3s ease; }
+.about-link i { font-size: 0.85rem; transition: transform 0.3s ease; }
+.about-link:hover { color: rgba(220, 210, 255, 0.95); border-color: rgba(180, 160, 255, 0.35); background: rgba(180, 160, 255, 0.12); box-shadow: 0 0 16px rgba(180, 160, 255, 0.2); }
+.about-link:hover i { transform: scale(1.15); }
 @keyframes titleShimmer { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
 @keyframes dotPulse { 0%, 100% { opacity: 0.5; transform: translateY(-50%) scale(1); } 50% { opacity: 1; transform: translateY(-50%) scale(1.3); } }
 

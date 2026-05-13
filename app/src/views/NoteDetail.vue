@@ -123,14 +123,12 @@
 
 <script setup>
 import { ref, computed, onMounted, nextTick, onUnmounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { marked } from 'marked'
 import { getNoteDetail } from '../api/notes'
-import { getDeviceId } from '../composables/useAuth'
 import UnlockModal from '../components/UnlockModal.vue'
 
 const route = useRoute()
-const router = useRouter()
 const note = ref(null)
 const isUnlocked = ref(false)
 const showUnlockModal = ref(false)

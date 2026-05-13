@@ -4,7 +4,7 @@ import Notes from '../views/Notes.vue'
 import NoteDetail from '../views/NoteDetail.vue'
 import Hot from '../views/Hot.vue'
 import Theater from '../views/Theater.vue'
-import Skills from '../views/Skills.vue'
+import Tools from '../views/Tools.vue'
 import Search from '../views/Search.vue'
 import About from '../views/About.vue'
 
@@ -14,7 +14,7 @@ const routes = [
   { path: '/notes/:id', component: NoteDetail, name: 'NoteDetail', props: true },
   { path: '/hot', component: Hot, name: 'Hot' },
   { path: '/theater', component: Theater, name: 'Theater' },
-  { path: '/skills', component: Skills, name: 'Skills' },
+  { path: '/tools', component: Tools, name: 'Tools' },
   { path: '/search', component: Search, name: 'Search' },
   { path: '/about', component: About, name: 'About' },
 ]

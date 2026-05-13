@@ -1,5 +1,6 @@
 package cn.kong.cosmos.biz.note.service;
 
+import cn.kong.cosmos.biz.note.dto.resp.NoteCategoryDTO;
 import cn.kong.cosmos.biz.note.dto.resp.NoteDetailDTO;
 import cn.kong.cosmos.biz.note.dto.resp.NoteListDTO;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -24,5 +25,5 @@ public interface NoteService {
     /**
      * 获取所有启用的分类
      */
-    List<cn.kong.cosmos.biz.note.dto.resp.NoteCategoryDTO> listCategories();
+    List<NoteCategoryDTO> listCategories();
 }

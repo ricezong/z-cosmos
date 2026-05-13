@@ -1,6 +1,6 @@
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080').replace(/\/$/, '')
 
-// 全局认证：无需Token，基于device_id
+// 全局认证：基于device_id
 
 /**
  * 获取device_id

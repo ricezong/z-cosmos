@@ -58,7 +58,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { globalSearch } from '../api/search'
 import LoadingSpinner from '../components/LoadingSpinner.vue'
@@ -69,11 +69,6 @@ const searched = ref(false)
 const searchResults = ref([])
 const resultsCountNum = ref(0)
 const searching = ref(false)
-
-const resultsCount = computed(() => {
-  if (!searched.value) return '输入关键词开始搜索'
-  return `找到 ${resultsCountNum.value} 个结果`
-})
 
 function escapeHtml(text) {
   const div = document.createElement('div')
@@ -148,28 +143,6 @@ function scrollToTop() {
 .search-input::placeholder { color: rgba(144,166,196,0.5); }
 .search-btn { padding: 14px 32px; border-radius: 30px; border: none; background: linear-gradient(135deg, #7890b5, #a8bcd4); color: white; cursor: pointer; font-size: 1rem; transition: 0.3s; letter-spacing: 1px; }
 .search-btn:hover { box-shadow: 0 0 25px rgba(144,166,196,0.4); transform: translateY(-1px); }
-.filter-tags { display: flex; gap: 10px; flex-wrap: wrap; }
-.filter-tag { padding: 6px 16px; border-radius: 20px; cursor: pointer; background: rgba(144,166,196,0.1); border: 1px solid rgba(144,166,196,0.2); color: #a8bcd4; font-size: 0.85rem; transition: 0.3s; }
-.filter-tag.active, .filter-tag:hover { background: rgba(144,166,196,0.3); border-color: rgba(144,166,196,0.5); color: #fff; }
-
-/* Hot Keywords */
-.hot-keywords { margin-bottom: 20px; }
-.keywords-title { font-size: 0.9rem; color: #a8bcd4; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
-.keywords-list { display: flex; flex-wrap: wrap; gap: 8px; }
-.keyword-item { padding: 6px 14px; border-radius: 16px; background: rgba(144,166,196,0.08); border: 1px solid rgba(144,166,196,0.18); color: #a8bcd4; font-size: 0.82rem; cursor: pointer; transition: 0.3s; }
-.keyword-item:hover { background: rgba(144,166,196,0.2); border-color: rgba(144,166,196,0.4); color: #fff; }
-
-/* Suggestions */
-.suggestions { margin-bottom: 16px; }
-.suggestion-item { padding: 8px 16px; border-radius: 10px; cursor: pointer; color: #a8bcd4; font-size: 0.88rem; transition: 0.2s; display: flex; align-items: center; gap: 8px; }
-.suggestion-item:hover { background: rgba(144,166,196,0.15); color: #fff; }
-.suggestion-item i { font-size: 0.85rem; opacity: 0.5; }
-
-/* Results */
-.result-section { margin-bottom: 24px; }
-.section-title { font-size: 0.95rem; color: #c5d5ea; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; letter-spacing: 1px; }
-.results-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
-.results-count { font-size: 0.9rem; opacity: 0.7; }
 .results-list { display: flex; flex-direction: column; gap: 12px; }
 .result-item { border: 1px solid rgba(144,166,196,0.2); border-radius: 16px; padding: 18px 22px; cursor: pointer; transition: 0.3s; display: flex; gap: 15px; align-items: flex-start; }
 .result-item:hover { border-color: rgba(144,166,196,0.5); box-shadow: 0 5px 25px rgba(144,166,196,0.1); transform: translateY(-2px); }
@@ -180,8 +153,6 @@ function scrollToTop() {
 .result-desc { font-size: 0.88rem; opacity: 0.7; line-height: 1.5; margin-bottom: 8px; }
 .result-meta { display: flex; gap: 15px; font-size: 0.8rem; opacity: 0.5; align-items: center; }
 .result-type { display: inline-block; padding: 3px 12px; border-radius: 12px; font-size: 0.75rem; background: rgba(144,166,196,0.2); color: #a8bcd4; border: 1px solid rgba(144,166,196,0.3); }
-.result-type.post { background: rgba(144,166,196,0.2); color: #c9d9ef; border-color: rgba(144,166,196,0.3); }
-.result-type.news { background: rgba(196,142,110,0.2); color: #f0d8b0; border-color: rgba(196,142,110,0.3); }
 
 :deep(.highlight) { background: rgba(144,166,196,0.3); padding: 1px 4px; border-radius: 4px; }
 

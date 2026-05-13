@@ -54,8 +54,8 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { requestUnlockCode, validateUnlockCode } from '../api/auth'
-import { getDeviceId } from '../composables/useAuth'
+import { validateUnlockCode } from '../api/auth'
+import { getDeviceId } from '../utils/device'
 
 const emit = defineEmits(['close', 'unlocked'])
 

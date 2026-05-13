@@ -1,10 +1,16 @@
 <template>
-  <router-view />
-  <Footer />
-  <ToastContainer />
+  <div id="app-root">
+    <router-view />
+  </div>
 </template>
 
 <script setup>
-import Footer from './components/Footer.vue'
-import ToastContainer from './components/ToastContainer.vue'
 </script>
+
+<style scoped>
+#app-root {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+</style>

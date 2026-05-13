@@ -5,18 +5,18 @@
     <div class="page-fixed">
     <header class="header">
       <div class="header-left">
-        <div class="planet-icon"><div class="planet-sphere ice"></div></div>
+        <div class="planet-icon"><div class="planet-sphere ice-giant"></div></div>
         <div class="header-title">
-          <h1>技能展示</h1>
-          <p>冰巨星 · 技术栈星图</p>
+          <h1>工具箱</h1>
+          <p>冰巨星 · 常用工具与资源</p>
         </div>
       </div>
       <router-link to="/" class="back-btn"><i class="ri-arrow-left-line"></i> 返回星域</router-link>
     </header>
     <div class="container">
     <div class="tabs">
-      <div class="tab" :class="{ active: activeTab === 'stack' }" @click="activeTab = 'stack'"><i class="ri-code-s-slash-line"></i> 技术栈</div>
-      <div class="tab" :class="{ active: activeTab === 'projects' }" @click="activeTab = 'projects'"><i class="ri-folder-3-line"></i> 项目经历</div>
+      <div class="tab" :class="{ active: activeTab === 'tools' }" @click="activeTab = 'tools'"><i class="ri-tools-line"></i> 常用工具</div>
+      <div class="tab" :class="{ active: activeTab === 'links' }" @click="activeTab = 'links'"><i class="ri-links-line"></i> 实用链接</div>
     </div>
     </div><!-- container -->
     </div><!-- page-fixed -->
@@ -24,23 +24,23 @@
     <!-- 滚动区域 -->
     <div class="page-scroll" ref="contentRef" @scroll="onContentScroll">
     <div class="container">
-    <div class="panel" v-show="activeTab === 'stack'">
+    <div class="panel" v-show="activeTab === 'tools'">
       <div class="stage">
-        <div class="stage-title"><i class="ri-code-s-slash-line"></i> 技术栈展示</div>
-        <div class="stage-desc">站长的技术能力图谱</div>
+        <div class="stage-title"><i class="ri-tools-line"></i> 常用工具</div>
+        <div class="stage-desc">开发、设计、运维常用工具集合</div>
         <div class="placeholder-box">
-          <div class="placeholder-icon"><i class="ri-code-s-slash-line"></i></div>
+          <div class="placeholder-icon"><i class="ri-tools-line"></i></div>
           <p>功能开发中，敬请期待...</p>
         </div>
       </div>
     </div>
 
-    <div class="panel" v-show="activeTab === 'projects'">
+    <div class="panel" v-show="activeTab === 'links'">
       <div class="stage">
-        <div class="stage-title"><i class="ri-folder-3-line"></i> 项目经历</div>
-        <div class="stage-desc">过往项目作品展示</div>
+        <div class="stage-title"><i class="ri-links-line"></i> 实用链接</div>
+        <div class="stage-desc">常用网站与开发资源</div>
         <div class="placeholder-box">
-          <div class="placeholder-icon"><i class="ri-folder-3-line"></i></div>
+          <div class="placeholder-icon"><i class="ri-links-line"></i></div>
           <p>功能开发中，敬请期待...</p>
         </div>
       </div>
@@ -55,7 +55,7 @@
 <script setup>
 import { ref } from 'vue'
 
-const activeTab = ref('stack')
+const activeTab = ref('tools')
 
 // Back to top
 const showBackTop = ref(false)
