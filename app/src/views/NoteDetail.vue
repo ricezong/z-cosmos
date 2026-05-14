@@ -225,9 +225,11 @@ const renderMarkdownWithAnchors = (markdown) => {
   if (!markdown) return ''
   let headingIndex = 0
   const renderer = new marked.Renderer()
-  renderer.heading = function (text, level) {
+  renderer.heading = function (token) {
+    const text = typeof token.text === 'string' ? token.text : (token.raw || '').replace(/^#{1,6}\s+/, '').trim()
+    const depth = token.depth || 1
     const id = `heading-${headingIndex++}`
-    return `<h${level} id="${id}">${text}</h${level}>`
+    return `<h${depth} id="${id}">${text}</h${depth}>`
   }
   return marked(markdown, { renderer })
 }
@@ -608,7 +610,6 @@ onUnmounted(() => {
   justify-content: flex-end;
   padding-bottom: 32px;
   pointer-events: none;
-  backdrop-filter: blur(1px);
 }
 
 .content-mask .unlock-btn {
