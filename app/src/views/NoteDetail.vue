@@ -262,28 +262,36 @@ const renderedPreview = computed(() => {
   return renderMarkdownWithAnchors(content)
 })
 
+const contentRef = ref(null)
+
 const scrollToHeading = (index) => {
   const el = document.getElementById(`heading-${index}`)
-  if (el) {
-    const headerOffset = 80
-    const top = el.getBoundingClientRect().top + window.scrollY - headerOffset
-    window.scrollTo({ top, behavior: 'smooth' })
+  const scrollContainer = contentRef.value
+  if (el && scrollContainer) {
+    const headerOffset = 20
+    const containerRect = scrollContainer.getBoundingClientRect()
+    const elRect = el.getBoundingClientRect()
+    const scrollTop = scrollContainer.scrollTop + (elRect.top - containerRect.top) - headerOffset
+    scrollContainer.scrollTo({ top: scrollTop, behavior: 'smooth' })
   }
 }
 
 const setupScrollSpy = () => {
-  if (scrollHandler) window.removeEventListener('scroll', scrollHandler)
+  const scrollContainer = contentRef.value
+  if (!scrollContainer) return
+  if (scrollHandler) scrollContainer.removeEventListener('scroll', scrollHandler)
   scrollHandler = () => {
     const headings = document.querySelectorAll('.md-body h1, .md-body h2, .md-body h3')
     if (!headings.length) return
+    const containerRect = scrollContainer.getBoundingClientRect()
     let current = 0
     for (let i = 0; i < headings.length; i++) {
       const rect = headings[i].getBoundingClientRect()
-      if (rect.top <= 100) current = i
+      if (rect.top - containerRect.top <= 100) current = i
     }
     activeTocIndex.value = current
   }
-  window.addEventListener('scroll', scrollHandler, { passive: true })
+  scrollContainer.addEventListener('scroll', scrollHandler, { passive: true })
 }
 
 const loadNote = async () => {
@@ -322,7 +330,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  if (scrollHandler) window.removeEventListener('scroll', scrollHandler)
+  if (scrollHandler && contentRef.value) contentRef.value.removeEventListener('scroll', scrollHandler)
 })
 </script>
 
