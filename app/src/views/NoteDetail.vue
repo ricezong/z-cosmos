@@ -123,30 +123,32 @@
             @click.self="closeUnlockModal"
         >
           <div class="unlock-card">
+            <button class="unlock-close" @click="closeUnlockModal">
+              <i class="ri-close-line"></i>
+            </button>
             <div class="unlock-icon">
               <i class="ri-lock-2-line"></i>
             </div>
-            <h3 class="unlock-title">解锁全文阅读</h3>
+            <h3 class="unlock-title">解锁全站文章</h3>
             <p class="unlock-desc">
-              扫描下方二维码，关注公众号并回复“解锁”获取口令
+              扫描下方二维码，关注公众号并输入 <strong>123456</strong> 解锁全站文章
             </p>
             <div class="qr-container">
               <img :src="qrCodeImage" alt="QR Code" />
             </div>
-            <div class="input-group">
-              <label>输入解锁口令</label>
-              <input
-                  v-model="unlockCode"
-                  type="text"
-                  placeholder="请输入口令..."
-                  @keyup.enter="confirmUnlock"
-              />
-              <p :class="['error-msg', { show: showError }]">口令错误，请重新输入</p>
+            <div class="unlock-steps">
+              <div class="unlock-step">
+                <span class="step-num">1</span>
+                <span class="step-text">扫码关注公众号</span>
+              </div>
+              <div class="unlock-step">
+                <span class="step-num">2</span>
+                <span class="step-text">输入 <strong>123456</strong></span>
+              </div>
             </div>
-            <div class="unlock-actions">
-              <button class="btn-cancel" @click="closeUnlockModal">取消</button>
-              <button class="btn-confirm" @click="confirmUnlock">确认解锁</button>
-            </div>
+            <button class="unlock-done-btn" @click="confirmUnlock">
+              <i class="ri-check-line"></i> 我已完成
+            </button>
           </div>
         </div>
       </Teleport>
@@ -173,8 +175,6 @@ const route = useRoute()
 const note = ref(null)
 const isUnlocked = ref(false)
 const showUnlockModal = ref(false)
-const unlockCode = ref('')
-const showError = ref(false)
 const activeTocIndex = ref(0)
 let scrollHandler = null
 
@@ -224,14 +224,32 @@ const tocItems = computed(() => extractHeadings(currentContent.value))
 const renderMarkdownWithAnchors = (markdown) => {
   if (!markdown) return ''
   let headingIndex = 0
-  const renderer = new marked.Renderer()
-  renderer.heading = function (token) {
-    const text = typeof token.text === 'string' ? token.text : (token.raw || '').replace(/^#{1,6}\s+/, '').trim()
-    const depth = token.depth || 1
-    const id = `heading-${headingIndex++}`
-    return `<h${depth} id="${id}">${text}</h${depth}>`
+  let currentSectionDepth = 0
+  const sectionStack = []
+
+  const m = marked.use({
+    renderer: {
+      heading({ text, depth }) {
+        const id = `heading-${headingIndex++}`
+        let closeTags = ''
+        // 关闭比当前更深或同级的 section
+        while (sectionStack.length > 0 && sectionStack[sectionStack.length - 1] >= depth) {
+          closeTags += '</div>'
+          sectionStack.pop()
+        }
+        // 开启新 section
+        sectionStack.push(depth)
+        return `${closeTags}<div class="md-section md-section-${depth}"><h${depth} id="${id}">${text}</h${depth}>\n`
+      }
+    }
+  })
+  let result = m.parse(markdown)
+  // 关闭所有未关闭的 section
+  while (sectionStack.length > 0) {
+    result += '</div>'
+    sectionStack.pop()
   }
-  return marked(markdown, { renderer })
+  return result
 }
 
 const renderedContent = computed(() => {
@@ -284,27 +302,19 @@ const loadNote = async () => {
 }
 
 const confirmUnlock = () => {
-  if (unlockCode.value.trim() === 'tech2024') {
-    if (note.value) {
-      const unlockedIds = JSON.parse(localStorage.getItem('unlockedNotes') || '[]')
-      if (!unlockedIds.includes(note.value.id)) {
-        unlockedIds.push(note.value.id)
-        localStorage.setItem('unlockedNotes', JSON.stringify(unlockedIds))
-      }
-      isUnlocked.value = true
-      showUnlockModal.value = false
-      unlockCode.value = ''
-      showError.value = false
+  if (note.value) {
+    const unlockedIds = JSON.parse(localStorage.getItem('unlockedNotes') || '[]')
+    if (!unlockedIds.includes(note.value.id)) {
+      unlockedIds.push(note.value.id)
+      localStorage.setItem('unlockedNotes', JSON.stringify(unlockedIds))
     }
-  } else {
-    showError.value = true
+    isUnlocked.value = true
+    showUnlockModal.value = false
   }
 }
 
 const closeUnlockModal = () => {
   showUnlockModal.value = false
-  unlockCode.value = ''
-  showError.value = false
 }
 
 onMounted(() => {
@@ -578,6 +588,127 @@ onUnmounted(() => {
 .md-body :deep(h2) { scroll-margin-top: 80px; }
 .md-body :deep(h3) { scroll-margin-top: 80px; }
 
+/* 标题层级间距与样式 */
+.md-body :deep(h1) {
+  font-size: 1.5rem;
+  margin: 2rem 0 1rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid rgba(144, 166, 196, 0.15);
+  color: #fff;
+}
+.md-body :deep(h2) {
+  font-size: 1.25rem;
+  margin: 1.8rem 0 0.8rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid rgba(144, 166, 196, 0.1);
+  color: rgba(232, 238, 247, 0.95);
+}
+.md-body :deep(h3) {
+  font-size: 1.1rem;
+  margin: 1.5rem 0 0.6rem;
+  color: rgba(232, 238, 247, 0.9);
+}
+
+/* 标题 section 层级缩进 — h2 内容左缩进 16px，h3 内容左缩进 28px */
+.md-body :deep(.md-section-2) {
+  padding-left: 16px;
+  border-left: 2px solid rgba(144, 166, 196, 0.08);
+  margin-left: 0;
+}
+.md-body :deep(.md-section-3) {
+  padding-left: 28px;
+  border-left: 2px solid rgba(144, 166, 196, 0.06);
+  margin-left: 0;
+}
+.md-body :deep(.md-section-2 .md-section-3) {
+  padding-left: 36px;
+}
+
+/* 列表样式 */
+.md-body :deep(ul),
+.md-body :deep(ol) {
+  padding-left: 1.5em;
+  margin: 0.6rem 0;
+}
+.md-body :deep(li) {
+  margin: 0.3rem 0;
+}
+
+/* 代码块 */
+.md-body :deep(pre) {
+  background: rgba(10, 14, 28, 0.7);
+  border: 1px solid rgba(144, 166, 196, 0.12);
+  border-radius: 10px;
+  padding: 16px 20px;
+  margin: 1rem 0;
+  overflow-x: auto;
+  font-size: 0.85rem;
+}
+.md-body :deep(code) {
+  font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+  font-size: 0.85em;
+}
+.md-body :deep(:not(pre) > code) {
+  background: rgba(144, 166, 196, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #c5d5ea;
+}
+
+/* 引用块 */
+.md-body :deep(blockquote) {
+  border-left: 3px solid rgba(168, 188, 212, 0.3);
+  padding: 8px 16px;
+  margin: 1rem 0;
+  background: rgba(144, 166, 196, 0.04);
+  border-radius: 0 8px 8px 0;
+  color: rgba(168, 188, 212, 0.75);
+}
+
+/* 表格 */
+.md-body :deep(table) {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  font-size: 0.88rem;
+}
+.md-body :deep(th),
+.md-body :deep(td) {
+  border: 1px solid rgba(144, 166, 196, 0.15);
+  padding: 8px 12px;
+  text-align: left;
+}
+.md-body :deep(th) {
+  background: rgba(144, 166, 196, 0.08);
+  color: #c5d5ea;
+  font-weight: 600;
+}
+
+/* 链接 */
+.md-body :deep(a) {
+  color: #78a0c5;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.md-body :deep(a:hover) {
+  color: #a8bcd4;
+}
+
+/* 水平线 */
+.md-body :deep(hr) {
+  border: none;
+  border-top: 1px solid rgba(144, 166, 196, 0.15);
+  margin: 2rem 0;
+}
+
+/* 图片 */
+.md-body :deep(img) {
+  max-width: 100%;
+  border-radius: 10px;
+  margin: 1rem 0;
+  border: 1px solid rgba(144, 166, 196, 0.1);
+}
+
 /* 已解锁状态 */
 .content-unlocked {
   position: relative;
@@ -649,117 +780,147 @@ onUnmounted(() => {
   justify-content: center;
   z-index: 1000;
   backdrop-filter: blur(4px);
+  overflow-y: auto;
+  padding: 20px 0;
 }
 .unlock-card {
   background: rgba(15, 20, 35, 0.95);
   border: 1px solid rgba(144, 166, 196, 0.25);
   border-radius: 20px;
-  padding: 40px;
-  max-width: 420px;
+  padding: 36px 32px;
+  max-width: 400px;
   width: 90%;
   text-align: center;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  position: relative;
+  margin: auto;
+}
+.unlock-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(144, 166, 196, 0.1);
+  border: 1px solid rgba(144, 166, 196, 0.2);
+  color: #a8bcd4;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: 0.3s;
+}
+.unlock-close:hover {
+  background: rgba(144, 166, 196, 0.25);
+  color: #fff;
 }
 .unlock-icon {
-  width: 72px;
-  height: 72px;
+  width: 64px;
+  height: 64px;
   background: linear-gradient(135deg, #7890b5, #a8bcd4);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 24px;
-  font-size: 2rem;
+  margin: 0 auto 18px;
+  font-size: 1.8rem;
   color: #fff;
 }
 .unlock-title {
-  font-size: 1.3rem;
+  font-size: 1.2rem;
   font-weight: 600;
   color: #ffffff;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 .unlock-desc {
-  font-size: 0.9rem;
-  color: rgba(168, 188, 212, 0.8);
-  margin-bottom: 24px;
+  font-size: 0.88rem;
+  color: rgba(168, 188, 212, 0.75);
+  margin-bottom: 20px;
   line-height: 1.6;
+}
+.unlock-desc strong {
+  color: #e8eef7;
+  font-weight: 600;
+  background: rgba(144, 166, 196, 0.12);
+  padding: 1px 6px;
+  border-radius: 4px;
 }
 .qr-container {
   background: white;
-  padding: 16px;
+  padding: 14px;
   border-radius: 12px;
   display: inline-block;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 .qr-container img {
-  width: 160px;
-  height: 160px;
+  width: 140px;
+  height: 140px;
   display: block;
 }
-.input-group {
-  margin-bottom: 24px;
+
+/* 步骤说明 */
+.unlock-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 22px;
   text-align: left;
 }
-.input-group label {
-  display: block;
-  font-size: 0.8rem;
-  color: rgba(168, 188, 212, 0.7);
-  margin-bottom: 8px;
-}
-.input-group input {
-  width: 100%;
-  padding: 12px 16px;
-  background: rgba(5, 10, 22, 0.8);
-  border: 1px solid rgba(144, 166, 196, 0.25);
-  border-radius: 10px;
-  color: #fff;
-  font-size: 0.9rem;
-  transition: border-color 0.3s;
-}
-.input-group input:focus {
-  outline: none;
-  border-color: #a8bcd4;
-}
-.error-msg {
-  color: #f87171;
-  font-size: 0.8rem;
-  margin-top: 8px;
-  display: none;
-}
-.error-msg.show {
-  display: block;
-}
-.unlock-actions {
+.unlock-step {
   display: flex;
-  gap: 12px;
-}
-.btn-cancel {
-  flex: 1;
-  padding: 12px;
-  background: transparent;
-  border: 1px solid rgba(144, 166, 196, 0.3);
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
   border-radius: 10px;
+  background: rgba(144, 166, 196, 0.04);
+  border: 1px solid rgba(144, 166, 196, 0.08);
+}
+.step-num {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(120, 144, 181, 0.2);
+  border: 1px solid rgba(120, 144, 181, 0.35);
   color: #c5d5ea;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: 0.3s;
+  font-size: 0.72rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
-.btn-cancel:hover {
-  background: rgba(144, 166, 196, 0.15);
+.step-text {
+  font-size: 0.82rem;
+  color: rgba(168, 188, 212, 0.8);
+  line-height: 1.4;
 }
-.btn-confirm {
-  flex: 1;
+.step-text strong {
+  color: #e8eef7;
+  font-weight: 600;
+}
+
+/* 完成按钮 */
+.unlock-done-btn {
+  width: 100%;
   padding: 12px;
   background: linear-gradient(135deg, #7890b5, #a8bcd4);
   border: none;
-  border-radius: 10px;
+  border-radius: 12px;
   color: #fff;
   font-size: 0.9rem;
   font-weight: 500;
   cursor: pointer;
-  transition: 0.3s;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
-.btn-confirm:hover {
+.unlock-done-btn:hover {
   opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 18px rgba(120, 144, 181, 0.35);
 }
 </style>
