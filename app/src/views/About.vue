@@ -1,371 +1,377 @@
 <template>
-  <div class="about-page">
-    <!-- 动态星空背景 -->
-    <div class="stars-layer stars-small"></div>
-    <div class="stars-layer stars-medium"></div>
-    <div class="stars-layer stars-large"></div>
-    <div class="nebula"></div>
+  <div class="star-bg"></div>
 
-    <header class="page-fixed about-header">
-      <router-link to="/" class="back-btn" title="返回星域">
-        <span class="back-orbit"></span>
-        <span class="back-core"><i class="ri-arrow-left-line"></i></span>
-      </router-link>
-      <h1 class="about-title">关于站长</h1>
-    </header>
-
-    <main class="about-content">
-      <div class="about-card">
-        <!-- 顶部扫描线 -->
-        <div class="card-scanline"></div>
-
-        <!-- 头像区域 -->
-        <div class="avatar-section">
-          <div class="avatar-ring orbit1"></div>
-          <div class="avatar-ring orbit2"></div>
-          <div class="avatar-wrapper">
-            <div class="avatar-glow"></div>
-            <img :src="avatar" alt="站长头像" class="avatar" />
+  <div class="page-layout">
+    <!-- 固定顶部栏 -->
+    <div class="page-fixed">
+      <header class="header">
+        <div class="header-left">
+          <div class="planet-icon">
+            <div class="planet-sphere profile-planet"></div>
+          </div>
+          <div class="header-title">
+            <h1>关于站长</h1>
           </div>
         </div>
+        <router-link to="/" class="back-btn">
+          <i class="ri-arrow-left-line"></i> 返回星域
+        </router-link>
+      </header>
+    </div>
 
-        <!-- 基本信息 -->
-        <h1 class="name">{{ name }}</h1>
-        <p class="bio">{{ bio }}</p>
-
-        <!-- 技术方向 -->
-        <div class="section">
-          <h3 class="section-title"><i class="ri-code-s-slash-line"></i> 技术方向</h3>
-          <div class="tags">
-            <span v-for="tech in techStack" :key="tech" class="tech-tag">{{ tech }}</span>
+    <!-- 可滚动内容区 -->
+    <div class="page-scroll">
+      <div class="container">
+        <div class="about-card">
+          <!-- 头像区域 - 孔明灯 -->
+          <div class="lantern-section">
+            <div class="lantern-glow"></div>
+            <div class="lantern">
+              <div class="lantern-flame"></div>
+              <div class="lantern-body">
+                <span class="lantern-text">Z</span>
+              </div>
+              <div class="lantern-tail"></div>
+            </div>
+            <div class="lantern-sparks">
+              <span class="spark"></span>
+              <span class="spark"></span>
+              <span class="spark"></span>
+              <span class="spark"></span>
+              <span class="spark"></span>
+            </div>
           </div>
-        </div>
 
-        <!-- 友情链接 -->
-        <div class="section">
-          <h3 class="section-title"><i class="ri-links-line"></i> 友情链接</h3>
-          <div class="link-grid">
-            <a
-                v-for="link in links"
-                :key="link.name"
-                :href="link.url"
-                target="_blank"
-                rel="noopener"
-                class="link-item"
-            >
-              <span class="link-icon">{{ link.icon }}</span>
-              <span class="link-name">{{ link.name }}</span>
-              <span class="link-arrow"><i class="ri-arrow-right-up-line"></i></span>
-            </a>
+          <!-- 基本信息 -->
+          <h1 class="name">{{ name }}</h1>
+          <p class="bio">{{ bio }}</p>
+
+          <!-- 技术方向 -->
+          <div class="section">
+            <h3 class="section-title"><i class="ri-code-s-slash-line"></i> 技术方向</h3>
+            <div class="tech-grid">
+              <div v-for="tech in techStack" :key="tech.name" class="tech-card">
+                <div class="tech-icon-wrap" :style="{ background: tech.bg }">
+                  <i :class="tech.icon"></i>
+                </div>
+                <div class="tech-info">
+                  <span class="tech-name">{{ tech.name }}</span>
+                  <div class="tech-bar">
+                    <div class="tech-bar-fill" :style="{ width: tech.level + '%', background: tech.color }"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
 
-        <!-- 联系方式 -->
-        <div class="section contact-section">
-          <h3 class="section-title"><i class="ri-mail-line"></i> 联系方式</h3>
-          <div class="contact-info">
-            <span class="email"><i class="ri-at-line"></i> {{ email }}</span>
-            <span class="note">—— 欢迎技术交流与合作 ——</span>
+          <!-- 友情链接 -->
+          <div class="section">
+            <h3 class="section-title"><i class="ri-links-line"></i> 友情链接</h3>
+            <div class="link-grid">
+              <a
+                  v-for="link in links"
+                  :key="link.name"
+                  :href="link.url"
+                  target="_blank"
+                  rel="noopener"
+                  class="link-item"
+              >
+                <div class="link-icon-wrap" :style="{ background: link.bg }">
+                  <i :class="link.icon"></i>
+                </div>
+                <div class="link-body">
+                  <span class="link-name">{{ link.name }}</span>
+                  <span class="link-desc">{{ link.desc }}</span>
+                </div>
+                <i class="ri-arrow-right-up-line link-arrow"></i>
+              </a>
+            </div>
+          </div>
+
+          <!-- 联系方式 -->
+          <div class="section">
+            <h3 class="section-title"><i class="ri-mail-send-line"></i> 联系方式</h3>
+            <div class="contact-grid">
+              <div class="contact-card">
+                <div class="contact-icon-wrap">
+                  <i class="ri-at-line"></i>
+                </div>
+                <div class="contact-body">
+                  <span class="contact-label">邮箱</span>
+                  <span class="contact-value">{{ email }}</span>
+                </div>
+              </div>
+              <div class="contact-card">
+                <div class="contact-icon-wrap">
+                  <i class="ri-chat-3-line"></i>
+                </div>
+                <div class="contact-body">
+                  <span class="contact-label">交流</span>
+                  <span class="contact-value">欢迎技术交流与合作</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </main>
-
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref } from 'vue'
 
-const avatar = ref('https://avatars.githubusercontent.com/u/your-avatar')
-const name = ref('站长名称')
+const name = ref('孔明灯')
 const bio = ref('全栈开发者 | 技术爱好者 | 终身学习者')
 
 const techStack = ref([
-  'Java',
-  'Spring Boot',
-  'Vue.js',
-  'React',
-  'MySQL',
-  'Redis',
-  'Docker',
-  'Linux'
+  { name: 'Java', icon: 'ri-code-s-slash-line', bg: 'rgba(255, 120, 50, 0.12)', color: 'rgba(255, 140, 70, 0.8)', level: 90 },
+  { name: 'Spring Boot', icon: 'ri-leaf-line', bg: 'rgba(100, 200, 120, 0.12)', color: 'rgba(120, 220, 140, 0.8)', level: 85 },
+  { name: 'Vue.js', icon: 'ri-vuejs-line', bg: 'rgba(66, 184, 131, 0.12)', color: 'rgba(66, 184, 131, 0.8)', level: 88 },
+  { name: 'React', icon: 'ri-reactjs-line', bg: 'rgba(97, 218, 251, 0.12)', color: 'rgba(97, 218, 251, 0.8)', level: 75 },
+  { name: 'MySQL', icon: 'ri-database-2-line', bg: 'rgba(0, 136, 204, 0.12)', color: 'rgba(0, 150, 220, 0.8)', level: 82 },
+  { name: 'Redis', icon: 'ri-server-line', bg: 'rgba(220, 60, 50, 0.12)', color: 'rgba(220, 80, 70, 0.8)', level: 78 },
+  { name: 'Docker', icon: 'ri-box-3-line', bg: 'rgba(36, 150, 237, 0.12)', color: 'rgba(36, 150, 237, 0.8)', level: 72 },
+  { name: 'Linux', icon: 'ri-terminal-box-line', bg: 'rgba(200, 180, 100, 0.12)', color: 'rgba(200, 180, 100, 0.8)', level: 80 },
 ])
 
 const links = ref([
-  { name: 'GitHub', url: 'https://github.com/yourusername', icon: '🐙' },
-  { name: 'Gitee', url: 'https://gitee.com/yourusername', icon: '🐒' },
-  { name: '知乎', url: 'https://zhihu.com/people/yourusername', icon: '💡' },
-  { name: '掘金', url: 'https://juejin.cn/user/yourusername', icon: '📝' }
+  { name: 'GitHub', url: 'https://github.com/yourusername', icon: 'ri-github-line', desc: '开源项目', bg: 'rgba(255, 255, 255, 0.08)' },
+  { name: 'Gitee', url: 'https://gitee.com/yourusername', icon: 'ri-git-branch-line', desc: '国内代码托管', bg: 'rgba(200, 60, 50, 0.1)' },
+  { name: '知乎', url: 'https://zhihu.com/people/yourusername', icon: 'ri-chat-quote-line', desc: '技术问答', bg: 'rgba(66, 133, 244, 0.1)' },
+  { name: '掘金', url: 'https://juejin.cn/user/yourusername', icon: 'ri-quill-pen-line', desc: '技术博客', bg: 'rgba(66, 165, 245, 0.1)' },
 ])
 
-const email = ref('contact@example.com')
+const email = ref('gz.kong@qq.com')
 </script>
 
 <style scoped>
-/* ========== 全局基础 ========== */
-.about-page {
-  min-height: 100vh;
-  background: radial-gradient(ellipse at 50% 0%, #111532 0%, #0a0c1d 60%, #050712 100%);
-  color: #e0ecff;
-  font-family: 'Noto Serif SC', 'Segoe UI', 'Microsoft YaHei', sans-serif;
-  position: relative;
-  overflow-x: hidden;
-}
-
-/* ---------- 动态星空层 ---------- */
-.stars-layer {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  pointer-events: none;
-  z-index: 0;
-}
-
-.stars-small {
-  background-image: radial-gradient(1px 1px at 5% 10%, rgba(255,255,255,0.4), transparent),
-  radial-gradient(1px 1px at 15% 25%, rgba(255,255,255,0.3), transparent),
-  radial-gradient(1px 1px at 25% 8%, rgba(255,255,255,0.35), transparent),
-  radial-gradient(1px 1px at 35% 40%, rgba(255,255,255,0.25), transparent),
-  radial-gradient(1px 1px at 45% 15%, rgba(255,255,255,0.4), transparent),
-  radial-gradient(1px 1px at 55% 35%, rgba(255,255,255,0.3), transparent),
-  radial-gradient(1px 1px at 65% 5%, rgba(255,255,255,0.35), transparent),
-  radial-gradient(1px 1px at 75% 30%, rgba(255,255,255,0.2), transparent),
-  radial-gradient(1px 1px at 85% 12%, rgba(255,255,255,0.4), transparent),
-  radial-gradient(1px 1px at 95% 28%, rgba(255,255,255,0.3), transparent);
-  animation: twinkle 4s ease-in-out infinite alternate;
-}
-.stars-medium {
-  background-image: radial-gradient(2px 2px at 10% 60%, rgba(210,220,255,0.5), transparent),
-  radial-gradient(2px 2px at 30% 70%, rgba(200,210,255,0.4), transparent),
-  radial-gradient(2px 2px at 50% 55%, rgba(220,230,255,0.45), transparent),
-  radial-gradient(2px 2px at 70% 65%, rgba(200,215,255,0.4), transparent),
-  radial-gradient(2px 2px at 90% 50%, rgba(210,220,255,0.5), transparent);
-  animation: twinkle 6s ease-in-out infinite alternate-reverse;
-}
-.stars-large {
-  background-image: radial-gradient(3px 3px at 20% 15%, rgba(255,245,200,0.6), transparent),
-  radial-gradient(3px 3px at 60% 25%, rgba(240,240,255,0.5), transparent),
-  radial-gradient(3px 3px at 80% 80%, rgba(255,225,150,0.55), transparent);
-  animation: twinkle 8s ease-in-out infinite alternate;
-}
-@keyframes twinkle {
-  0% { opacity: 0.5; }
-  100% { opacity: 1; }
-}
-
-/* 星云光晕 */
-.nebula {
-  position: fixed;
-  top: -20%; left: -20%;
-  width: 140%; height: 140%;
-  background: radial-gradient(circle at 30% 40%, rgba(80, 120, 200, 0.06) 0%, transparent 50%),
-  radial-gradient(circle at 70% 60%, rgba(140, 100, 180, 0.05) 0%, transparent 50%);
-  pointer-events: none;
-  z-index: 0;
-  animation: nebulaDrift 20s linear infinite;
-}
-@keyframes nebulaDrift {
-  0% { transform: translate(0, 0); }
-  100% { transform: translate(20px, 15px); }
-}
-
-/* ---------- 头部导航 ---------- */
-.about-header {
+/* ========== 顶部栏 ========== */
+.header {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 18px 30px;
-  position: relative;
-  z-index: 10;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(144, 166, 196, 0.3);
 }
-
-/* 返回按钮 - 星轨样式 */
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+.header-title h1 {
+  font-size: 1.6rem;
+  font-weight: 300;
+  letter-spacing: 4px;
+  background: linear-gradient(135deg, #ffffff, #c5d5ea);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin: 0;
+}
+.header-title p {
+  font-size: 0.85rem;
+  color: rgba(168, 188, 212, 0.7);
+  margin: 2px 0 0;
+}
 .back-btn {
-  position: relative;
-  width: 42px;
-  height: 42px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: rgba(15, 25, 45, 0.6);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(100, 180, 255, 0.25);
-  transition: transform 0.3s, box-shadow 0.3s;
+  gap: 8px;
+  padding: 8px 20px;
+  border-radius: 30px;
+  background: rgba(144, 166, 196, 0.2);
+  border: 1px solid rgba(144, 166, 196, 0.4);
+  color: #c5d5ea;
+  cursor: pointer;
   text-decoration: none;
-  flex-shrink: 0;
+  transition: 0.3s;
+  font-size: 0.9rem;
 }
 .back-btn:hover {
-  transform: scale(1.1);
-  box-shadow: 0 0 16px rgba(80, 160, 255, 0.4), 0 0 30px rgba(80, 160, 255, 0.2);
-}
-.back-orbit {
-  position: absolute;
-  inset: -4px;
-  border-radius: 50%;
-  border: 1px dashed rgba(197, 213, 234, 0.5);
-  animation: orbitSpin 12s linear infinite;
-}
-@keyframes orbitSpin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-.back-core {
-  color: #c8d8ff;
-  font-size: 1.2rem;
-  z-index: 1;
-  transition: color 0.3s;
-}
-.back-btn:hover .back-core {
-  color: #fff;
+  background: rgba(144, 166, 196, 0.35);
+  box-shadow: 0 0 15px rgba(144, 166, 196, 0.15);
 }
 
-.about-title {
-  font-family: 'Cinzel', 'Noto Serif SC', serif;
-  font-size: 1.4rem;
-  font-weight: 500;
-  letter-spacing: 4px;
-  background: linear-gradient(135deg, #fff 0%, #c0b0f0 50%, #fff 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  animation: titleGlow 3s ease-in-out infinite alternate;
-}
-@keyframes titleGlow {
-  from { filter: drop-shadow(0 0 8px rgba(160, 140, 240, 0.4)); }
-  to { filter: drop-shadow(0 0 16px rgba(180, 160, 255, 0.6)); }
-}
-
-/* ---------- 主内容 ---------- */
-.about-content {
+/* ========== 主内容 ========== */
+.container {
   position: relative;
-  z-index: 5;
-  max-width: 760px;
+  z-index: 1;
+  max-width: 960px;
   margin: 0 auto;
-  padding: 20px 20px 100px;
+  padding: 20px;
 }
 
 .about-card {
-  background: linear-gradient(135deg, rgba(15, 25, 50, 0.55) 0%, rgba(10, 18, 36, 0.65) 100%);
-  backdrop-filter: blur(25px) saturate(1.4);
-  -webkit-backdrop-filter: blur(25px) saturate(1.4);
-  border: 1px solid rgba(120, 180, 255, 0.15);
-  border-radius: 28px;
-  padding: 50px 40px;
-  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6),
-  inset 0 0 0 1px rgba(100, 180, 255, 0.08),
-  0 0 80px rgba(60, 120, 200, 0.1);
   position: relative;
   overflow: hidden;
-  animation: cardAppear 0.7s cubic-bezier(0.23, 1, 0.32, 1) both;
 }
-@keyframes cardAppear {
-  from { opacity: 0; transform: translateY(20px); }
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-.card-scanline {
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(100, 180, 255, 0.6), transparent);
-  opacity: 0.5;
-}
-
-/* ---------- 头像区 ---------- */
-.avatar-section {
-  position: relative;
-  width: 160px;
-  height: 160px;
-  margin: 0 auto 30px;
-}
-.avatar-ring {
-  position: absolute;
-  inset: -10px;
-  border-radius: 50%;
-  border: 1px dashed rgba(180, 200, 255, 0.25);
-  animation: ringSpin 20s linear infinite;
-}
-.orbit2 {
-  inset: -18px;
-  border-style: solid;
-  border-color: rgba(140, 180, 240, 0.15);
-  animation-direction: reverse;
-  animation-duration: 30s;
-}
-@keyframes ringSpin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-.avatar-wrapper {
-  position: relative;
-  width: 100%;
-  height: 100%;
-}
-
-.avatar-glow {
-  position: absolute;
-  left: 50%; top: 50%;
-  transform: translate(-50%, -50%);
-  width: 160px; height: 160px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(160, 140, 240, 0.3) 0%, rgba(80, 100, 180, 0.1) 50%, transparent 70%);
-  animation: pulseGlow 3s ease-in-out infinite;
-}
-@keyframes pulseGlow {
-  0%, 100% { opacity: 0.7; transform: translate(-50%, -50%) scale(1); }
-  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
-}
-
-.avatar {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  border: 2px solid rgba(180, 160, 255, 0.5);
-  object-fit: cover;
-  position: relative;
-  z-index: 1;
-  box-shadow: 0 0 25px rgba(180, 160, 255, 0.3), 0 0 50px rgba(100, 120, 200, 0.2);
-  animation: avatarFloat 6s ease-in-out infinite;
-}
-@keyframes avatarFloat {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-6px); }
-}
-
-/* ---------- 名字与简介 ---------- */
-.name {
+/* ========== 孔明灯头像区 ========== */
+.lantern-section {
   text-align: center;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 160px;
+}
+
+.lantern-glow {
+  position: absolute;
+  left: 50%; top: 45%;
+  transform: translate(-50%, -50%);
+  width: 140px; height: 140px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 160, 60, 0.15) 0%, rgba(255, 120, 40, 0.08) 40%, transparent 70%);
+  pointer-events: none;
+  animation: lanternGlow 4s ease-in-out infinite;
+}
+@keyframes lanternGlow {
+  0%, 100% { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
+  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
+}
+
+.lantern {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: lanternFloat 5s ease-in-out infinite;
+}
+@keyframes lanternFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.lantern-flame {
+  width: 8px;
+  height: 12px;
+  background: radial-gradient(ellipse at 50% 80%, #ffcc44, #ff8800 60%, transparent 100%);
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  animation: flameFlicker 0.6s ease-in-out infinite alternate;
+  position: absolute;
+  top: -6px;
+  z-index: 2;
+}
+@keyframes flameFlicker {
+  0% { transform: scale(1) rotate(-3deg); opacity: 0.9; }
+  100% { transform: scale(1.15) rotate(3deg); opacity: 1; }
+}
+
+.lantern-body {
+  width: 72px;
+  height: 88px;
+  background: radial-gradient(ellipse at 40% 30%, rgba(255, 180, 80, 0.9), rgba(220, 80, 30, 0.85) 60%, rgba(180, 50, 20, 0.8));
+  border-radius: 50% 50% 45% 45% / 55% 55% 45% 45%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow:
+    0 0 20px rgba(255, 140, 40, 0.4),
+    0 0 50px rgba(255, 100, 20, 0.2),
+    inset 0 -8px 20px rgba(180, 50, 10, 0.3),
+    inset 0 5px 15px rgba(255, 220, 150, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+.lantern-body::before {
+  content: '';
+  position: absolute;
+  top: 8%; left: 15%; right: 55%; bottom: 40%;
+  background: radial-gradient(ellipse, rgba(255, 240, 200, 0.35), transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+.lantern-body::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  border: 1px solid rgba(255, 200, 100, 0.25);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.lantern-text {
+  font-family: 'Cinzel', serif;
   font-size: 2rem;
   font-weight: 600;
+  color: rgba(255, 240, 200, 0.95);
+  text-shadow: 0 0 10px rgba(255, 200, 100, 0.6), 0 0 20px rgba(255, 160, 60, 0.3);
+  position: relative;
+  z-index: 1;
+}
+
+.lantern-tail {
+  width: 30px;
+  height: 20px;
+  background: linear-gradient(180deg, rgba(200, 70, 20, 0.7), rgba(160, 50, 10, 0.4));
+  border-radius: 0 0 50% 50% / 0 0 100% 100%;
+  margin-top: -2px;
+}
+
+.lantern-sparks {
+  position: absolute;
+  left: 50%; top: 25%;
+  width: 100px; height: 100px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.spark {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  background: rgba(255, 200, 80, 0.8);
+  border-radius: 50%;
+  animation: sparkRise 3s ease-out infinite;
+  box-shadow: 0 0 4px rgba(255, 180, 60, 0.6);
+}
+.spark:nth-child(1) { left: 45%; animation-delay: 0s; }
+.spark:nth-child(2) { left: 55%; animation-delay: 0.6s; }
+.spark:nth-child(3) { left: 40%; animation-delay: 1.2s; }
+.spark:nth-child(4) { left: 60%; animation-delay: 1.8s; }
+.spark:nth-child(5) { left: 50%; animation-delay: 2.4s; }
+@keyframes sparkRise {
+  0% { top: 50%; opacity: 0; transform: scale(0.5); }
+  20% { opacity: 1; }
+  100% { top: 0%; opacity: 0; transform: scale(0); }
+}
+
+/* ========== 名字与简介 ========== */
+.name {
+  text-align: center;
+  font-size: 1.8rem;
+  font-weight: 600;
   letter-spacing: 4px;
-  font-family: 'Cinzel', 'Noto Serif SC', serif;
+  font-family: var(--font-display, 'Cinzel', 'Noto Serif SC', serif);
   background: linear-gradient(135deg, #fff 0%, #d4c0ff 50%, #fff 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  margin: 0 0 12px;
+  margin: 0 0 10px;
 }
 .bio {
   text-align: center;
-  font-size: 1rem;
-  color: rgba(200, 215, 240, 0.8);
-  margin: 0 0 40px;
+  font-size: 0.95rem;
+  color: rgba(168, 188, 212, 0.8);
+  margin: 0 0 36px;
   line-height: 1.6;
 }
 
-/* ---------- 通用区块 ---------- */
+/* ========== 通用区块 ========== */
 .section {
-  margin-bottom: 36px;
+  margin-bottom: 32px;
 }
 .section-title {
-  font-size: 1.05rem;
+  font-size: 1rem;
   font-weight: 500;
   letter-spacing: 2px;
   color: rgba(200, 215, 250, 0.9);
-  margin: 0 0 16px;
+  margin: 0 0 14px;
   padding-bottom: 8px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
@@ -373,117 +379,184 @@ const email = ref('contact@example.com')
   gap: 8px;
 }
 .section-title i {
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   opacity: 0.8;
 }
 
-/* ---------- 技术标签 ---------- */
-.tags {
-  display: flex;
-  flex-wrap: wrap;
+/* ========== 技术方向 ========== */
+.tech-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: 10px;
 }
-.tech-tag {
-  background: linear-gradient(135deg, rgba(80, 150, 240, 0.2) 0%, rgba(120, 130, 220, 0.15) 100%);
-  color: rgba(210, 225, 255, 0.9);
-  padding: 8px 20px;
-  border-radius: 20px;
-  font-size: 0.85rem;
-  letter-spacing: 1px;
-  border: 1px solid rgba(100, 180, 255, 0.2);
-  backdrop-filter: blur(6px);
-  transition: all 0.3s ease;
-  cursor: default;
+@media (min-width: 640px) {
+  .tech-grid { grid-template-columns: repeat(4, 1fr); }
 }
-.tech-tag:hover {
-  background: linear-gradient(135deg, rgba(90, 170, 255, 0.4) 0%, rgba(140, 150, 240, 0.3) 100%);
-  border-color: rgba(120, 200, 255, 0.5);
-  box-shadow: 0 0 18px rgba(80, 160, 255, 0.35);
-  transform: translateY(-2px);
+.tech-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(144, 166, 196, 0.12);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  transition: all 0.3s ease;
+}
+.tech-card:hover {
+  border-color: rgba(144, 166, 196, 0.3);
+  background: rgba(144, 166, 196, 0.05);
+  transform: translateY(-1px);
+}
+.tech-icon-wrap {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 1.1rem;
+  color: #e8eef7;
+}
+.tech-info {
+  flex: 1;
+  min-width: 0;
+}
+.tech-name {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #c5d5ea;
+  display: block;
+  margin-bottom: 5px;
+}
+.tech-bar {
+  width: 100%;
+  height: 3px;
+  background: rgba(144, 166, 196, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.tech-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.8s cubic-bezier(0.19, 1, 0.22, 1);
 }
 
-/* ---------- 友情链接 ---------- */
+/* ========== 友情链接 ========== */
 .link-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
 }
 .link-item {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   padding: 14px 16px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(144, 166, 196, 0.12);
+  border-radius: 14px;
   text-decoration: none;
-  color: rgba(210, 220, 245, 0.8);
+  color: rgba(168, 188, 212, 0.85);
   transition: all 0.3s ease;
-  backdrop-filter: blur(6px);
   position: relative;
   overflow: hidden;
 }
-.link-item::after {
-  content: '';
-  position: absolute;
-  top: 0; left: -100%;
-  width: 100%; height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
-  transition: left 0.5s;
-}
-.link-item:hover::after {
-  left: 100%;
-}
 .link-item:hover {
-  background: rgba(100, 150, 220, 0.12);
-  border-color: rgba(120, 180, 240, 0.35);
+  background: rgba(144, 166, 196, 0.08);
+  border-color: rgba(144, 166, 196, 0.3);
+  color: #e8eef7;
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(80, 160, 255, 0.2);
+  box-shadow: 0 4px 15px rgba(144, 166, 196, 0.08);
 }
-.link-icon {
-  font-size: 1.3rem;
+.link-icon-wrap {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 1.15rem;
+  color: #e8eef7;
+}
+.link-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 .link-name {
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   font-weight: 500;
-  flex: 1;
+  color: #c5d5ea;
+}
+.link-desc {
+  font-size: 0.72rem;
+  color: rgba(144, 166, 196, 0.5);
 }
 .link-arrow {
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   opacity: 0;
   transition: all 0.3s;
-  color: rgba(180, 200, 255, 0.7);
+  color: rgba(168, 188, 212, 0.6);
+  flex-shrink: 0;
 }
 .link-item:hover .link-arrow {
   opacity: 1;
   transform: translate(2px, -2px);
 }
 
-/* ---------- 联系方式 ---------- */
-.contact-section .section-title {
-  margin-bottom: 12px;
+/* ========== 联系方式 ========== */
+.contact-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
 }
-.contact-info {
-  text-align: center;
+.contact-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid rgba(144, 166, 196, 0.12);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.02);
+  transition: all 0.3s ease;
+}
+.contact-card:hover {
+  border-color: rgba(144, 166, 196, 0.25);
+  background: rgba(144, 166, 196, 0.05);
+}
+.contact-icon-wrap {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: rgba(144, 166, 196, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 1.1rem;
+  color: #a8bcd4;
+}
+.contact-body {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  align-items: center;
+  gap: 2px;
 }
-.email {
-  font-size: 1rem;
-  color: rgba(200, 215, 240, 0.8);
-  display: flex;
-  align-items: center;
-  gap: 6px;
+.contact-label {
+  font-size: 0.72rem;
+  color: rgba(144, 166, 196, 0.5);
 }
-.email i {
-  font-size: 1.1rem;
+.contact-value {
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: #c5d5ea;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.note {
-  font-size: 0.85rem;
-  color: rgba(180, 195, 220, 0.6);
-  letter-spacing: 1px;
-}
-
 </style>

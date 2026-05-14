@@ -37,12 +37,8 @@
           </div>
         </aside>
 
-        <!-- 中间新闻列表（使用独立的 list-wrapper，无 padding） -->
         <div class="list-wrapper">
           <div class="news-list-panel">
-            <div class="list-header">
-              <h3 class="list-header-title">新闻列表</h3>
-            </div>
             <div class="minimal-list">
               <div
                   v-for="(item, idx) in newsList"
@@ -264,7 +260,7 @@ onMounted(() => {
 
 /* ========== 左侧占位栏 ========== */
 .sidebar-placeholder {
-  width: 220px; flex-shrink: 0;
+  width: 200px; flex-shrink: 0;
   position: sticky; top: 20px;
 }
 .placeholder-card {
@@ -283,15 +279,8 @@ onMounted(() => {
 }
 .news-list-panel {
   border: 1px solid rgba(144,166,196,0.2); border-radius: 16px;
-  background: rgba(15,20,35,0.6); overflow: hidden;
+  overflow: hidden;
   backdrop-filter: blur(10px);
-}
-.list-header {
-  padding: 12px 20px; border-bottom: 1px solid rgba(144,166,196,0.15);
-}
-.list-header-title {
-  font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 2px;
-  opacity: 0.5; color: #a8bcd4; margin: 0;
 }
 .minimal-list { display: flex; flex-direction: column; }
 .list-item {
@@ -336,12 +325,12 @@ onMounted(() => {
 
 /* ========== 右侧详情面板 ========== */
 .preview-panel {
-  width: 220px; flex-shrink: 0;
+  width: 300px; flex-shrink: 0;
   position: sticky; top: 20px;
 }
 .detail-card {
   border: 1px solid rgba(144,166,196,0.2); border-radius: 16px;
-  overflow: hidden; background: rgba(15,20,35,0.85); backdrop-filter: blur(10px);
+  overflow: hidden; backdrop-filter: blur(10px);
   max-height: calc(100vh - 150px);
   display: flex; flex-direction: column;
 }

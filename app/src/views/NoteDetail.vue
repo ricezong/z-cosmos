@@ -469,12 +469,8 @@ onUnmounted(() => {
 /* 帖子卡片 */
 .detail-post {
   position: relative;
-  //border: 1px solid rgba(144, 166, 196, 0.22);
-  //border-radius: 22px;
   padding: 32px 36px;
   backdrop-filter: blur(12px);
-  //background: rgba(5, 12, 26, 0.3);
-  //box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.05);
   overflow: hidden;
 }
 .detail-decor {
@@ -590,19 +586,21 @@ onUnmounted(() => {
   position: relative;
 }
 
-/* ========== 渐变遮罩（修复左右间距，完全贴合卡片边缘） ========== */
+/* ========== 渐变遮罩（与背景自然融合） ========== */
 .content-mask {
   position: absolute;
   bottom: 0;
-  left: -36px;   /* 抵消 detail-post 的 padding-left */
-  right: -36px;  /* 抵消 detail-post 的 padding-right */
-  height: 200px; /* 可调整遮罩高度 */
+  left: -36px;
+  right: -36px;
+  height: 280px;
   background: linear-gradient(
       to bottom,
       transparent 0%,
-      rgba(5, 8, 20, 0.5) 30%,
-      rgba(5, 8, 20, 0.85) 70%,
-      rgba(5, 8, 20, 0.98) 100%
+      rgba(13, 15, 36, 0.15) 15%,
+      rgba(13, 15, 36, 0.4) 30%,
+      rgba(10, 12, 29, 0.65) 50%,
+      rgba(10, 12, 29, 0.85) 70%,
+      rgba(7, 8, 26, 0.96) 100%
   );
   display: flex;
   flex-direction: column;
@@ -610,6 +608,7 @@ onUnmounted(() => {
   justify-content: flex-end;
   padding-bottom: 32px;
   pointer-events: none;
+  backdrop-filter: blur(1px);
 }
 
 .content-mask .unlock-btn {

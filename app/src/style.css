@@ -70,6 +70,13 @@ h1, h2, h3, .display { font-family: var(--font-display); font-feature-settings: 
 /* Reset */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* 全局滚动条 — 轻量优雅风格 */
+*::-webkit-scrollbar { width: 6px; height: 6px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb { background: rgba(168, 188, 212, 0.2); border-radius: 3px; }
+*::-webkit-scrollbar-thumb:hover { background: rgba(168, 188, 212, 0.35); }
+* { scrollbar-width: thin; scrollbar-color: rgba(168, 188, 212, 0.2) transparent; }
+
 /* Star Background - Shared: 冷暖混杂星点，电影感深度 */
 .star-bg {
   position: fixed;
