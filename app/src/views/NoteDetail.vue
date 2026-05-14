@@ -1,6 +1,5 @@
 <template>
   <div class="note-detail-page">
-    <!-- 星空背景（复用全局样式） -->
     <div class="star-bg"></div>
 
     <div class="page-layout">
@@ -22,49 +21,43 @@
         </header>
       </div>
 
-      <!-- 可滚动内容区 -->
-      <div class="page-scroll" ref="contentRef" @scroll="onContentScroll">
-        <div class="container">
-          <!-- 加载中 -->
-          <LoadingSpinner v-if="!note" text="加载中..." />
+      <!-- 可滚动区域：三栏布局 -->
+      <div class="page-scroll" ref="contentRef">
+        <div class="detail-layout">
+          <!-- 左侧目录侧边栏 -->
+          <aside class="sidebar-left">
+            <div class="sidebar-inner">
+              <h3 class="sidebar-section-title">目录</h3>
+              <nav class="toc-nav">
+                <a
+                    v-for="(heading, index) in tocItems"
+                    :key="index"
+                    :href="'#heading-' + index"
+                    :class="['toc-link', 'toc-level-' + heading.level, { active: activeTocIndex === index }]"
+                    @click.prevent="scrollToHeading(index)"
+                >
+                  {{ heading.text }}
+                </a>
+              </nav>
+            </div>
+          </aside>
 
-          <!-- 主内容 -->
-          <div v-else class="content-layout">
-            <!-- 左侧目录栏（桌面端） -->
-            <aside class="sidebar">
-              <div class="sidebar-inner">
-                <h3 class="sidebar-section-title">目录</h3>
-                <nav class="toc-nav">
-                  <a
-                      v-for="(heading, index) in tocItems"
-                      :key="index"
-                      :href="'#heading-' + index"
-                      :class="['toc-link', 'toc-level-' + heading.level, { active: activeTocIndex === index }]"
-                      @click.prevent="scrollToHeading(index)"
-                  >
-                    {{ heading.text }}
-                  </a>
-                </nav>
-              </div>
-            </aside>
+          <!-- 中央正文容器 -->
+          <div class="container">
+            <LoadingSpinner v-if="!note" text="加载中..." />
 
-            <!-- 主内容区 -->
-            <main class="main-content">
-              <!-- 面包屑 -->
-              <div class="detail-header">
-                <button class="back-link" @click="$router.push('/notes')">
-                  <i class="ri-arrow-left-s-line"></i>
-                  <span>笔记列表</span>
-                </button>
-                <div class="header-separator"></div>
-                <div class="header-breadcrumb">
-                  <span class="breadcrumb-current">笔记详情</span>
-                </div>
-              </div>
-
+            <template v-else>
               <!-- 帖子卡片 -->
               <article class="detail-post">
                 <span class="detail-decor"></span>
+
+                <!-- 封面图 -->
+                <img
+                    v-if="note.coverImage"
+                    :src="note.coverImage"
+                    class="detail-cover"
+                    alt="封面"
+                />
 
                 <!-- 标签行 -->
                 <div class="detail-meta-row">
@@ -73,6 +66,9 @@
                   </span>
                   <span v-if="note.categoryName" class="post-tag tag-category">{{ note.categoryName }}</span>
                   <span v-for="tag in (note.tags || [])" :key="tag" class="post-tag tag-default">{{ tag }}</span>
+                  <span v-if="note.authorName" class="meta-chip">
+                    <i class="ri-user-line"></i> {{ note.authorName }}
+                  </span>
                   <span class="meta-chip">
                     <i class="ri-eye-line"></i> {{ formatViewCount(note.viewCount) }} 阅读
                   </span>
@@ -88,43 +84,71 @@
                 <h1 class="detail-title">{{ note.title }}</h1>
                 <div class="title-underline"></div>
 
-                <!-- Markdown 内容 -->
+                <!-- Markdown 正文（带遮罩/解锁逻辑） -->
                 <div class="detail-content-wrapper">
                   <!-- 已解锁或公开笔记 -->
-                  <div v-if="isUnlocked || note.isLocked !== 1" class="md-body" v-html="renderedContent" />
+                  <div
+                      v-if="isUnlocked || note.isLocked !== 1"
+                      class="md-body content-unlocked"
+                      v-html="renderedContent"
+                  />
 
                   <!-- 未解锁笔记 -->
-                  <div v-else>
-                    <div class="lock-mask">
-                      <div class="md-body" v-html="renderedPreview" />
-                    </div>
+                  <div v-else class="locked-content">
+                    <div class="md-body" v-html="renderedPreview" />
 
-                    <!-- 锁定提示 -->
-                    <div class="lock-section">
-                      <div class="lock-icon-wrap">
-                        <i class="ri-lock-2-line"></i>
-                      </div>
-                      <h3 class="lock-title">内容已锁定</h3>
-                      <p class="lock-desc">扫描二维码并输入口令，即可解锁全站所有文章</p>
+                    <!-- 渐变遮罩（宽度完全覆盖卡片，消除左右间距） -->
+                    <div class="content-mask">
                       <button class="unlock-btn" @click="showUnlockModal = true">
-                        <i class="ri-lock-unlock-line"></i> 阅读全文
+                        <i class="ri-lock-unlock-line"></i>
+                        解锁全文
                       </button>
                     </div>
                   </div>
                 </div>
               </article>
-            </main>
+            </template>
           </div>
+
+          <!-- 右侧占位栏 -->
+          <aside class="sidebar-right"></aside>
         </div>
       </div>
 
       <!-- 解锁弹窗 -->
       <Teleport to="body">
-        <UnlockModal
+        <div
             v-if="showUnlockModal"
-            @close="showUnlockModal = false"
-            @unlocked="handleUnlocked"
-        />
+            class="unlock-modal-overlay"
+            @click.self="closeUnlockModal"
+        >
+          <div class="unlock-card">
+            <div class="unlock-icon">
+              <i class="ri-lock-2-line"></i>
+            </div>
+            <h3 class="unlock-title">解锁全文阅读</h3>
+            <p class="unlock-desc">
+              扫描下方二维码，关注公众号并回复“解锁”获取口令
+            </p>
+            <div class="qr-container">
+              <img :src="qrCodeImage" alt="QR Code" />
+            </div>
+            <div class="input-group">
+              <label>输入解锁口令</label>
+              <input
+                  v-model="unlockCode"
+                  type="text"
+                  placeholder="请输入口令..."
+                  @keyup.enter="confirmUnlock"
+              />
+              <p :class="['error-msg', { show: showError }]">口令错误，请重新输入</p>
+            </div>
+            <div class="unlock-actions">
+              <button class="btn-cancel" @click="closeUnlockModal">取消</button>
+              <button class="btn-confirm" @click="confirmUnlock">确认解锁</button>
+            </div>
+          </div>
+        </div>
       </Teleport>
     </div>
   </div>
@@ -135,32 +159,40 @@ import { ref, computed, onMounted, nextTick, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { marked } from 'marked'
 import { getNoteDetail } from '../api/notes'
-import UnlockModal from '../components/UnlockModal.vue'
 import LoadingSpinner from '../components/LoadingSpinner.vue'
+
+// 组件 Props
+const props = defineProps({
+  qrCodeImage: {
+    type: String,
+    default: 'https://via.placeholder.com/160x160/ffffff/000000?text=QR+Code' // 默认占位图
+  }
+})
 
 const route = useRoute()
 const note = ref(null)
 const isUnlocked = ref(false)
 const showUnlockModal = ref(false)
+const unlockCode = ref('')
+const showError = ref(false)
 const activeTocIndex = ref(0)
 let scrollHandler = null
 
-function formatViewCount(count) {
+const formatViewCount = (count) => {
   if (!count) return '0'
   if (count >= 10000) return (count / 10000).toFixed(1) + '万'
   if (count >= 1000) return (count / 1000).toFixed(1) + 'k'
   return count.toString()
 }
 
-function formatDate(dateStr) {
+const formatDate = (dateStr) => {
   if (!dateStr) return ''
   return dateStr.split('T')[0] || dateStr
 }
 
-// 提取 Markdown 标题生成目录
-function extractHeadings(markdown) {
-  if (!markdown) return []
-  const lines = markdown.split('\n')
+const extractHeadings = (md) => {
+  if (!md) return []
+  const lines = md.split('\n')
   const headings = []
   let inCodeBlock = false
   for (const line of lines) {
@@ -189,17 +221,7 @@ const currentContent = computed(() => {
 
 const tocItems = computed(() => extractHeadings(currentContent.value))
 
-const renderedContent = computed(() => {
-  const content = note.value?.fullContent || note.value?.previewContent || ''
-  return renderMarkdownWithAnchors(content)
-})
-
-const renderedPreview = computed(() => {
-  const content = note.value?.previewContent || ''
-  return renderMarkdownWithAnchors(content)
-})
-
-function renderMarkdownWithAnchors(markdown) {
+const renderMarkdownWithAnchors = (markdown) => {
   if (!markdown) return ''
   let headingIndex = 0
   const renderer = new marked.Renderer()
@@ -210,7 +232,17 @@ function renderMarkdownWithAnchors(markdown) {
   return marked(markdown, { renderer })
 }
 
-function scrollToHeading(index) {
+const renderedContent = computed(() => {
+  const content = note.value?.fullContent || note.value?.previewContent || ''
+  return renderMarkdownWithAnchors(content)
+})
+
+const renderedPreview = computed(() => {
+  const content = note.value?.previewContent || ''
+  return renderMarkdownWithAnchors(content)
+})
+
+const scrollToHeading = (index) => {
   const el = document.getElementById(`heading-${index}`)
   if (el) {
     const headerOffset = 80
@@ -219,7 +251,8 @@ function scrollToHeading(index) {
   }
 }
 
-function setupScrollSpy() {
+const setupScrollSpy = () => {
+  if (scrollHandler) window.removeEventListener('scroll', scrollHandler)
   scrollHandler = () => {
     const headings = document.querySelectorAll('.md-body h1, .md-body h2, .md-body h3')
     if (!headings.length) return
@@ -233,12 +266,13 @@ function setupScrollSpy() {
   window.addEventListener('scroll', scrollHandler, { passive: true })
 }
 
-async function loadNote() {
+const loadNote = async () => {
   try {
     const data = await getNoteDetail(route.params.id)
     if (data) {
       note.value = data
-      isUnlocked.value = data.unlocked || false
+      const unlockedIds = JSON.parse(localStorage.getItem('unlockedNotes') || '[]')
+      isUnlocked.value = data.isLocked !== 1 || unlockedIds.includes(data.id)
       await nextTick()
       setupScrollSpy()
     }
@@ -247,10 +281,28 @@ async function loadNote() {
   }
 }
 
-function handleUnlocked() {
-  isUnlocked.value = true
+const confirmUnlock = () => {
+  if (unlockCode.value.trim() === 'tech2024') {
+    if (note.value) {
+      const unlockedIds = JSON.parse(localStorage.getItem('unlockedNotes') || '[]')
+      if (!unlockedIds.includes(note.value.id)) {
+        unlockedIds.push(note.value.id)
+        localStorage.setItem('unlockedNotes', JSON.stringify(unlockedIds))
+      }
+      isUnlocked.value = true
+      showUnlockModal.value = false
+      unlockCode.value = ''
+      showError.value = false
+    }
+  } else {
+    showError.value = true
+  }
+}
+
+const closeUnlockModal = () => {
   showUnlockModal.value = false
-  loadNote()
+  unlockCode.value = ''
+  showError.value = false
 }
 
 onMounted(() => {
@@ -267,13 +319,6 @@ onUnmounted(() => {
 .note-detail-page {
   height: 100vh;
   overflow: hidden;
-}
-.container {
-  position: relative;
-  z-index: 1;
-  max-width: 960px;
-  margin: 0 auto;
-  padding: 20px;
 }
 
 /* ========== 顶部栏 ========== */
@@ -321,135 +366,115 @@ onUnmounted(() => {
   box-shadow: 0 0 15px rgba(144, 166, 196, 0.15);
 }
 
-/* ========== 内容布局 ========== */
-.content-layout {
-  display: flex;
-  gap: 24px;
+/* ========== 三栏布局 ========== */
+.page-scroll {
+  overflow-y: auto;
+  height: calc(100vh - 80px);
 }
 
-/* ========== 左侧目录栏 ========== */
-.sidebar {
-  display: none;
-  width: 200px;
+.detail-layout {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px 24px;
+}
+
+/* 左侧侧边栏 */
+.sidebar-left {
+  width: 220px;
   flex-shrink: 0;
+  display: none;
 }
 @media (min-width: 1024px) {
-  .sidebar {
+  .sidebar-left {
     display: block;
   }
 }
 .sidebar-inner {
   position: sticky;
-  top: 80px;
+  top: 20px;
   max-height: calc(100vh - 120px);
   overflow-y: auto;
-  padding: 12px 0;
+  border-right: 1px solid rgba(144, 166, 196, 0.15);
+  padding: 18px 16px;
+  backdrop-filter: blur(8px);
 }
 .sidebar-section-title {
   font-size: 0.7rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: rgba(168, 188, 212, 0.5);
-  margin: 0 0 8px 8px;
+  letter-spacing: 0.1em;
+  color: rgba(168, 188, 212, 0.45);
+  margin: 0 0 12px 8px;
 }
 .toc-nav {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 2px;
 }
 .toc-link {
   display: block;
-  font-size: 0.78rem;
-  color: rgba(168, 188, 212, 0.55);
+  font-size: 0.8rem;
+  color: rgba(168, 188, 212, 0.6);
   text-decoration: none;
-  padding: 3px 10px;
-  border-radius: 6px;
-  border-left: 2px solid transparent;
-  transition: all 0.2s;
+  padding: 8px 12px;
+  border-radius: 0 8px 8px 0;
+  border-left: 3px solid transparent;
+  transition: all 0.25s;
   line-height: 1.4;
 }
 .toc-link:hover {
-  color: #c5d5ea;
-  background: rgba(144, 166, 196, 0.06);
+  color: #e8eef7;
+  background: rgba(144, 166, 196, 0.08);
+  border-left-color: rgba(168, 188, 212, 0.3);
 }
 .toc-link.active {
-  color: #c5d5ea;
-  border-left-color: #7890b5;
-  background: rgba(144, 166, 196, 0.08);
+  color: #ffffff;
+  background: rgba(144, 166, 196, 0.15);
+  border-left-color: #a8bcd4;
   font-weight: 500;
 }
 .toc-level-2 {
-  padding-left: 20px;
+  padding-left: 24px;
+  font-size: 0.76rem;
 }
 .toc-level-3 {
-  padding-left: 30px;
-  font-size: 0.72rem;
+  padding-left: 36px;
+  font-size: 0.73rem;
+  color: rgba(168, 188, 212, 0.5);
 }
 
-/* ========== 主内容区 ========== */
-.main-content {
+/* 右侧占位栏 */
+.sidebar-right {
+  width: 220px;
+  flex-shrink: 0;
+  display: none;
+}
+@media (min-width: 1024px) {
+  .sidebar-right {
+    display: block;
+  }
+}
+
+/* ========== 中央容器 ========== */
+.container {
   flex: 1;
   min-width: 0;
-}
-
-/* 面包屑 */
-.detail-header {
-  display: flex;
-  align-items: center;
-  gap: 0;
-  margin-bottom: 22px;
-}
-.back-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  padding: 6px 12px;
-  border-radius: 8px;
-  background: transparent;
-  border: none;
-  color: #a8bcd4;
-  cursor: pointer;
-  font-size: 0.88rem;
-  transition: 0.2s;
-}
-.back-link i {
-  font-size: 1.2rem;
-  transition: transform 0.2s;
-}
-.back-link:hover {
-  background: rgba(144, 166, 196, 0.1);
-  color: #e8eef7;
-}
-.back-link:hover i {
-  transform: translateX(-2px);
-}
-.header-separator {
-  width: 1px;
-  height: 16px;
-  background: rgba(144, 166, 196, 0.25);
-  margin: 0 8px;
-  flex-shrink: 0;
-}
-.header-breadcrumb {
-  display: flex;
-  align-items: center;
-  font-size: 0.88rem;
-}
-.breadcrumb-current {
-  color: #e8eef7;
-  font-weight: 500;
+  max-width: 960px;
+  padding: 0;
 }
 
 /* 帖子卡片 */
 .detail-post {
   position: relative;
-  border: 1px solid rgba(144, 166, 196, 0.22);
-  border-radius: 22px;
+  //border: 1px solid rgba(144, 166, 196, 0.22);
+  //border-radius: 22px;
   padding: 32px 36px;
   backdrop-filter: blur(12px);
-  background: rgba(5, 12, 26, 0.3);
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  //background: rgba(5, 12, 26, 0.3);
+  //box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.05);
   overflow: hidden;
 }
 .detail-decor {
@@ -460,6 +485,16 @@ onUnmounted(() => {
   width: 3px;
   background: linear-gradient(180deg, transparent, rgba(168, 188, 212, 0.8) 20%, rgba(144, 166, 196, 0.6) 80%, transparent);
   border-radius: 0 3px 3px 0;
+}
+
+/* 封面图 */
+.detail-cover {
+  width: 100%;
+  aspect-ratio: 16/9;
+  object-fit: cover;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  border: 1px solid rgba(144, 166, 196, 0.15);
 }
 
 /* 标签行 */
@@ -541,170 +576,190 @@ onUnmounted(() => {
   font-size: 0.95rem;
   color: #e8eef7;
 }
-.md-body :deep(h1) {
-  font-size: 1.6rem;
-  font-weight: 500;
-  color: #c5d5ea;
-  margin: 1.5rem 0 0.8rem;
-  scroll-margin-top: 80px;
-}
-.md-body :deep(h2) {
-  font-size: 1.25rem;
-  font-weight: 500;
-  color: #c5d5ea;
-  margin: 1.3rem 0 0.6rem;
-  padding-bottom: 0.4rem;
-  border-bottom: 1px solid rgba(144, 166, 196, 0.2);
-  scroll-margin-top: 80px;
-}
-.md-body :deep(h3) {
-  font-size: 1.05rem;
-  font-weight: 500;
-  color: #a8bcd4;
-  margin: 1.1rem 0 0.5rem;
-  scroll-margin-top: 80px;
-}
-.md-body :deep(p) {
-  margin-bottom: 12px;
-}
-.md-body :deep(code) {
-  background: rgba(144, 166, 196, 0.12);
-  padding: 2px 7px;
-  border-radius: 5px;
-  font-size: 0.85em;
-  color: #e8eef7;
-  border: 1px solid rgba(144, 166, 196, 0.18);
-  font-family: 'JetBrains Mono', 'Consolas', monospace;
-}
-.md-body :deep(pre) {
-  background: rgba(5, 10, 22, 0.85);
-  padding: 16px;
-  border-radius: 10px;
-  overflow-x: auto;
-  border: 1px solid rgba(144, 166, 196, 0.2);
-  margin: 14px 0;
-  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.25);
-}
-.md-body :deep(pre code) {
-  background: none;
-  padding: 0;
-  border: none;
-}
-.md-body :deep(blockquote) {
-  border-left: 3px solid #c5d5ea;
-  padding: 4px 16px;
-  color: #c5d5ea;
-  margin: 14px 0;
-  background: rgba(168, 188, 212, 0.06);
-  border-radius: 0 8px 8px 0;
-}
-.md-body :deep(ul),
-.md-body :deep(ol) {
-  padding-left: 22px;
-}
-.md-body :deep(a) {
-  color: #c5d5ea;
-}
-.md-body :deep(table) {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 12px 0;
-}
-.md-body :deep(th),
-.md-body :deep(td) {
-  border: 1px solid rgba(144, 166, 196, 0.2);
-  padding: 6px 10px;
-  text-align: left;
-}
-.md-body :deep(th) {
-  background: rgba(144, 166, 196, 0.08);
-}
-.md-body :deep(img) {
-  max-width: 100%;
-  border-radius: 8px;
-  margin: 10px 0;
-}
-.md-body :deep(hr) {
-  border: none;
-  border-top: 1px solid rgba(144, 166, 196, 0.2);
-  margin: 1.2rem 0;
-}
+.md-body :deep(h1) { scroll-margin-top: 80px; }
+.md-body :deep(h2) { scroll-margin-top: 80px; }
+.md-body :deep(h3) { scroll-margin-top: 80px; }
 
-/* ========== 锁定遮罩 ========== */
-.lock-mask {
+/* 已解锁状态 */
+.content-unlocked {
   position: relative;
 }
-.lock-mask::after {
-  content: '';
+
+/* 未解锁容器 */
+.locked-content {
+  position: relative;
+}
+
+/* ========== 渐变遮罩（修复左右间距，完全贴合卡片边缘） ========== */
+.content-mask {
   position: absolute;
-  left: 0;
-  right: 0;
   bottom: 0;
-  height: 280px;
-  background: linear-gradient(to bottom, rgba(5, 8, 20, 0), rgba(5, 8, 20, 0.7) 40%, rgba(5, 8, 20, 0.95));
-  pointer-events: none;
-}
-
-/* ========== 锁定提示区 ========== */
-.lock-section {
-  position: relative;
-  z-index: 10;
+  left: -36px;   /* 抵消 detail-post 的 padding-left */
+  right: -36px;  /* 抵消 detail-post 的 padding-right */
+  height: 200px; /* 可调整遮罩高度 */
+  background: linear-gradient(
+      to bottom,
+      transparent 0%,
+      rgba(5, 8, 20, 0.5) 30%,
+      rgba(5, 8, 20, 0.85) 70%,
+      rgba(5, 8, 20, 0.98) 100%
+  );
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 48px 0;
-  margin-top: 12px;
+  justify-content: flex-end;
+  padding-bottom: 32px;
+  pointer-events: none;
 }
-.lock-icon-wrap {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, rgba(168, 188, 212, 0.15), rgba(120, 144, 181, 0.1));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 14px;
-  box-shadow: 0 4px 20px rgba(120, 144, 181, 0.15);
-  color: #a8bcd4;
-  font-size: 1.5rem;
-  animation: pulseGlow 2s infinite;
+
+.content-mask .unlock-btn {
+  pointer-events: auto;
 }
-@keyframes pulseGlow {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(120, 144, 181, 0.3); }
-  50% { box-shadow: 0 0 0 8px rgba(120, 144, 181, 0); }
-}
-.lock-title {
-  font-size: 1.1rem;
-  font-weight: 500;
-  color: #e8eef7;
-  margin: 0 0 6px;
-}
-.lock-desc {
-  font-size: 0.85rem;
-  color: rgba(168, 188, 212, 0.6);
-  margin: 0 0 20px;
-  text-align: center;
-  max-width: 400px;
-}
+
 .unlock-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 32px;
-  border-radius: 12px;
-  font-size: 0.85rem;
+  gap: 10px;
+  padding: 12px 36px;
+  border-radius: 14px;
+  font-size: 0.9rem;
   font-weight: 500;
   color: #fff;
   background: linear-gradient(135deg, #7890b5, #a8bcd4);
   border: none;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(120, 144, 181, 0.25);
+  box-shadow: 0 4px 18px rgba(120, 144, 181, 0.35);
   transition: all 0.3s;
 }
 .unlock-btn:hover {
-  box-shadow: 0 6px 20px rgba(120, 144, 181, 0.4);
+  box-shadow: 0 6px 25px rgba(120, 144, 181, 0.5);
   transform: translateY(-1px);
 }
 
+/* ========== 解锁弹窗 ========== */
+.unlock-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+.unlock-card {
+  background: rgba(15, 20, 35, 0.95);
+  border: 1px solid rgba(144, 166, 196, 0.25);
+  border-radius: 20px;
+  padding: 40px;
+  max-width: 420px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+}
+.unlock-icon {
+  width: 72px;
+  height: 72px;
+  background: linear-gradient(135deg, #7890b5, #a8bcd4);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 24px;
+  font-size: 2rem;
+  color: #fff;
+}
+.unlock-title {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 12px;
+}
+.unlock-desc {
+  font-size: 0.9rem;
+  color: rgba(168, 188, 212, 0.8);
+  margin-bottom: 24px;
+  line-height: 1.6;
+}
+.qr-container {
+  background: white;
+  padding: 16px;
+  border-radius: 12px;
+  display: inline-block;
+  margin-bottom: 24px;
+}
+.qr-container img {
+  width: 160px;
+  height: 160px;
+  display: block;
+}
+.input-group {
+  margin-bottom: 24px;
+  text-align: left;
+}
+.input-group label {
+  display: block;
+  font-size: 0.8rem;
+  color: rgba(168, 188, 212, 0.7);
+  margin-bottom: 8px;
+}
+.input-group input {
+  width: 100%;
+  padding: 12px 16px;
+  background: rgba(5, 10, 22, 0.8);
+  border: 1px solid rgba(144, 166, 196, 0.25);
+  border-radius: 10px;
+  color: #fff;
+  font-size: 0.9rem;
+  transition: border-color 0.3s;
+}
+.input-group input:focus {
+  outline: none;
+  border-color: #a8bcd4;
+}
+.error-msg {
+  color: #f87171;
+  font-size: 0.8rem;
+  margin-top: 8px;
+  display: none;
+}
+.error-msg.show {
+  display: block;
+}
+.unlock-actions {
+  display: flex;
+  gap: 12px;
+}
+.btn-cancel {
+  flex: 1;
+  padding: 12px;
+  background: transparent;
+  border: 1px solid rgba(144, 166, 196, 0.3);
+  border-radius: 10px;
+  color: #c5d5ea;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: 0.3s;
+}
+.btn-cancel:hover {
+  background: rgba(144, 166, 196, 0.15);
+}
+.btn-confirm {
+  flex: 1;
+  padding: 12px;
+  background: linear-gradient(135deg, #7890b5, #a8bcd4);
+  border: none;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: 0.3s;
+}
+.btn-confirm:hover {
+  opacity: 0.9;
+}
 </style>

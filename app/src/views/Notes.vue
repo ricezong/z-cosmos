@@ -1,14 +1,13 @@
 <template>
   <div class="notes-page">
-    <!-- 星空背景（样式由全局定义，与 Community 一致） -->
+    <!-- 星空背景 -->
     <div class="star-bg"></div>
 
     <div class="page-layout">
-      <!-- 固定顶部栏 -->
+      <!-- 固定顶部栏（不改动） -->
       <div class="page-fixed">
         <header class="header">
           <div class="header-left">
-            <!-- 星球图标容器（无背景/尺寸，与 Community 一致） -->
             <div class="planet-icon">
               <div class="planet-sphere earth"></div>
             </div>
@@ -40,6 +39,62 @@
       <!-- 可滚动内容区 -->
       <div class="page-scroll" ref="contentRef" @scroll="onContentScroll">
         <div class="container">
+          <!-- 精选区域（横向滚动，md以上可见） -->
+          <div v-if="topNotes.length > 0" class="featured-section hidden md:block">
+            <div class="featured-header">
+              <h3 class="section-title">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
+                  <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+                  <path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/>
+                </svg>
+                本周精选
+              </h3>
+              <span class="featured-hint">左右滑动查看更多</span>
+            </div>
+            <div class="featured-scroll">
+              <article
+                  v-for="note in topNotes"
+                  :key="note.noteId"
+                  class="note-card featured-card"
+                  @click="goToDetail(note.noteId)"
+              >
+                <div class="card-cover">
+                  <div class="cover-text-bg">
+                    <span class="cover-title-text">{{ note.title }}</span>
+                  </div>
+                  <div class="cover-overlay" />
+                  <div class="cover-action">
+                    <span>
+                      阅读全文
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                    </span>
+                  </div>
+                </div>
+                <div class="card-body">
+                  <h3 class="card-title">{{ note.title }}</h3>
+                  <p class="card-summary">{{ note.shortSummary }}</p>
+                  <div class="card-tags">
+                    <span :class="['tag', note.contentType === 0 ? 'tag-original' : 'tag-reprint']">
+                      {{ note.contentType === 0 ? '原创' : '转载' }}
+                    </span>
+                    <span v-if="note.categoryName" class="tag tag-category">{{ note.categoryName }}</span>
+                    <span v-for="tag in (note.tags || [])" :key="tag" class="tag tag-default">{{ tag }}</span>
+                  </div>
+                  <div class="card-footer">
+                    <div class="card-views">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                      <span>{{ formatViewCount(note.viewCount) }} 阅读</span>
+                    </div>
+                    <span class="card-date">{{ formatDate(note.createdAt) }}</span>
+                  </div>
+                </div>
+              </article>
+            </div>
+          </div>
+
+          <!-- 全部文章标题 -->
+          <h3 v-if="notes.length > 0" class="section-title hidden md:block" style="margin-top: 32px;">全部文章</h3>
+
           <!-- 笔记网格 -->
           <div class="notes-grid" v-if="notes.length > 0">
             <article
@@ -49,11 +104,8 @@
                 @click="goToDetail(note.noteId)"
             >
               <div class="card-cover">
-                <div class="cover-placeholder">
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
-                    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
-                  </svg>
+                <div class="cover-text-bg">
+                  <span class="cover-title-text">{{ note.title }}</span>
                 </div>
                 <div class="cover-overlay" />
                 <div class="cover-action">
@@ -84,9 +136,18 @@
             </article>
           </div>
 
+          <!-- 加载更多指示器（关键新增） -->
+          <LoadingSpinner v-if="loading && notes.length > 0" text="加载中..." />
+
+          <!-- 无限滚动触发器 -->
+          <div ref="loadMoreRef" class="load-more-trigger" />
+
+          <!-- 底部提示 -->
+          <div v-if="!hasMore && notes.length > 0" class="bottom-tip">— 已经到底了 —</div>
+
           <!-- 加载骨架屏（仅首次加载时显示） -->
           <div v-if="loading && notes.length === 0" class="notes-grid skeleton-grid">
-            <div v-for="i in 3" :key="i" class="skeleton-card">
+            <div v-for="i in 2" :key="i" class="skeleton-card">
               <div class="skeleton-cover" />
               <div class="skeleton-body">
                 <div class="skeleton-line skeleton-title" />
@@ -106,11 +167,6 @@
             <p class="empty-title">暂无笔记</p>
             <p class="empty-desc">换个分类试试吧</p>
           </div>
-
-          <!-- 无限滚动触发器 -->
-          <div ref="loadMoreRef" class="load-more-trigger" />
-          <!-- 底部提示 -->
-          <div v-if="!hasMore && notes.length > 0" class="bottom-tip">— 已经到底了 —</div>
         </div>
       </div>
     </div>
@@ -118,9 +174,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getNoteList, getCategories } from '../api/notes'
+import LoadingSpinner from '../components/LoadingSpinner.vue'
 
 const router = useRouter()
 
@@ -133,6 +190,11 @@ const loading = ref(false)
 const hasMore = ref(true)
 const loadMoreRef = ref(null)
 let observer = null
+
+// 精选笔记：按浏览量降序取前5
+const topNotes = computed(() => {
+  return [...notes.value].sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0)).slice(0, 5)
+})
 
 function formatViewCount(count) {
   if (!count) return '0'
@@ -228,7 +290,7 @@ onUnmounted(() => {
   padding: 20px;
 }
 
-/* ========== 顶部栏 ========== */
+/* ========== 顶部栏（不动） ========== */
 .header {
   display: flex;
   align-items: center;
@@ -241,7 +303,6 @@ onUnmounted(() => {
   align-items: center;
   gap: 15px;
 }
-
 .header-title h1 {
   font-size: 1.6rem;
   font-weight: 300;
@@ -256,7 +317,6 @@ onUnmounted(() => {
   color: rgba(168, 188, 212, 0.7);
   margin: 2px 0 0;
 }
-
 .back-btn {
   display: flex;
   align-items: center;
@@ -276,7 +336,7 @@ onUnmounted(() => {
   box-shadow: 0 0 15px rgba(144, 166, 196, 0.15);
 }
 
-/* ========== 分类筛选 ========== */
+/* ========== 分类筛选（不动） ========== */
 .category-filter {
   display: flex;
   flex-wrap: wrap;
@@ -301,20 +361,67 @@ onUnmounted(() => {
   color: #fff;
 }
 
+/* ========== 精选区域 ========== */
+.featured-section {
+  margin-bottom: 8px;
+}
+.featured-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.featured-header .section-title {
+  display: flex;
+  align-items: center;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+}
+.featured-hint {
+  font-size: 0.75rem;
+  color: rgba(168, 188, 212, 0.4);
+}
+.featured-scroll {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+.featured-scroll::-webkit-scrollbar {
+  height: 4px;
+}
+.featured-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.featured-scroll::-webkit-scrollbar-thumb {
+  background: rgba(144, 166, 196, 0.2);
+  border-radius: 2px;
+}
+.featured-card {
+  flex: 0 0 260px;
+  scroll-snap-align: start;
+}
+
+/* ========== 全部文章标题 ========== */
+.section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 16px;
+}
+
 /* ========== 笔记网格 ========== */
 .notes-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 12px;
+  gap: 16px;
 }
 @media (min-width: 640px) {
   .notes-grid {
     grid-template-columns: repeat(2, 1fr);
-  }
-}
-@media (min-width: 1024px) {
-  .notes-grid {
-    grid-template-columns: repeat(3, 1fr);
   }
 }
 
@@ -324,14 +431,14 @@ onUnmounted(() => {
   border-radius: 16px;
   overflow: hidden;
   cursor: pointer;
-  transition: 0.3s;
+  transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s;
   background: rgba(5, 12, 26, 0.4);
   backdrop-filter: blur(8px);
 }
 .note-card:hover {
   border-color: rgba(144, 166, 196, 0.5);
-  box-shadow: 0 5px 25px rgba(144, 166, 196, 0.15);
-  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(144, 166, 196, 0.2);
+  transform: translateY(-4px);
 }
 
 /* 封面 */
@@ -341,20 +448,40 @@ onUnmounted(() => {
   overflow: hidden;
   background: linear-gradient(135deg, rgba(120, 144, 181, 0.15), rgba(168, 188, 212, 0.08));
 }
-.cover-placeholder {
+/* 文字占位封面 */
+.cover-text-bg {
   width: 100%;
   height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: rgba(168, 188, 212, 0.25);
+  padding: 16px;
+  background: linear-gradient(135deg, rgba(120, 144, 181, 0.35), rgba(168, 188, 212, 0.1));
+  transition: transform 0.5s ease;
 }
+.note-card:hover .cover-text-bg {
+  transform: scale(1.05);
+}
+.cover-title-text {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+  text-align: center;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+}
+
 .cover-overlay {
   position: absolute;
   inset: 0;
   background: linear-gradient(to top, rgba(5, 8, 20, 0.5), transparent);
   opacity: 0;
   transition: opacity 0.3s;
+  pointer-events: none;
 }
 .note-card:hover .cover-overlay {
   opacity: 1;
