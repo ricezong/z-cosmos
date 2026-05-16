@@ -99,7 +99,7 @@
 
                     <!-- 渐变遮罩（宽度完全覆盖卡片，消除左右间距） -->
                     <div class="content-mask">
-                      <button class="unlock-btn" @click="showUnlockModal = true">
+                      <button class="unlock-btn" @click="openUnlockModal">
                         <i class="ri-lock-unlock-line"></i>
                         阅读全文
                       </button>
@@ -126,29 +126,63 @@
             <button class="unlock-close" @click="closeUnlockModal">
               <i class="ri-close-line"></i>
             </button>
-            <div class="unlock-icon">
-              <i class="ri-lock-2-line"></i>
+            <div v-if="unlockLoading" class="unlock-loading">
+              <div class="unlock-loading-spinner"></div>
+              <span>正在生成口令...</span>
             </div>
-            <h3 class="unlock-title">解锁全站文章</h3>
-            <p class="unlock-desc">
-              扫描下方二维码，关注公众号解锁全站文章
-            </p>
-            <div class="qr-container">
-              <img :src="qrCodeImage" alt="QR Code" />
-            </div>
-            <div class="unlock-steps">
-              <div class="unlock-step">
-                <span class="step-num">1</span>
-                <span class="step-text">扫码关注公众号</span>
+            <template v-else>
+              <div class="qr-container">
+                <img :src="qrCodeImage" alt="QR Code" />
               </div>
-              <div class="unlock-step">
-                <span class="step-num">2</span>
-                <span class="step-text">输入 <strong>123456</strong></span>
+              <div class="unlock-code-display">
+                <span class="unlock-code-label">解锁口令</span>
+                <div class="unlock-code-value">
+                  <span v-for="(char, i) in unlockCode" :key="i" class="unlock-code-char">{{ char }}</span>
+                </div>
               </div>
-            </div>
-            <button class="unlock-done-btn" @click="confirmUnlock">
-              <i class="ri-check-line"></i> 我已完成
-            </button>
+              <div class="unlock-timeline">
+                <div class="timeline-item" style="--delay: 0s">
+                  <div class="timeline-dot">
+                    <i class="ri-smartphone-line"></i>
+                  </div>
+                  <div class="timeline-line"></div>
+                  <div class="timeline-content">
+                    <span class="timeline-title">扫码关注</span>
+                    <span class="timeline-desc">微信扫描二维码关注公众号</span>
+                  </div>
+                </div>
+                <div class="timeline-item" style="--delay: 0.15s">
+                  <div class="timeline-dot">
+                    <i class="ri-keyboard-line"></i>
+                  </div>
+                  <div class="timeline-line"></div>
+                  <div class="timeline-content">
+                    <span class="timeline-title">发送口令</span>
+                    <span class="timeline-desc">在公众号内发送上方口令</span>
+                  </div>
+                </div>
+                <div class="timeline-item" style="--delay: 0.3s">
+                  <div class="timeline-dot pulse">
+                    <i class="ri-loader-4-line"></i>
+                  </div>
+                  <div class="timeline-content">
+                    <span class="timeline-title">自动解锁</span>
+                    <span class="timeline-desc">验证通过后页面将自动解锁</span>
+                  </div>
+                </div>
+              </div>
+              <div v-if="pollTimeout" class="unlock-timeout">
+                <i class="ri-time-line" style="font-size: 1.2rem; color: rgba(255, 180, 80, 0.8);"></i>
+                <span>长时间无响应，请重新扫码</span>
+                <button class="unlock-retry-btn" @click="openUnlockModal">
+                  <i class="ri-refresh-line"></i> 重新获取口令
+                </button>
+              </div>
+              <div v-else class="unlock-poll-status">
+                <div class="unlock-poll-spinner"></div>
+                <span>等待扫码验证中...</span>
+              </div>
+            </template>
           </div>
         </div>
       </Teleport>
@@ -161,13 +195,14 @@ import { ref, computed, onMounted, nextTick, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { marked } from 'marked'
 import { getNoteDetail } from '../api/notes'
+import { requestUnlockCode, checkUnlockStatus } from '../api/auth'
 import LoadingSpinner from '../components/LoadingSpinner.vue'
 
 // 组件 Props
 const props = defineProps({
   qrCodeImage: {
     type: String,
-    default: '/qrcode.jpg'
+    default: '/0.jpg'
   }
 })
 
@@ -175,8 +210,14 @@ const route = useRoute()
 const note = ref(null)
 const isUnlocked = ref(false)
 const showUnlockModal = ref(false)
+const unlockCode = ref('')
+const unlockLoading = ref(false)
 const activeTocIndex = ref(0)
 let scrollHandler = null
+let pollTimer = null
+let pollCount = 0
+const MAX_POLL = 60
+const pollTimeout = ref(false)
 
 const formatViewCount = (count) => {
   if (!count) return '0'
@@ -309,20 +350,73 @@ const loadNote = async () => {
   }
 }
 
-const confirmUnlock = () => {
-  if (note.value) {
-    const unlockedIds = JSON.parse(localStorage.getItem('unlockedNotes') || '[]')
-    if (!unlockedIds.includes(note.value.id)) {
-      unlockedIds.push(note.value.id)
-      localStorage.setItem('unlockedNotes', JSON.stringify(unlockedIds))
+const openUnlockModal = async () => {
+  showUnlockModal.value = true
+  unlockLoading.value = true
+  unlockCode.value = ''
+  pollTimeout.value = false
+  try {
+    const res = await requestUnlockCode('NOTE')
+    if (res?.code) {
+      unlockCode.value = res.code
     }
-    isUnlocked.value = true
-    showUnlockModal.value = false
+  } catch (e) {
+    console.error('获取口令失败', e)
+  } finally {
+    unlockLoading.value = false
+  }
+  // 开始轮询扫码状态
+  startPolling()
+}
+
+const startPolling = () => {
+  stopPolling()
+  pollCount = 0
+  pollTimer = setInterval(async () => {
+    pollCount++
+    if (pollCount > MAX_POLL) {
+      stopPolling()
+      pollTimeout.value = true
+      return
+    }
+    try {
+      const res = await checkUnlockStatus('NOTE')
+      if (res?.unlocked) {
+        // 扫码验证成功，自动解锁
+        stopPolling()
+        if (note.value) {
+          const unlockedIds = JSON.parse(localStorage.getItem('unlockedNotes') || '[]')
+          if (!unlockedIds.includes(note.value.id)) {
+            unlockedIds.push(note.value.id)
+            localStorage.setItem('unlockedNotes', JSON.stringify(unlockedIds))
+          }
+        }
+        // 重新获取全文内容（后端需要鉴权后才返回 fullContent）
+        try {
+          const data = await getNoteDetail(route.params.id)
+          if (data) note.value = data
+        } catch (e) {
+          console.error('获取全文失败', e)
+        }
+        isUnlocked.value = true
+        showUnlockModal.value = false
+      }
+    } catch (e) {
+      console.error('轮询解锁状态失败', e)
+    }
+  }, 2000)
+}
+
+const stopPolling = () => {
+  if (pollTimer) {
+    clearInterval(pollTimer)
+    pollTimer = null
   }
 }
 
 const closeUnlockModal = () => {
   showUnlockModal.value = false
+  stopPolling()
 }
 
 onMounted(() => {
@@ -331,6 +425,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   if (scrollHandler && contentRef.value) contentRef.value.removeEventListener('scroll', scrollHandler)
+  stopPolling()
 })
 </script>
 
@@ -821,111 +916,235 @@ onUnmounted(() => {
   background: rgba(144, 166, 196, 0.25);
   color: #fff;
 }
-.unlock-icon {
-  width: 64px;
-  height: 64px;
-  background: linear-gradient(135deg, #7890b5, #a8bcd4);
-  border-radius: 50%;
+/* 二维码容器 — 星球主题风格 */
+.qr-container {
+  position: relative;
+  background: linear-gradient(135deg, rgba(100, 160, 230, 0.08), rgba(144, 166, 196, 0.06));
+  padding: 16px;
+  border-radius: 16px;
+  display: inline-block;
+  margin-bottom: 20px;
+  border: 1px solid rgba(144, 166, 196, 0.25);
+  box-shadow: 0 0 20px rgba(100, 160, 230, 0.12), 0 0 40px rgba(100, 160, 230, 0.06);
+}
+.qr-container::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(120, 144, 181, 0.3), rgba(168, 188, 212, 0.15), rgba(120, 144, 181, 0.3));
+  z-index: -1;
+  filter: blur(1px);
+}
+.qr-container img {
+  width: 150px;
+  height: 150px;
+  display: block;
+  border-radius: 8px;
+}
+
+/* 口令显示区 */
+.unlock-code-display {
+  margin-bottom: 20px;
+}
+.unlock-code-label {
+  display: block;
+  font-size: 0.78rem;
+  color: rgba(168, 188, 212, 0.55);
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.unlock-code-value {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.unlock-code-char {
+  width: 40px;
+  height: 48px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 18px;
-  font-size: 1.8rem;
-  color: #fff;
-}
-.unlock-title {
-  font-size: 1.2rem;
+  font-size: 1.4rem;
   font-weight: 600;
-  color: #ffffff;
-  margin-bottom: 10px;
-}
-.unlock-desc {
-  font-size: 0.88rem;
-  color: rgba(168, 188, 212, 0.75);
-  margin-bottom: 20px;
-  line-height: 1.6;
-}
-.unlock-desc strong {
+  font-family: 'JetBrains Mono', monospace;
   color: #e8eef7;
-  font-weight: 600;
-  background: rgba(144, 166, 196, 0.12);
-  padding: 1px 6px;
-  border-radius: 4px;
+  background: rgba(120, 144, 181, 0.15);
+  border: 1px solid rgba(144, 166, 196, 0.3);
+  border-radius: 10px;
+  text-shadow: 0 0 8px rgba(144, 166, 196, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  animation: charReveal 0.3s ease-out both;
 }
-.qr-container {
-  background: white;
-  padding: 14px;
-  border-radius: 12px;
-  display: inline-block;
-  margin-bottom: 20px;
+.unlock-code-char:nth-child(1) { animation-delay: 0.05s; }
+.unlock-code-char:nth-child(2) { animation-delay: 0.1s; }
+.unlock-code-char:nth-child(3) { animation-delay: 0.15s; }
+.unlock-code-char:nth-child(4) { animation-delay: 0.2s; }
+.unlock-code-char:nth-child(5) { animation-delay: 0.25s; }
+.unlock-code-char:nth-child(6) { animation-delay: 0.3s; }
+@keyframes charReveal {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
-.qr-container img {
-  width: 140px;
-  height: 140px;
-  display: block;
-}
-
-/* 步骤说明 */
-.unlock-steps {
+/* 加载状态 */
+.unlock-loading {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin-bottom: 22px;
-  text-align: left;
-}
-.unlock-step {
-  display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 12px;
-  border-radius: 10px;
-  background: rgba(144, 166, 196, 0.04);
-  border: 1px solid rgba(144, 166, 196, 0.08);
+  margin-bottom: 20px;
+  color: rgba(168, 188, 212, 0.6);
+  font-size: 0.85rem;
 }
-.step-num {
-  width: 24px;
-  height: 24px;
+.unlock-loading-spinner {
+  width: 28px;
+  height: 28px;
+  border: 2px solid rgba(144, 166, 196, 0.15);
+  border-top-color: rgba(144, 166, 196, 0.6);
   border-radius: 50%;
-  background: rgba(120, 144, 181, 0.2);
-  border: 1px solid rgba(120, 144, 181, 0.35);
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* 轮询状态 */
+.unlock-poll-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: rgba(100, 160, 230, 0.06);
+  border: 1px solid rgba(100, 160, 230, 0.12);
+  color: rgba(168, 188, 212, 0.65);
+  font-size: 0.8rem;
+  margin-top: 16px;
+}
+.unlock-poll-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(144, 166, 196, 0.15);
+  border-top-color: rgba(100, 180, 255, 0.7);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* 超时状态 */
+.unlock-timeout {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: rgba(255, 180, 80, 0.06);
+  border: 1px solid rgba(255, 180, 80, 0.15);
+  color: rgba(255, 200, 120, 0.85);
+  font-size: 0.85rem;
+  margin-top: 16px;
+}
+.unlock-retry-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 20px;
+  border-radius: 10px;
+  background: rgba(120, 144, 181, 0.15);
+  border: 1px solid rgba(120, 144, 181, 0.3);
   color: #c5d5ea;
-  font-size: 0.72rem;
-  font-weight: 600;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  margin-top: 4px;
+}
+.unlock-retry-btn:hover {
+  background: rgba(120, 144, 181, 0.25);
+  border-color: rgba(120, 144, 181, 0.5);
+  color: #fff;
+}
+
+/* 时间线步骤 */
+.unlock-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-bottom: 20px;
+  text-align: left;
+  padding: 0 8px;
+}
+.timeline-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  position: relative;
+  padding-bottom: 18px;
+  animation: timelineFadeIn 0.4s ease-out both;
+  animation-delay: var(--delay, 0s);
+}
+.timeline-item:last-child {
+  padding-bottom: 0;
+}
+@keyframes timelineFadeIn {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.timeline-dot {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(120, 144, 181, 0.12);
+  border: 1px solid rgba(120, 144, 181, 0.25);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  font-size: 1rem;
+  color: #a8bcd4;
+  position: relative;
+  z-index: 2;
+  transition: all 0.3s;
 }
-.step-text {
-  font-size: 0.82rem;
-  color: rgba(168, 188, 212, 0.8);
-  line-height: 1.4;
+.timeline-dot.pulse {
+  animation: dotPulse 2s ease-in-out infinite;
+  border-color: rgba(100, 180, 255, 0.4);
+  color: rgba(100, 180, 255, 0.8);
 }
-.step-text strong {
-  color: #e8eef7;
-  font-weight: 600;
+@keyframes dotPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(100, 180, 255, 0.3); }
+  50% { box-shadow: 0 0 0 6px rgba(100, 180, 255, 0); }
 }
 
-/* 完成按钮 */
-.unlock-done-btn {
-  width: 100%;
-  padding: 12px;
-  background: linear-gradient(135deg, #7890b5, #a8bcd4);
-  border: none;
-  border-radius: 12px;
-  color: #fff;
-  font-size: 0.9rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s;
+.timeline-line {
+  position: absolute;
+  left: 17px;
+  top: 38px;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(to bottom, rgba(120, 144, 181, 0.25), rgba(120, 144, 181, 0.08));
+  z-index: 1;
+}
+
+.timeline-content {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
+  flex-direction: column;
+  gap: 2px;
+  padding-top: 5px;
 }
-.unlock-done-btn:hover {
-  opacity: 0.9;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 18px rgba(120, 144, 181, 0.35);
+.timeline-title {
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: #e8eef7;
+  letter-spacing: 0.5px;
 }
+.timeline-desc {
+  font-size: 0.75rem;
+  color: rgba(168, 188, 212, 0.55);
+  line-height: 1.4;
+}
+
 </style>

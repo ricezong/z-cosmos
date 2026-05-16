@@ -29,11 +29,30 @@ public class AuthUnlockServiceImpl implements AuthUnlockService {
     private final AuthUnlockMapper authUnlockMapper;
     private final StringRedisTemplate redisTemplate;
     
+    private static final String CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+    private String generateUnlockCode() {
+        StringBuilder sb = new StringBuilder(6);
+        for (int i = 0; i < 6; i++) {
+            sb.append(CODE_CHARS.charAt((int) (Math.random() * CODE_CHARS.length())));
+        }
+        return sb.toString();
+    }
+
     @Override
     @Transactional
     public UnlockCodeDTO requestUnlockCode(String deviceId, String moduleType) {
-        // 生成6位随机口令（数字）
-        String unlockCode = String.valueOf((int)((Math.random() * 9 + 1) * 100000));
+        // 5分钟防重复：检查该设备是否在5分钟内已生成过口令
+        String cooldownKey = "unlock:cooldown:" + deviceId + ":" + moduleType;
+        String existingCode = redisTemplate.opsForValue().get(cooldownKey);
+        if (existingCode != null) {
+            // 5分钟内重复请求，返回已有口令
+            log.info("5分钟内重复请求，返回已有口令: deviceId={}, code={}", deviceId, existingCode);
+            return new UnlockCodeDTO(existingCode, 43200);
+        }
+
+        // 生成6位混合口令（大写字母+数字，排除易混淆字符0/O/1/I/L）
+        String unlockCode = generateUnlockCode();
         
         // 删除旧的未解锁记录（全局解锁，不需要target_id）
         authUnlockMapper.delete(
@@ -52,10 +71,13 @@ public class AuthUnlockServiceImpl implements AuthUnlockService {
         authUnlock.setExpiresAt(LocalDateTime.now().plusHours(12));
         authUnlockMapper.insert(authUnlock);
         
-        // 缓存到Redis（快速查询）
+        // 缓存到Redis（快速查询，12小时过期）
         String redisKey = "unlock:code:" + unlockCode;
         String redisValue = deviceId + ":" + moduleType;
         redisTemplate.opsForValue().set(redisKey, redisValue, 12, TimeUnit.HOURS);
+
+        // 设置5分钟防重复冷却
+        redisTemplate.opsForValue().set(cooldownKey, unlockCode, 5, TimeUnit.MINUTES);
         
         log.info("生成全局解锁口令: deviceId={}, moduleType={}, code={}", 
             deviceId, moduleType, unlockCode);
@@ -76,46 +98,7 @@ public class AuthUnlockServiceImpl implements AuthUnlockService {
         
         return new UnlockStatusDTO(authUnlock != null);
     }
-    
-    @Override
-    @Transactional
-    public boolean validateUnlockCode(String deviceId, String unlockCode) {
-        // 从Redis中查找口令
-        String redisKey = "unlock:code:" + unlockCode;
-        String redisValue = redisTemplate.opsForValue().get(redisKey);
 
-        if (redisValue == null) {
-            return false;
-        }
-
-        // 解析Redis中的设备和模块信息
-        String[] parts = redisValue.split(":");
-        String redisDeviceId = parts[0];
-        String moduleType = parts[1];
-
-        // 验证设备ID匹配
-        if (!deviceId.equals(redisDeviceId)) {
-            return false;
-        }
-
-        // 验证口令并更新数据库状态
-        boolean updated = authUnlockMapper.update(
-            null,
-            new LambdaQueryWrapper<AuthUnlock>()
-                .eq(AuthUnlock::getDeviceId, deviceId)
-                .eq(AuthUnlock::getModuleType, moduleType)
-                .eq(AuthUnlock::getUnlockCode, unlockCode)
-                .eq(AuthUnlock::getStatus, 0)
-        ) > 0;
-
-        if (updated) {
-            // 删除Redis中的口令缓存（口令验证后立即失效）
-            redisTemplate.delete(redisKey);
-            log.info("解锁成功: deviceId={}, moduleType={}, code={}", deviceId, moduleType, unlockCode);
-            return true;
-        }
-        return false;
-    }
 
     @Override
     @Transactional
@@ -127,9 +110,9 @@ public class AuthUnlockServiceImpl implements AuthUnlockService {
             // 提取用户发送的口令
             String content = wxMessage.getContent() != null ? wxMessage.getContent().trim() : "";
             
-            if (content.length() != 6 || !content.matches("\\d{6}")) {
+            if (content.length() != 6 || !content.matches("[A-Z0-9]{6}")) {
                 // 口令格式不正确
-                return buildWechatReply(wxMessage, "口令格式不正确，请输入6位数字口令。");
+                return buildWechatReply(wxMessage, "口令格式不正确，请输入6位字母数字口令。");
             }
             
             // 从Redis中查找口令
@@ -146,8 +129,10 @@ public class AuthUnlockServiceImpl implements AuthUnlockService {
             String moduleType = parts[1];
             
             // 验证口令并更新数据库状态
+            AuthUnlock updateEntity = new AuthUnlock();
+            updateEntity.setStatus(1);
             boolean updated = authUnlockMapper.update(
-                null,
+                updateEntity,
                 new LambdaQueryWrapper<AuthUnlock>()
                     .eq(AuthUnlock::getDeviceId, deviceId)
                     .eq(AuthUnlock::getModuleType, moduleType)
