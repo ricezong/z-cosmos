@@ -44,12 +44,12 @@
       <span class="footer-divider"></span>
 
 
-      <a href="https://beian.mps.gov.cn" target="_blank" rel="noopener noreferrer" class="footer-link police-link"
+<!--      <a href="https://beian.mps.gov.cn" target="_blank" rel="noopener noreferrer" class="footer-link police-link"
          title="公安机关互联网站安全管理服务平台">
         <i class="ri-police-badge-line"></i>
         <span>粤公网安备 44010002000000号</span>
       </a>
-      <span class="footer-divider"></span>
+      <span class="footer-divider"></span>-->
 
       <span class="footer-copyright">
         <i class="ri-copyright-line"></i>
