@@ -15,20 +15,45 @@ import java.util.List;
 public interface SearchIndexMapper extends BaseMapper<SearchIndex> {
 
     /**
-     * 全文搜索（利用 ngram 全文索引）
+     * 全文搜索（利用 ngram 全文索引）- 支持分页
      * @param keyword 搜索关键词
      * @param contentType 内容类型过滤（可选）
+     * @param offset 偏移量
+     * @param limit 每页数量
      * @return 匹配结果
      */
-    @Select("<script>" +
-        "SELECT id, content_type, content_id, title, keywords, tags, created_at, " +
-        "MATCH(title, keywords, tags) AGAINST(#{keyword} IN NATURAL LANGUAGE MODE) AS relevance " +
-        "FROM z_search_index " +
-        "WHERE MATCH(title, keywords, tags) AGAINST(#{keyword} IN NATURAL LANGUAGE MODE) " +
-        "<if test='contentType != null and contentType != \"\"'>" +
-        "AND content_type = #{contentType} " +
-        "</if>" +
-        "ORDER BY relevance DESC" +
-        "</script>")
-    List<SearchIndex> fullTextSearch(@Param("keyword") String keyword, @Param("contentType") String contentType);
+    @Select("""
+        <script>
+        SELECT id, content_type, content_id, title, keywords, tags, created_at,
+        MATCH(title, keywords, tags) AGAINST(#{keyword} IN NATURAL LANGUAGE MODE) AS relevance
+        FROM z_search_index
+        WHERE MATCH(title, keywords, tags) AGAINST(#{keyword} IN NATURAL LANGUAGE MODE)
+        <if test='contentType != null and contentType != ""'>
+            AND content_type = #{contentType}
+        </if>
+        ORDER BY relevance DESC
+        LIMIT #{offset}, #{limit}
+        </script>
+        """)
+    List<SearchIndex> fullTextSearch(@Param("keyword") String keyword,
+                                     @Param("contentType") String contentType,
+                                     @Param("offset") int offset,
+                                     @Param("limit") int limit);
+
+    /**
+     * 全文搜索结果计数
+     * @param keyword 搜索关键词
+     * @param contentType 内容类型过滤（可选）
+     * @return 总数
+     */
+    @Select("""
+        <script>
+        SELECT COUNT(*) FROM z_search_index
+        WHERE MATCH(title, keywords, tags) AGAINST(#{keyword} IN NATURAL LANGUAGE MODE)
+        <if test='contentType != null and contentType != ""'>
+            AND content_type = #{contentType}
+        </if>
+        </script>
+        """)
+    int countFullTextSearch(@Param("keyword") String keyword, @Param("contentType") String contentType);
 }

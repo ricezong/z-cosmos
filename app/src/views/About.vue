@@ -23,22 +23,45 @@
     <div class="page-scroll">
       <div class="container">
         <div class="about-card">
-          <!-- 头像区域 - 孔明灯 -->
-          <div class="lantern-section">
-            <div class="lantern-glow"></div>
-            <div class="lantern">
-              <div class="lantern-flame"></div>
-              <div class="lantern-body">
-                <span class="lantern-text">Z</span>
-              </div>
-              <div class="lantern-tail"></div>
+          <!-- 头像区域 - 旋转的黑洞 -->
+          <div class="blackhole-section">
+            <div class="bh-outer-halo"></div>
+
+            <div class="accretion-disk-container">
+              <div class="disk-ring"></div>
+              <div class="disk-ring"></div>
+              <div class="disk-ring"></div>
+              <div class="disk-ring"></div>
             </div>
-            <div class="lantern-sparks">
-              <span class="spark"></span>
-              <span class="spark"></span>
-              <span class="spark"></span>
-              <span class="spark"></span>
-              <span class="spark"></span>
+
+            <div class="disk-particles">
+              <span class="disk-particle"></span>
+              <span class="disk-particle"></span>
+              <span class="disk-particle"></span>
+              <span class="disk-particle"></span>
+              <span class="disk-particle"></span>
+              <span class="disk-particle"></span>
+              <span class="disk-particle"></span>
+              <span class="disk-particle"></span>
+            </div>
+
+            <div class="event-horizon-glow"></div>
+
+            <div class="blackhole-sphere">
+              <span class="bh-text">Z</span>
+            </div>
+
+            <div class="accretion-particles">
+              <span class="accretion-particle"></span>
+              <span class="accretion-particle"></span>
+              <span class="accretion-particle"></span>
+              <span class="accretion-particle"></span>
+              <span class="accretion-particle"></span>
+              <span class="accretion-particle"></span>
+              <span class="accretion-particle"></span>
+              <span class="accretion-particle"></span>
+              <span class="accretion-particle"></span>
+              <span class="accretion-particle"></span>
             </div>
           </div>
 
@@ -211,134 +234,227 @@ const email = ref('gz.kong@qq.com')
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* ========== 孔明灯头像区 ========== */
-.lantern-section {
+/* ========== 🕳️ 旋转的黑洞头像区 ========== */
+.blackhole-section {
   text-align: center;
   position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 160px;
+  height: 260px;
+  overflow: visible;
+  margin-bottom: 10px;
 }
 
-.lantern-glow {
+.bh-outer-halo {
   position: absolute;
-  left: 50%; top: 45%;
+  left: 50%; top: 50%;
   transform: translate(-50%, -50%);
-  width: 140px; height: 140px;
+  width: 220px; height: 220px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 160, 60, 0.15) 0%, rgba(255, 120, 40, 0.08) 40%, transparent 70%);
+  background: radial-gradient(circle, rgba(140, 100, 220, 0.15) 0%, rgba(100, 70, 180, 0.08) 35%, rgba(60, 30, 120, 0.03) 65%, transparent 100%);
   pointer-events: none;
-  animation: lanternGlow 4s ease-in-out infinite;
+  animation: outerHaloPulse 3.5s ease-in-out infinite;
+  z-index: 0;
 }
-@keyframes lanternGlow {
-  0%, 100% { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
-  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
-}
-
-.lantern {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  animation: lanternFloat 5s ease-in-out infinite;
-}
-@keyframes lanternFloat {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
+@keyframes outerHaloPulse {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
+  50% { transform: translate(-50%, -50%) scale(1.15); opacity: 0.9; }
 }
 
-.lantern-flame {
-  width: 8px;
-  height: 12px;
-  background: radial-gradient(ellipse at 50% 80%, #ffcc44, #ff8800 60%, transparent 100%);
-  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
-  animation: flameFlicker 0.6s ease-in-out infinite alternate;
+.accretion-disk-container {
   position: absolute;
-  top: -6px;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  width: 180px; height: 180px;
+  pointer-events: none;
   z-index: 2;
-}
-@keyframes flameFlicker {
-  0% { transform: scale(1) rotate(-3deg); opacity: 0.9; }
-  100% { transform: scale(1.15) rotate(3deg); opacity: 1; }
+  perspective: 300px;
+  transform-style: preserve-3d;
 }
 
-.lantern-body {
-  width: 72px;
-  height: 88px;
-  background: radial-gradient(ellipse at 40% 30%, rgba(255, 180, 80, 0.9), rgba(220, 80, 30, 0.85) 60%, rgba(180, 50, 20, 0.8));
-  border-radius: 50% 50% 45% 45% / 55% 55% 45% 45%;
+.disk-ring {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%) rotateX(65deg) rotateZ(var(--ring-angle, 0deg));
+  border-radius: 50%;
+  border: 3px solid transparent;
+  animation: diskSpin var(--spin-dur, 3.5s) linear infinite;
+  pointer-events: none;
+  box-shadow: 0 0 12px rgba(180, 130, 255, 0.25);
+}
+.disk-ring:nth-child(1) {
+  width: 155px; height: 155px;
+  border-top-color: rgba(180, 130, 255, 0.55);
+  border-right-color: rgba(140, 100, 220, 0.4);
+  border-bottom-color: rgba(100, 60, 180, 0.2);
+  --spin-dur: 4s; --ring-angle: 15deg;
+}
+.disk-ring:nth-child(2) {
+  width: 145px; height: 145px;
+  border-top-color: rgba(200, 150, 255, 0.45);
+  border-left-color: rgba(160, 110, 240, 0.3);
+  border-bottom-color: rgba(120, 80, 200, 0.2);
+  --spin-dur: 5.2s; --ring-angle: -25deg;
+  animation-direction: reverse;
+}
+.disk-ring:nth-child(3) {
+  width: 135px; height: 135px;
+  border-right-color: rgba(190, 140, 255, 0.5);
+  border-bottom-color: rgba(130, 90, 220, 0.35);
+  border-left-color: rgba(150, 100, 230, 0.25);
+  --spin-dur: 3.8s; --ring-angle: 40deg;
+}
+.disk-ring:nth-child(4) {
+  width: 125px; height: 125px;
+  border-top-color: rgba(170, 120, 255, 0.4);
+  border-right-color: rgba(140, 100, 230, 0.3);
+  --spin-dur: 4.6s; --ring-angle: -10deg;
+  animation-direction: reverse;
+}
+@keyframes diskSpin {
+  from { transform: translate(-50%, -50%) rotateX(65deg) rotateZ(var(--ring-angle, 0deg)) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotateX(65deg) rotateZ(var(--ring-angle, 0deg)) rotate(360deg); }
+}
+
+.disk-particles {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%) rotateX(65deg) rotateZ(30deg);
+  width: 170px; height: 170px;
+  pointer-events: none;
+  z-index: 3;
+  animation: diskSpin 2.8s linear infinite reverse;
+  border-radius: 50%;
+}
+.disk-particle {
+  position: absolute;
+  width: 4px; height: 4px;
+  background: rgba(220, 180, 255, 0.8);
+  border-radius: 50%;
+  box-shadow: 0 0 6px rgba(200, 150, 255, 0.8), 0 0 14px rgba(160, 100, 255, 0.5);
+}
+.disk-particle:nth-child(1) { top: 2%; left: 50%; }
+.disk-particle:nth-child(2) { top: 12%; left: 75%; }
+.disk-particle:nth-child(3) { top: 45%; left: 90%; }
+.disk-particle:nth-child(4) { top: 80%; left: 70%; }
+.disk-particle:nth-child(5) { top: 92%; left: 40%; }
+.disk-particle:nth-child(6) { top: 70%; left: 15%; }
+.disk-particle:nth-child(7) { top: 30%; left: 8%; }
+.disk-particle:nth-child(8) { top: 5%; left: 25%; }
+
+.event-horizon-glow {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  width: 90px; height: 90px;
+  border-radius: 50%;
+  background: transparent;
+  border: 2.5px solid rgba(200, 160, 255, 0.6);
+  box-shadow: 0 0 10px rgba(180, 120, 255, 0.7), 0 0 25px rgba(140, 90, 230, 0.45), inset 0 0 10px rgba(200, 160, 255, 0.2);
+  pointer-events: none;
+  z-index: 5;
+  animation: horizonGlow 2s ease-in-out infinite alternate;
+}
+@keyframes horizonGlow {
+  0% { box-shadow: 0 0 8px rgba(180, 120, 255, 0.6), 0 0 20px rgba(140, 90, 230, 0.35), inset 0 0 8px rgba(200, 160, 255, 0.2); }
+  100% { box-shadow: 0 0 16px rgba(200, 150, 255, 0.9), 0 0 35px rgba(160, 110, 250, 0.6), inset 0 0 14px rgba(220, 180, 255, 0.35); }
+}
+
+.blackhole-sphere {
+  position: relative;
+  width: 78px; height: 78px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #1a1030, #08030f 50%, #000000 100%);
+  z-index: 4;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.9), inset 0 0 20px rgba(0, 0, 0, 0.8), inset 0 -5px 10px rgba(40, 20, 60, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow:
-    0 0 20px rgba(255, 140, 40, 0.4),
-    0 0 50px rgba(255, 100, 20, 0.2),
-    inset 0 -8px 20px rgba(180, 50, 10, 0.3),
-    inset 0 5px 15px rgba(255, 220, 150, 0.3);
-  position: relative;
   overflow: hidden;
+  animation: blackholePulse 3s ease-in-out infinite;
 }
-.lantern-body::before {
-  content: '';
-  position: absolute;
-  top: 8%; left: 15%; right: 55%; bottom: 40%;
-  background: radial-gradient(ellipse, rgba(255, 240, 200, 0.35), transparent 70%);
-  border-radius: 50%;
-  pointer-events: none;
-}
-.lantern-body::after {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  border: 1px solid rgba(255, 200, 100, 0.25);
-  border-radius: inherit;
-  pointer-events: none;
+@keyframes blackholePulse {
+  0%, 100% { box-shadow: 0 0 12px rgba(0, 0, 0, 0.9), inset 0 0 18px rgba(0, 0, 0, 0.8), inset 0 -4px 8px rgba(40, 20, 60, 0.3); }
+  50% { box-shadow: 0 0 22px rgba(20, 10, 40, 0.9), inset 0 0 25px rgba(0, 0, 0, 0.9), inset 0 -6px 12px rgba(60, 30, 80, 0.35); }
 }
 
-.lantern-text {
-  font-family: 'Cinzel', serif;
-  font-size: 2rem;
-  font-weight: 600;
-  color: rgba(255, 240, 200, 0.95);
-  text-shadow: 0 0 10px rgba(255, 200, 100, 0.6), 0 0 20px rgba(255, 160, 60, 0.3);
+.blackhole-sphere::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent, rgba(180, 140, 255, 0.15) 20%, rgba(140, 100, 240, 0.1) 40%, transparent 60%, rgba(160, 120, 255, 0.12) 80%, transparent 100%);
+  animation: lensSpin 5s linear infinite;
+  pointer-events: none;
+  z-index: -1;
+  filter: blur(4px);
+}
+@keyframes lensSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.blackhole-sphere::after {
+  content: '';
+  position: absolute;
+  top: 15%; left: 20%;
+  width: 18%; height: 14%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(200, 180, 255, 0.4), transparent 70%);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.bh-text {
+  font-family: var(--font-display, 'Cinzel', 'Noto Serif SC', serif);
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: rgba(210, 190, 255, 0.85);
+  text-shadow: 0 0 10px rgba(180, 130, 255, 0.8), 0 0 25px rgba(140, 100, 240, 0.5), 0 0 45px rgba(100, 70, 200, 0.3);
   position: relative;
-  z-index: 1;
+  z-index: 3;
+  animation: textFlicker 2.5s ease-in-out infinite alternate;
+}
+@keyframes textFlicker {
+  0% { text-shadow: 0 0 8px rgba(180, 130, 255, 0.7), 0 0 20px rgba(140, 100, 240, 0.4), 0 0 35px rgba(100, 70, 200, 0.25); }
+  100% { text-shadow: 0 0 14px rgba(200, 160, 255, 0.95), 0 0 32px rgba(160, 120, 255, 0.65), 0 0 55px rgba(120, 90, 230, 0.45); }
 }
 
-.lantern-tail {
-  width: 30px;
-  height: 20px;
-  background: linear-gradient(180deg, rgba(200, 70, 20, 0.7), rgba(160, 50, 10, 0.4));
-  border-radius: 0 0 50% 50% / 0 0 100% 100%;
-  margin-top: -2px;
-}
-
-.lantern-sparks {
+.accretion-particles {
   position: absolute;
-  left: 50%; top: 25%;
-  width: 100px; height: 100px;
+  left: 50%; top: 50%;
   transform: translate(-50%, -50%);
+  width: 150px; height: 150px;
   pointer-events: none;
+  z-index: 6;
 }
-.spark {
+.accretion-particle {
   position: absolute;
-  width: 3px;
-  height: 3px;
-  background: rgba(255, 200, 80, 0.8);
+  width: 2px; height: 2px;
+  background: rgba(220, 190, 255, 0.9);
   border-radius: 50%;
-  animation: sparkRise 3s ease-out infinite;
-  box-shadow: 0 0 4px rgba(255, 180, 60, 0.6);
+  box-shadow: 0 0 5px rgba(200, 150, 255, 0.8);
+  animation: spiralIn var(--duration, 2.5s) ease-in infinite;
+  animation-delay: var(--delay, 0s);
+  left: 50%; top: 50%;
+  transform-origin: center center;
 }
-.spark:nth-child(1) { left: 45%; animation-delay: 0s; }
-.spark:nth-child(2) { left: 55%; animation-delay: 0.6s; }
-.spark:nth-child(3) { left: 40%; animation-delay: 1.2s; }
-.spark:nth-child(4) { left: 60%; animation-delay: 1.8s; }
-.spark:nth-child(5) { left: 50%; animation-delay: 2.4s; }
-@keyframes sparkRise {
-  0% { top: 50%; opacity: 0; transform: scale(0.5); }
-  20% { opacity: 1; }
-  100% { top: 0%; opacity: 0; transform: scale(0); }
+.accretion-particle:nth-child(1) { --duration: 2.2s; --delay: 0s; }
+.accretion-particle:nth-child(2) { --duration: 2.8s; --delay: 0.4s; }
+.accretion-particle:nth-child(3) { --duration: 2.5s; --delay: 0.8s; }
+.accretion-particle:nth-child(4) { --duration: 3s; --delay: 1.2s; }
+.accretion-particle:nth-child(5) { --duration: 2.6s; --delay: 1.6s; }
+.accretion-particle:nth-child(6) { --duration: 2.3s; --delay: 0.2s; }
+.accretion-particle:nth-child(7) { --duration: 2.9s; --delay: 0.6s; }
+.accretion-particle:nth-child(8) { --duration: 2.4s; --delay: 1s; }
+.accretion-particle:nth-child(9) { --duration: 2.7s; --delay: 1.4s; }
+.accretion-particle:nth-child(10) { --duration: 2.1s; --delay: 1.8s; }
+@keyframes spiralIn {
+  0% { transform: translate(-50%, -50%) rotate(0deg) translateX(60px) scale(1); opacity: 0.2; }
+  30% { opacity: 1; transform: translate(-50%, -50%) rotate(120deg) translateX(45px) scale(1.2); }
+  70% { opacity: 0.8; transform: translate(-50%, -50%) rotate(240deg) translateX(20px) scale(0.7); }
+  100% { transform: translate(-50%, -50%) rotate(360deg) translateX(0px) scale(0); opacity: 0; }
 }
 
 /* ========== 名字与简介 ========== */

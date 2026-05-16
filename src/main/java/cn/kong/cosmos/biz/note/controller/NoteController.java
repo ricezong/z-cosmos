@@ -42,6 +42,11 @@ public class NoteController {
             @PathVariable String noteId,
             @RequestHeader(value = "X-Device-ID", required = false) String deviceId
     ) {
+
+        // 强制要求 deviceId，防止未授权访问
+        if (deviceId == null || deviceId.isEmpty()) {
+            return Result.error("缺少设备标识");
+        }
         NoteDetailDTO result = noteService.getNoteDetail(noteId, deviceId);
         return Result.success(result);
     }

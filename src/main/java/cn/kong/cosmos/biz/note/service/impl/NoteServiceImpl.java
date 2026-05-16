@@ -36,43 +36,7 @@ public class NoteServiceImpl implements NoteService {
     @Override
     public Page<NoteListDTO> listNotes(Integer page, Integer size, String categoryCode) {
         Page<Note> notePage = new Page<>(page, size);
-        LambdaQueryWrapper<Note> wrapper = new LambdaQueryWrapper<>();
-        wrapper.orderByDesc(Note::getCreatedAt);
-        
-        if (categoryCode != null && !categoryCode.isEmpty()) {
-            wrapper.eq(Note::getCategoryCode, categoryCode);
-        }
-        
-        Page<Note> result = noteMapper.selectPage(notePage, wrapper);
-        
-        List<NoteListDTO> dtoList = result.getRecords().stream().map(note -> {
-            NoteListDTO dto = new NoteListDTO();
-            dto.setNoteId(note.getNoteId());
-            dto.setTitle(note.getTitle());
-            dto.setCategoryCode(note.getCategoryCode());
-            dto.setTags(note.getTags());
-            dto.setContentType(note.getContentType());
-            dto.setSourceUrl(note.getSourceUrl());
-            dto.setReadMinutes(note.getReadMinutes());
-            dto.setIsLocked(note.getIsLocked());
-            dto.setShortSummary(note.getShortSummary());
-            dto.setViewCount(note.getViewCount());
-            dto.setCreatedAt(note.getCreatedAt() != null ? note.getCreatedAt().toString() : null);
-            
-            // 查询分类名称
-            NoteCategory category = categoryMapper.selectOne(
-                new LambdaQueryWrapper<NoteCategory>().eq(NoteCategory::getCategoryCode, note.getCategoryCode())
-            );
-            if (category != null) {
-                dto.setCategoryName(category.getCategoryName());
-            }
-            
-            return dto;
-        }).collect(Collectors.toList());
-        
-        Page<NoteListDTO> dtoPage = new Page<>(result.getCurrent(), result.getSize(), result.getTotal());
-        dtoPage.setRecords(dtoList);
-        return dtoPage;
+        return noteMapper.selectNoteListWithCategory(notePage, categoryCode);
     }
     
     @Override
@@ -128,10 +92,9 @@ public class NoteServiceImpl implements NoteService {
             dto.setFullContent(fullContent);
         }
         
-        // 增加阅读数
-        note.setViewCount(note.getViewCount() + 1);
-        noteMapper.updateById(note);
-        
+        // 增加阅读数（使用原子操作避免并发问题）
+        noteMapper.incrementViewCount(noteId);
+
         return dto;
     }
     

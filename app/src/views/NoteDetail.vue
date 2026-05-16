@@ -101,7 +101,7 @@
                     <div class="content-mask">
                       <button class="unlock-btn" @click="showUnlockModal = true">
                         <i class="ri-lock-unlock-line"></i>
-                        解锁全文
+                        阅读全文
                       </button>
                     </div>
                   </div>
@@ -131,7 +131,7 @@
             </div>
             <h3 class="unlock-title">解锁全站文章</h3>
             <p class="unlock-desc">
-              扫描下方二维码，关注公众号并输入 <strong>123456</strong> 解锁全站文章
+              扫描下方二维码，关注公众号解锁全站文章
             </p>
             <div class="qr-container">
               <img :src="qrCodeImage" alt="QR Code" />
@@ -167,7 +167,7 @@ import LoadingSpinner from '../components/LoadingSpinner.vue'
 const props = defineProps({
   qrCodeImage: {
     type: String,
-    default: 'https://via.placeholder.com/160x160/ffffff/000000?text=QR+Code' // 默认占位图
+    default: '/qrcode.jpg'
   }
 })
 
@@ -575,7 +575,6 @@ onUnmounted(() => {
   text-shadow: 0 2px 20px rgba(144, 166, 196, 0.18);
 }
 .title-underline {
-  width: 56px;
   height: 2px;
   background: linear-gradient(90deg, #c5d5ea 0%, #a8bcd4 60%, transparent 100%);
   border-radius: 2px;
@@ -620,12 +619,10 @@ onUnmounted(() => {
 /* 标题 section 层级缩进 — h2 内容左缩进 16px，h3 内容左缩进 28px */
 .md-body :deep(.md-section-2) {
   padding-left: 16px;
-  border-left: 2px solid rgba(144, 166, 196, 0.08);
   margin-left: 0;
 }
 .md-body :deep(.md-section-3) {
   padding-left: 28px;
-  border-left: 2px solid rgba(144, 166, 196, 0.06);
   margin-left: 0;
 }
 .md-body :deep(.md-section-2 .md-section-3) {

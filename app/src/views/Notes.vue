@@ -602,7 +602,6 @@ onUnmounted(() => {
   border: 1px solid rgba(144, 166, 196, 0.2);
   border-radius: 16px;
   overflow: hidden;
-  background: rgba(5, 12, 26, 0.4);
 }
 .skeleton-cover {
   height: 140px;
