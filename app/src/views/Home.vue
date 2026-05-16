@@ -38,8 +38,7 @@
     <div class="footer-content">
       <a href="https://beian.miit.gov.cn" target="_blank" rel="noopener noreferrer" class="footer-link icp-link"
          title="工业和信息化部备案查询">
-        <i class="ri-shield-keyhole-line"></i>
-        <span>粤ICP备2026052099号</span>
+        <span>粤ICP备2026052099号-1</span>
       </a>
 
       <span class="footer-divider"></span>

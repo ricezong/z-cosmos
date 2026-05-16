@@ -44,7 +44,7 @@
 
           <!-- 中央正文容器 -->
           <div class="container">
-            <LoadingSpinner v-if="!note" text="加载中..." />
+            <LoadingSpinner v-if="!note || !noteReady" text="加载中..." />
 
             <template v-else>
               <!-- 帖子卡片 -->
@@ -212,6 +212,7 @@ const isUnlocked = ref(false)
 const showUnlockModal = ref(false)
 const unlockCode = ref('')
 const unlockLoading = ref(false)
+const noteReady = ref(false)
 const activeTocIndex = ref(0)
 let scrollHandler = null
 let pollTimer = null
@@ -338,15 +339,44 @@ const setupScrollSpy = () => {
 const loadNote = async () => {
   try {
     const data = await getNoteDetail(route.params.id)
-    if (data) {
-      note.value = data
+    if (!data) { noteReady.value = true; return }
+
+    let finalData = data
+    let unlocked = data.isLocked !== 1
+
+    if (!unlocked) {
       const unlockedIds = JSON.parse(localStorage.getItem('unlockedNotes') || '[]')
-      isUnlocked.value = data.isLocked !== 1 || unlockedIds.includes(data.id)
-      await nextTick()
-      setupScrollSpy()
+      if (unlockedIds.includes(data.id)) {
+        unlocked = true
+        try {
+          const fullData = await getNoteDetail(route.params.id)
+          if (fullData) finalData = fullData
+        } catch { /* 使用 previewData */ }
+      } else {
+        try {
+          const status = await checkUnlockStatus('NOTE')
+          if (status?.unlocked) {
+            unlocked = true
+            unlockedIds.push(data.id)
+            localStorage.setItem('unlockedNotes', JSON.stringify(unlockedIds))
+            const fullData = await getNoteDetail(route.params.id)
+            if (fullData) finalData = fullData
+          }
+        } catch (e) {
+          console.error('检查解锁状态失败', e)
+        }
+      }
     }
+
+    // 所有异步操作完成后，一次性设置状态，避免闪烁
+    isUnlocked.value = unlocked
+    note.value = finalData
+    noteReady.value = true
+    await nextTick()
+    setupScrollSpy()
   } catch (e) {
     console.error('加载笔记失败', e)
+    noteReady.value = true
   }
 }
 
