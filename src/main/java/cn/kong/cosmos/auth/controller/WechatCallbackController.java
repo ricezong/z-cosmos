@@ -23,7 +23,7 @@ public class WechatCallbackController {
     
     private final WechatCallbackService wechatCallbackService;
     
-    @Value("${wechat.mp.token:}")
+    @Value("${wechat.mp.token:kong}")
     private String wechatToken;
     
     /**
