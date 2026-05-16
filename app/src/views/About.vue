@@ -159,10 +159,8 @@ const techStack = ref([
 ])
 
 const links = ref([
-  { name: 'GitHub', url: 'https://github.com/yourusername', icon: 'ri-github-line', desc: '开源项目', bg: 'rgba(255, 255, 255, 0.08)' },
-  { name: 'Gitee', url: 'https://gitee.com/yourusername', icon: 'ri-git-branch-line', desc: '国内代码托管', bg: 'rgba(200, 60, 50, 0.1)' },
-  { name: '知乎', url: 'https://zhihu.com/people/yourusername', icon: 'ri-chat-quote-line', desc: '技术问答', bg: 'rgba(66, 133, 244, 0.1)' },
-  { name: '掘金', url: 'https://juejin.cn/user/yourusername', icon: 'ri-quill-pen-line', desc: '技术博客', bg: 'rgba(66, 165, 245, 0.1)' },
+  { name: 'GitHub', url: 'https://github.com/ricezong', icon: 'ri-github-line', desc: '开源项目', bg: 'rgba(255, 255, 255, 0.08)' },
+  { name: 'Gitee', url: 'https://gitee.com/kongming-latern', icon: 'ri-git-branch-line', desc: '国内代码托管', bg: 'rgba(200, 60, 50, 0.1)' }
 ])
 
 const email = ref('gz.kong@qq.com')

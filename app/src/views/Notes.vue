@@ -189,7 +189,12 @@ const size = ref(6)
 const loading = ref(false)
 const hasMore = ref(true)
 const loadMoreRef = ref(null)
+const contentRef = ref(null)
 let observer = null
+
+function onContentScroll() {
+  // 可扩展：滚动事件处理
+}
 
 // 精选笔记：按浏览量降序取前5
 const topNotes = computed(() => {
@@ -431,14 +436,14 @@ onUnmounted(() => {
   border-radius: 16px;
   overflow: hidden;
   cursor: pointer;
-  transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s;
+  transition: border-color 0.3s, box-shadow 0.3s;
   background: rgba(5, 12, 26, 0.4);
   backdrop-filter: blur(8px);
+  position: relative;
 }
 .note-card:hover {
   border-color: rgba(144, 166, 196, 0.5);
-  box-shadow: 0 8px 30px rgba(144, 166, 196, 0.2);
-  transform: translateY(-4px);
+  box-shadow: inset 0 0 40px rgba(144, 166, 196, 0.1);
 }
 
 /* 封面 */
