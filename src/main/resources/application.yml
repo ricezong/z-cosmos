@@ -8,9 +8,9 @@ spring:
   # 数据源配置
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://124.223.110.114:13306/z-cosmos?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
-    username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:2025#dx}
+    url: jdbc:mysql://localhost:3306/z-cosmos?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     hikari:
       minimum-idle: 5
       maximum-pool-size: 20
@@ -21,8 +21,8 @@ spring:
   # Redis配置
   data:
     redis:
-      host: ${REDIS_HOST:124.223.110.114}
-      port: ${REDIS_PORT:16379}
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
       database: 0
       timeout: 3000ms
       lettuce:
@@ -35,16 +35,10 @@ spring:
   # 微信公众号配置
   wechat:
     mp:
-      app-id: ${WECHAT_MP_APP_ID:}
-      secret: ${WECHAT_MP_SECRET:}
-      token: ${WECHAT_MP_TOKEN:}
-      aes-key: ${WECHAT_MP_AES_KEY:}
-
-  # AI配置
-  ai:
-    deepseek:
-      chat:
-        api-key: ${DEEPSEEK_API_KEY:sk-298eaa5393c44cc9a87c83b1560c20d5}
+      app-id: ${WECHAT_MP_APP_ID}
+      secret: ${WECHAT_MP_SECRET}
+      token: ${WECHAT_MP_TOKEN}
+      aes-key: ${WECHAT_MP_AES_KEY}
 
   # Jackson配置
   jackson:
