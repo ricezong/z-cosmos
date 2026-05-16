@@ -28,6 +28,10 @@ target/
 .env
 .env.local
 *.env.*
+application-local.yml
+application-local.properties
+*.local.yml
+*.local.properties
 # Editors
 .vscode/
 .idea/
