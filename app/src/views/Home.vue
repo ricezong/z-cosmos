@@ -728,7 +728,7 @@ function init() {
   }))
   planet1.castShadow = planet1.receiveShadow = true
   planet1.add(createAtmosphere(1.72, 0x66a3ff, 0.2))
-  planet1.userData = {name: '地球', func: '技术笔记', desc: '站长技术笔记，知识共享', link: '/notes', spin: 0.004}
+  planet1.userData = {name: '地球', func: '个人随笔', desc: '站长个人随笔', link: '/notes', spin: 0.004}
   const tex2 = createMarsTexture()
   const planet2 = new THREE.Mesh(new THREE.SphereGeometry(1.4, 64, 64), new THREE.MeshStandardMaterial({
     map: tex2,

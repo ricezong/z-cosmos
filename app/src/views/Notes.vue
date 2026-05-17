@@ -12,7 +12,7 @@
               <div class="planet-sphere earth"></div>
             </div>
             <div class="header-title">
-              <h1>技术笔记</h1>
+              <h1>个人随笔</h1>
               <p>探索 · 记录 · 分享</p>
             </div>
           </div>
